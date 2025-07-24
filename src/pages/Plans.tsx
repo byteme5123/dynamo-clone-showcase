@@ -1,58 +1,16 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Signal, Zap, Phone, Globe, Wifi } from 'lucide-react';
+import { domesticPlans, specialPlans } from '@/data/plans';
 import PromoBanner from '@/components/PromoBanner';
 import Navbar from '@/components/Navbar';
 import CoverageSection from '@/components/CoverageSection';
 import Footer from '@/components/Footer';
 import MobileBottomBar from '@/components/MobileBottomBar';
-import planCardImage from '@/assets/dynamo-plan-card.png';
-import elSalvadorCard from '@/assets/el-salvador-plan-card.png';
-import guatemalaCard from '@/assets/guatemala-plan-card.png';
-import hondurasCard from '@/assets/honduras-plan-card.png';
 
 const Plans = () => {
-  const domesticPlans = [
-    {
-      image: planCardImage,
-      title: '$25/mo Plan',
-      description: 'UNLIMITED Talk & Text + 2GB Data'
-    },
-    {
-      image: planCardImage,
-      title: '$35/mo Plan', 
-      description: 'UNLIMITED Talk & Text + 5GB Data'
-    },
-    {
-      image: planCardImage,
-      title: '$45/mo Plan',
-      description: 'UNLIMITED Talk & Text + 10GB Data'
-    },
-    {
-      image: planCardImage,
-      title: '$55/mo Plan',
-      description: 'UNLIMITED Talk & Text + UNLIMITED Data'
-    }
-  ];
-
-  const specialPlans = [
-    {
-      image: elSalvadorCard,
-      title: '$60/mo Plan',
-      description: 'El Salvador - UNLIMITED Talk & Text + 100 minutes'
-    },
-    {
-      image: guatemalaCard,
-      title: '$60/mo Plan',
-      description: 'Guatemala - UNLIMITED Talk & Text + 100 minutes'
-    },
-    {
-      image: hondurasCard,
-      title: '$60/mo Plan',
-      description: 'Honduras - UNLIMITED Talk & Text + 100 minutes'
-    }
-  ];
 
   const planBenefits = [
     {
@@ -194,9 +152,11 @@ const Plans = () => {
                     </div>
                     <h3 className="text-xl font-bold text-foreground mb-2">{plan.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                    <Button variant="cta" className="w-full hover-lift">
-                      Choose Plan
-                    </Button>
+                    <Link to={`/plans/${plan.slug}`}>
+                      <Button variant="cta" className="w-full hover-lift">
+                        Choose Plan
+                      </Button>
+                    </Link>
                   </div>
                 ))}
               </div>
@@ -219,9 +179,11 @@ const Plans = () => {
                     </div>
                     <h3 className="text-xl font-bold text-foreground mb-2">{plan.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                    <Button variant="cta" className="w-full hover-lift">
-                      Choose Plan
-                    </Button>
+                    <Link to={`/plans/${plan.slug}`}>
+                      <Button variant="cta" className="w-full hover-lift">
+                        Choose Plan
+                      </Button>
+                    </Link>
                   </div>
                 ))}
               </div>
