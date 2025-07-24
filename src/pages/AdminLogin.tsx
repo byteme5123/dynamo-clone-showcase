@@ -15,15 +15,17 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { signIn, isAdmin, loading: authLoading } = useAdminAuth();
+  const { signIn, isAdmin, loading: authLoading, adminUser } = useAdminAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAdmin && !authLoading) {
+    console.log('AdminLogin: isAdmin:', isAdmin, 'authLoading:', authLoading, 'adminUser:', adminUser);
+    if (isAdmin && !authLoading && adminUser) {
+      console.log('Redirecting to dashboard');
       navigate('/admin/dashboard');
     }
-  }, [isAdmin, authLoading, navigate]);
+  }, [isAdmin, authLoading, adminUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +53,8 @@ const AdminLogin = () => {
           title: "Welcome!",
           description: "Successfully logged in to admin dashboard.",
         });
-        navigate('/admin/dashboard');
+        // Don't navigate here - let the useEffect handle it after admin verification
+        console.log('Sign in successful, waiting for admin verification...');
       }
     } catch (err) {
       setError('An unexpected error occurred');

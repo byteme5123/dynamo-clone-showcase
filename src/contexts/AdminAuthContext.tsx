@@ -32,6 +32,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const fetchAdminUser = async (userId: string) => {
     try {
+      console.log('Fetching admin user for userId:', userId);
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
@@ -44,6 +45,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return null;
       }
 
+      console.log('Admin user data:', data);
       return data;
     } catch (error) {
       console.error('Error in fetchAdminUser:', error);
@@ -66,6 +68,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -73,6 +76,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           // Fetch admin user data
           const adminData = await fetchAdminUser(session.user.id);
           setAdminUser(adminData as AdminUser);
+          console.log('Setting admin user:', adminData);
           
           if (adminData && event === 'SIGNED_IN') {
             await updateLastLogin(session.user.id);
@@ -87,12 +91,14 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
         fetchAdminUser(session.user.id).then(adminData => {
           setAdminUser(adminData as AdminUser);
+          console.log('Initial admin user set:', adminData);
           setLoading(false);
         });
       } else {
