@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Footer = () => {
   const footerLinks = {
@@ -53,11 +54,12 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 mb-8">
           {/* Logo and Description */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">D</span>
-              </div>
-              <span className="font-bold text-xl">Dynamo Wireless</span>
+            <div className="flex items-center">
+              <img 
+                src={logoImage} 
+                alt="Dynamo Wireless" 
+                className="h-12 w-auto object-contain"
+              />
             </div>
             <p className="text-secondary-foreground/80 text-sm leading-relaxed">
               Experience the power of reliable, fast, and affordable wireless service. 
