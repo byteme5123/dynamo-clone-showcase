@@ -60,8 +60,8 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="cta" size="default" className="hover-lift">
-              Activate SIM
+            <Button variant="cta" size="default" className="hover-lift" asChild>
+              <a href="/activate">Activate SIM</a>
             </Button>
           </div>
 
@@ -104,8 +104,8 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <div className="px-3">
-                  <Button variant="cta" size="default" className="w-full">
-                    Activate SIM
+                  <Button variant="cta" size="default" className="w-full" asChild>
+                    <a href="/activate">Activate SIM</a>
                   </Button>
                 </div>
               </div>
