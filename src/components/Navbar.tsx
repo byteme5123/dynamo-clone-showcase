@@ -13,8 +13,8 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { name: 'Home', href: '#' },
-    { name: 'About', href: '#about' },
+    { name: 'Home', href: '/' },
+    { name: 'About', href: '/about' },
     { name: 'Plans', href: '#plans' },
     { name: 'Contact', href: '#contact' },
   ];
