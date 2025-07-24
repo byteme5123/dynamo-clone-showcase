@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Signal, Zap, Phone, Globe, Wifi } from 'lucide-react';
 import PromoBanner from '@/components/PromoBanner';
 import Navbar from '@/components/Navbar';
@@ -7,8 +8,52 @@ import CoverageSection from '@/components/CoverageSection';
 import Footer from '@/components/Footer';
 import MobileBottomBar from '@/components/MobileBottomBar';
 import planCardImage from '@/assets/dynamo-plan-card.png';
+import elSalvadorCard from '@/assets/el-salvador-plan-card.png';
+import guatemalaCard from '@/assets/guatemala-plan-card.png';
+import hondurasCard from '@/assets/honduras-plan-card.png';
 
 const Plans = () => {
+  const domesticPlans = [
+    {
+      image: planCardImage,
+      title: '$25/mo Plan',
+      description: 'UNLIMITED Talk & Text + 2GB Data'
+    },
+    {
+      image: planCardImage,
+      title: '$35/mo Plan', 
+      description: 'UNLIMITED Talk & Text + 5GB Data'
+    },
+    {
+      image: planCardImage,
+      title: '$45/mo Plan',
+      description: 'UNLIMITED Talk & Text + 10GB Data'
+    },
+    {
+      image: planCardImage,
+      title: '$55/mo Plan',
+      description: 'UNLIMITED Talk & Text + UNLIMITED Data'
+    }
+  ];
+
+  const specialPlans = [
+    {
+      image: elSalvadorCard,
+      title: '$60/mo Plan',
+      description: 'El Salvador - UNLIMITED Talk & Text + 100 minutes'
+    },
+    {
+      image: guatemalaCard,
+      title: '$60/mo Plan',
+      description: 'Guatemala - UNLIMITED Talk & Text + 100 minutes'
+    },
+    {
+      image: hondurasCard,
+      title: '$60/mo Plan',
+      description: 'Honduras - UNLIMITED Talk & Text + 100 minutes'
+    }
+  ];
+
   const planBenefits = [
     {
       icon: Signal,
@@ -123,33 +168,65 @@ const Plans = () => {
             </p>
           </div>
           
-          {/* Plans Grid - Same as homepage but custom heading */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { title: '$25/mo Plan', description: 'UNLIMITED Talk & Text + 2GB Data' },
-              { title: '$35/mo Plan', description: 'UNLIMITED Talk & Text + 5GB Data' },
-              { title: '$45/mo Plan', description: 'UNLIMITED Talk & Text + 10GB Data' },
-              { title: '$55/mo Plan', description: 'UNLIMITED Talk & Text + UNLIMITED Data' }
-            ].map((plan, index) => (
-              <div
-                key={index}
-                className="bg-background rounded-xl p-6 shadow-lg hover-scale relative text-center"
-              >
-                <div className="mb-4">
-                  <img
-                    src={planCardImage}
-                    alt={plan.title}
-                    className="w-full h-auto max-w-[200px] mx-auto object-contain"
-                  />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">{plan.title}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
-                <Button variant="cta" className="w-full hover-lift">
-                  Choose Plan
-                </Button>
+          {/* Plan Type Toggle */}
+          <Tabs defaultValue="domestic" className="w-full">
+            <div className="flex justify-center mb-8">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="domestic">Domestic Plans</TabsTrigger>
+                <TabsTrigger value="special">Special Plans</TabsTrigger>
+              </TabsList>
+            </div>
+
+            {/* Domestic Plans */}
+            <TabsContent value="domestic">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {domesticPlans.map((plan, index) => (
+                  <div
+                    key={index}
+                    className="bg-background rounded-xl p-6 shadow-lg hover-lift relative text-center"
+                  >
+                    <div className="mb-4">
+                      <img
+                        src={plan.image}
+                        alt={plan.title}
+                        className="w-full h-auto max-w-[200px] mx-auto object-contain"
+                      />
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground mb-2">{plan.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
+                    <Button variant="cta" className="w-full hover-lift">
+                      Choose Plan
+                    </Button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </TabsContent>
+
+            {/* Special Plans */}
+            <TabsContent value="special">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                {specialPlans.map((plan, index) => (
+                  <div
+                    key={index}
+                    className="bg-background rounded-xl p-6 shadow-lg hover-lift relative text-center"
+                  >
+                    <div className="mb-4">
+                      <img
+                        src={plan.image}
+                        alt={plan.title}
+                        className="w-full h-auto max-w-[200px] mx-auto object-contain"
+                      />
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground mb-2">{plan.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
+                    <Button variant="cta" className="w-full hover-lift">
+                      Choose Plan
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
 
           <div className="text-center mt-8">
             <p className="text-sm text-muted-foreground mb-4">
