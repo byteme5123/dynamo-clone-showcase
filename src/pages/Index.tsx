@@ -8,6 +8,7 @@ import FeaturesSection from '@/components/FeaturesSection';
 import CoverageSection from '@/components/CoverageSection';
 import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
+import MobileBottomBar from '@/components/MobileBottomBar';
 
 const Index = () => {
   return (
@@ -22,6 +23,9 @@ const Index = () => {
       <CoverageSection />
       <CTASection />
       <Footer />
+      <MobileBottomBar />
+      {/* Add bottom padding to prevent content from being hidden behind mobile bottom bar */}
+      <div className="h-16 md:h-0" />
     </div>
   );
 };

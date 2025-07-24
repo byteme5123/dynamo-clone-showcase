@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -24,12 +25,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">D</span>
-              </div>
-              <span className="font-bold text-xl text-foreground">Dynamo Wireless</span>
-            </div>
+            <img 
+              src={logoImage} 
+              alt="Dynamo Wireless" 
+              className="h-8 w-auto object-contain"
+            />
           </div>
 
           {/* Desktop Navigation */}

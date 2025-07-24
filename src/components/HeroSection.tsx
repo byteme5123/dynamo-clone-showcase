@@ -1,70 +1,70 @@
 import { Button } from '@/components/ui/button';
-import heroImage from '@/assets/hero-woman-phone.jpg';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import slider1 from '@/assets/slider-1.jpg';
+import slider2 from '@/assets/slider-2.jpg';
+import slider3 from '@/assets/slider-3.jpg';
 
 const HeroSection = () => {
-  const plans = [
-    { data: '5GB', price: 20, originalData: '4GB' },
-    { data: '11GB', price: 30, originalData: '7GB' },
-    { data: '17GB', price: 40, originalData: '16GB' },
-    { data: 'UNLIMITED', price: 50, originalData: 'UNLIMITED', subtitle: '100GB MOBILE HOTSPOT', note: '45GB of premium data speed, then 2G' }
+  const slides = [
+    {
+      id: 1,
+      image: slider1,
+      heading: 'Stay Connected Everywhere',
+      subheading: 'Experience blazing-fast 5G speeds with our unlimited plans',
+      cta: 'Get Started'
+    },
+    {
+      id: 2,
+      image: slider2,
+      heading: 'Family Plans That Work',
+      subheading: 'Keep your whole family connected with our affordable family plans',
+      cta: 'View Family Plans'
+    },
+    {
+      id: 3,
+      image: slider3,
+      heading: 'Next-Gen 5G Network',
+      subheading: 'Join the future of wireless with our nationwide 5G coverage',
+      cta: 'Check Coverage'
+    }
   ];
 
   return (
     <section className="hero-gradient py-16 md:py-24">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
-          <div className="text-white space-y-8 slide-up">
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-              Even more data!
-            </h1>
-            
-            {/* Plan Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {plans.map((plan, index) => (
-                <div
-                  key={index}
-                  className="bg-white/90 backdrop-blur rounded-lg p-4 text-center hover-lift cursor-pointer"
-                >
-                  <div className="text-primary text-xs font-medium mb-1">
-                    {plan.originalData}
+        <Carousel className="w-full">
+          <CarouselContent>
+            {slides.map((slide) => (
+              <CarouselItem key={slide.id}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[400px]">
+                  {/* Left Content */}
+                  <div className="text-white space-y-8 slide-up">
+                    <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                      {slide.heading}
+                    </h1>
+                    <p className="text-xl md:text-2xl text-white/90">
+                      {slide.subheading}
+                    </p>
+                    <Button variant="hero" size="xl" className="hover-lift">
+                      {slide.cta}
+                    </Button>
                   </div>
-                  <div className="text-secondary text-2xl font-bold mb-1">
-                    {plan.data}
+
+                  {/* Right Image */}
+                  <div className="flex justify-center lg:justify-end fade-in">
+                    <img
+                      src={slide.image}
+                      alt={slide.heading}
+                      className="max-w-md w-full h-auto object-cover rounded-lg"
+                    />
                   </div>
-                  <div className="text-secondary text-lg">
-                    <span className="text-sm">$</span>
-                    <span className="font-bold">{plan.price}</span>
-                    <span className="text-xs">/mo</span>
-                  </div>
-                  {plan.subtitle && (
-                    <div className="text-primary text-xs font-medium mt-1">
-                      {plan.subtitle}
-                    </div>
-                  )}
-                  {plan.note && (
-                    <div className="text-muted-foreground text-xs mt-1">
-                      {plan.note}
-                    </div>
-                  )}
                 </div>
-              ))}
-            </div>
-
-            <Button variant="hero" size="xl" className="hover-lift">
-              See plans
-            </Button>
-          </div>
-
-          {/* Right Image */}
-          <div className="flex justify-center lg:justify-end fade-in">
-            <img
-              src={heroImage}
-              alt="Woman using smartphone"
-              className="max-w-md w-full h-auto object-cover rounded-lg"
-            />
-          </div>
-        </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-4 lg:left-8" />
+          <CarouselNext className="right-4 lg:right-8" />
+        </Carousel>
       </div>
     </section>
   );
