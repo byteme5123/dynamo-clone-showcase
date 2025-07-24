@@ -14,16 +14,250 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          last_name: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contact_forms: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      faqs: {
+        Row: {
+          answer: string
+          category: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          category?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          category?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          question?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          call_minutes: string | null
+          countries: string[] | null
+          created_at: string
+          currency: string
+          data_limit: string | null
+          description: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          name: string
+          plan_type: Database["public"]["Enums"]["plan_type"]
+          price: number
+          slug: string
+          sms_limit: string | null
+          updated_at: string
+          validity_days: number | null
+        }
+        Insert: {
+          call_minutes?: string | null
+          countries?: string[] | null
+          created_at?: string
+          currency?: string
+          data_limit?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          name: string
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          price: number
+          slug: string
+          sms_limit?: string | null
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Update: {
+          call_minutes?: string | null
+          countries?: string[] | null
+          created_at?: string
+          currency?: string
+          data_limit?: string | null
+          description?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          name?: string
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          price?: number
+          slug?: string
+          sms_limit?: string | null
+          updated_at?: string
+          validity_days?: number | null
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          avatar_url: string | null
+          company: string | null
+          content: string
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          name: string
+          rating: number | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          company?: string | null
+          content: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          name: string
+          rating?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          company?: string | null
+          content?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          name?: string
+          rating?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          first_name: string | null
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          last_name: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "super_admin"
+      plan_type: "prepaid" | "postpaid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +384,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "super_admin"],
+      plan_type: ["prepaid", "postpaid"],
+    },
   },
 } as const
