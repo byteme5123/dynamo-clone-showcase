@@ -102,8 +102,8 @@ const About = () => {
           </div>
           
           <div className="text-center">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              Shop Plans
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+              <a href="/plans">Shop Plans</a>
             </Button>
           </div>
         </div>
