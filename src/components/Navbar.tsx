@@ -7,16 +7,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
 
   const navItems = [
-    { name: 'Home', href: '/' },
-    { name: 'About', href: '/about' },
-    { name: 'Plans', href: '/plans' },
-    { name: 'Contact', href: '/contact' },
+    { name: t('navbar.home'), href: '/' },
+    { name: t('navbar.about'), href: '/about' },
+    { name: t('navbar.plans'), href: '/plans' },
+    { name: t('navbar.contact'), href: '/contact' },
   ];
 
   return (
@@ -51,17 +55,17 @@ const Navbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
                 <Globe className="w-4 h-4" />
-                <span className="text-sm">EN</span>
+                <span className="text-sm">{t('navbar.language')}</span>
                 <ChevronDown className="w-3 h-3" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem>English</DropdownMenuItem>
-                <DropdownMenuItem>Español</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLanguage('es')}>Español</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             <Button variant="cta" size="default" className="hover-lift" asChild>
-              <a href="/activate">Activate SIM</a>
+              <a href="/activate">{t('navbar.activateSim')}</a>
             </Button>
           </div>
 
@@ -95,17 +99,17 @@ const Navbar = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center space-x-1 px-3 py-2 text-foreground hover:text-primary transition-colors">
                     <Globe className="w-4 h-4" />
-                    <span className="text-sm">Language</span>
+                    <span className="text-sm">{language === 'en' ? 'Language' : 'Idioma'}</span>
                     <ChevronDown className="w-3 h-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>English</DropdownMenuItem>
-                    <DropdownMenuItem>Español</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('es')}>Español</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <div className="px-3">
                   <Button variant="cta" size="default" className="w-full" asChild>
-                    <a href="/activate">Activate SIM</a>
+                    <a href="/activate">{t('navbar.activateSim')}</a>
                   </Button>
                 </div>
               </div>

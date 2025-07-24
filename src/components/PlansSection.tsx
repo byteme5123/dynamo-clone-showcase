@@ -1,27 +1,30 @@
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/useTranslation';
 import planCardImage from '@/assets/dynamo-plan-card.png';
 
 const PlansSection = () => {
+  const { t } = useTranslation();
+  
   const plans = [
     {
       image: planCardImage,
       title: '$25/mo Plan',
-      description: 'UNLIMITED Talk & Text + 2GB Data'
+      description: `${t('plans.unlimited')} ${t('plans.talkText')} + 2GB ${t('plans.data')}`
     },
     {
       image: planCardImage,
       title: '$35/mo Plan', 
-      description: 'UNLIMITED Talk & Text + 5GB Data'
+      description: `${t('plans.unlimited')} ${t('plans.talkText')} + 5GB ${t('plans.data')}`
     },
     {
       image: planCardImage,
       title: '$45/mo Plan',
-      description: 'UNLIMITED Talk & Text + 10GB Data'
+      description: `${t('plans.unlimited')} ${t('plans.talkText')} + 10GB ${t('plans.data')}`
     },
     {
       image: planCardImage,
       title: '$55/mo Plan',
-      description: 'UNLIMITED Talk & Text + UNLIMITED Data'
+      description: `${t('plans.unlimited')} ${t('plans.talkText')} + ${t('plans.unlimited')} ${t('plans.data')}`
     }
   ];
 
@@ -30,10 +33,10 @@ const PlansSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Choose Your Perfect Plan
+            {t('plans.title')}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Get more data for less with our flexible plans. No contracts, no hidden fees.
+            {t('plans.subtitle')}
           </p>
         </div>
 
@@ -53,7 +56,7 @@ const PlansSection = () => {
               <h3 className="text-xl font-bold text-foreground mb-2">{plan.title}</h3>
               <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
               <Button variant="cta" className="w-full hover-lift">
-                Choose Plan
+                {t('plans.choosePlan')}
               </Button>
             </div>
           ))}
@@ -61,10 +64,10 @@ const PlansSection = () => {
 
         <div className="text-center mt-8">
           <p className="text-sm text-muted-foreground mb-4">
-            All plans include nationwide coverage and 24/7 customer support
+            {t('plans.supportText')}
           </p>
           <Button variant="outline" size="lg">
-            Compare All Plans
+            {t('plans.compareAllPlans')}
           </Button>
         </div>
       </div>

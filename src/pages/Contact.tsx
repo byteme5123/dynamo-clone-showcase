@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Phone, MessageCircle, Mail, MapPin, Book, Settings, HelpCircle, Clock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import PromoBanner from '@/components/PromoBanner';
@@ -22,6 +23,7 @@ const Contact = () => {
   });
   const [submitted, setSubmitted] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +31,7 @@ const Contact = () => {
     // Basic validation
     if (!formData.firstName || !formData.email || !formData.message) {
       toast({
-        title: "Please fill in all required fields",
+        title: t('contact.fillRequired'),
         variant: "destructive"
       });
       return;
@@ -38,8 +40,8 @@ const Contact = () => {
     // Simulate form submission
     setSubmitted(true);
     toast({
-      title: "✅ Message sent successfully!",
-      description: "A support rep will reach out shortly."
+      title: t('contact.messageSent'),
+      description: t('contact.messageSentDesc')
     });
   };
 
@@ -56,10 +58,10 @@ const Contact = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="relative z-10">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-              🧑‍💼 Need Help? We're Here for You.
+              {t('contact.heroTitle')}
             </h1>
             <p className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto">
-              Get in touch with our friendly support team anytime.
+              {t('contact.heroSubtitle')}
             </p>
           </div>
           
@@ -82,16 +84,16 @@ const Contact = () => {
                 <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Phone className="w-8 h-8 text-primary" />
                 </div>
-                <CardTitle className="text-xl">📞 Call Us</CardTitle>
+                <CardTitle className="text-xl">{t('contact.callUs')}</CardTitle>
               </CardHeader>
               <CardContent className="text-center space-y-2">
                 <p className="text-2xl font-semibold text-primary">+1 (877) 468-7989</p>
                 <div className="flex items-center justify-center text-muted-foreground">
                   <Clock className="w-4 h-4 mr-2" />
-                  <span>7 AM – 8 PM PST</span>
+                  <span>{t('contact.hours')}</span>
                 </div>
                 <Button variant="outline" className="mt-4 w-full">
-                  📲 Call Now
+                  {t('contact.callNow')}
                 </Button>
               </CardContent>
             </Card>
@@ -102,14 +104,14 @@ const Contact = () => {
                 <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <MessageCircle className="w-8 h-8 text-primary" />
                 </div>
-                <CardTitle className="text-xl">💬 Live Chat</CardTitle>
+                <CardTitle className="text-xl">{t('contact.liveChat')}</CardTitle>
               </CardHeader>
               <CardContent className="text-center space-y-2">
                 <p className="text-muted-foreground">
-                  Get instant help with setup, activation, or billing.
+                  {t('contact.chatHelp')}
                 </p>
                 <Button variant="outline" className="mt-4 w-full">
-                  💬 Start Chat
+                  {t('contact.startChat')}
                 </Button>
               </CardContent>
             </Card>
@@ -120,15 +122,15 @@ const Contact = () => {
                 <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                   <Mail className="w-8 h-8 text-primary" />
                 </div>
-                <CardTitle className="text-xl">📧 Email Us</CardTitle>
+                <CardTitle className="text-xl">{t('contact.emailUs')}</CardTitle>
               </CardHeader>
               <CardContent className="text-center space-y-2">
                 <p className="text-primary font-medium">activations@dynamowireless.com</p>
                 <p className="text-muted-foreground text-sm">
-                  Usually replies within a few hours
+                  {t('contact.emailResponse')}
                 </p>
                 <Button variant="outline" className="mt-4 w-full">
-                  📨 Send Email
+                  {t('contact.sendEmail')}
                 </Button>
               </CardContent>
             </Card>
@@ -139,9 +141,9 @@ const Contact = () => {
         <section>
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
-              <CardTitle className="text-2xl text-center">📝 Send us a message</CardTitle>
+              <CardTitle className="text-2xl text-center">{t('contact.sendMessage')}</CardTitle>
               <p className="text-muted-foreground text-center">
-                We're just a call or click away.
+                {t('contact.formSubtitle')}
               </p>
             </CardHeader>
             <CardContent>
@@ -150,16 +152,16 @@ const Contact = () => {
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                     <span className="text-2xl">✅</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-green-700">Thanks! A support rep will reach out shortly.</h3>
+                  <h3 className="text-xl font-semibold text-green-700">{t('contact.successTitle')}</h3>
                   <Button onClick={() => setSubmitted(false)} variant="outline">
-                    Send Another Message
+                    {t('contact.sendAnother')}
                   </Button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name *</Label>
+                      <Label htmlFor="firstName">{t('contact.firstName')} *</Label>
                       <Input
                         id="firstName"
                         placeholder="Jane Doe"
@@ -169,7 +171,7 @@ const Contact = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
+                      <Label htmlFor="phone">{t('contact.phoneNumber')}</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -181,7 +183,7 @@ const Contact = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address *</Label>
+                    <Label htmlFor="email">{t('contact.emailAddress')} *</Label>
                     <Input
                       id="email"
                       type="email"
@@ -193,22 +195,22 @@ const Contact = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="topic">Topic</Label>
+                    <Label htmlFor="topic">{t('contact.topic')}</Label>
                     <Select onValueChange={(value) => handleInputChange('topic', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a topic" />
+                        <SelectValue placeholder={t('contact.topic')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="activation">Activation</SelectItem>
-                        <SelectItem value="billing">Billing</SelectItem>
-                        <SelectItem value="technical">Technical</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="activation">{t('contact.topicOptions.activation')}</SelectItem>
+                        <SelectItem value="billing">{t('contact.topicOptions.billing')}</SelectItem>
+                        <SelectItem value="technical">{t('contact.topicOptions.technical')}</SelectItem>
+                        <SelectItem value="other">{t('contact.topicOptions.other')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">Message *</Label>
+                    <Label htmlFor="message">{t('contact.message')} *</Label>
                     <Textarea
                       id="message"
                       placeholder="Tell us how we can help you..."
@@ -220,7 +222,7 @@ const Contact = () => {
                   </div>
 
                   <Button type="submit" className="w-full" size="lg">
-                    📩 Submit Message
+                    {t('contact.submitMessage')}
                   </Button>
                 </form>
               )}
@@ -232,7 +234,7 @@ const Contact = () => {
         <section>
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-center">🗺️ Visit Us</CardTitle>
+              <CardTitle className="text-2xl text-center">{t('contact.visitUs')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -240,7 +242,7 @@ const Contact = () => {
                   <div className="flex items-start space-x-3">
                     <MapPin className="w-5 h-5 text-primary mt-1" />
                     <div>
-                      <h3 className="font-semibold">Our Office</h3>
+                      <h3 className="font-semibold">{t('contact.ourOffice')}</h3>
                       <p className="text-muted-foreground">
                         18000 Studebaker Rd, Suite 700<br />
                         Cerritos, CA 90703
@@ -248,7 +250,7 @@ const Contact = () => {
                     </div>
                   </div>
                   <Button variant="outline" onClick={() => window.open('https://maps.google.com/?q=18000+Studebaker+Rd,+Suite+700,+Cerritos,+CA+90703')}>
-                    📍 Get Directions
+                    {t('contact.getDirections')}
                   </Button>
                 </div>
                 <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
@@ -272,24 +274,24 @@ const Contact = () => {
         <section>
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-center">🙋‍♀️ Prefer self-help?</CardTitle>
+              <CardTitle className="text-2xl text-center">{t('contact.selfHelp')}</CardTitle>
               <p className="text-muted-foreground text-center">
-                Need a quick answer? Try our Help Center first!
+                {t('contact.selfHelpSubtitle')}
               </p>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button variant="outline" className="h-auto py-4 flex flex-col items-center space-y-2">
                   <Book className="w-6 h-6" />
-                  <span>📚 Help Center</span>
+                  <span>{t('contact.helpCenter')}</span>
                 </Button>
                 <Button variant="outline" className="h-auto py-4 flex flex-col items-center space-y-2">
                   <Settings className="w-6 h-6" />
-                  <span>⚙️ Activation Guide</span>
+                  <span>{t('contact.activationGuide')}</span>
                 </Button>
                 <Button variant="outline" className="h-auto py-4 flex flex-col items-center space-y-2">
                   <HelpCircle className="w-6 h-6" />
-                  <span>💡 FAQ Page</span>
+                  <span>{t('contact.faqPage')}</span>
                 </Button>
               </div>
             </CardContent>
@@ -300,9 +302,9 @@ const Contact = () => {
         <section className="text-center py-8">
           <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="py-8">
-              <h3 className="text-xl font-semibold mb-2">No robots here—just real people ready to help! 🤝</h3>
+              <h3 className="text-xl font-semibold mb-2">{t('contact.friendlyMessage')}</h3>
               <p className="text-muted-foreground">
-                Our friendly support team is standing by to make your experience as smooth as possible.
+                {t('contact.friendlySubtitle')}
               </p>
             </CardContent>
           </Card>

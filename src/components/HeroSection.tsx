@@ -1,31 +1,34 @@
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { useTranslation } from '@/hooks/useTranslation';
 import slider1 from '@/assets/slider-1.jpg';
 import slider2 from '@/assets/slider-2.jpg';
 import slider3 from '@/assets/slider-3.jpg';
 
 const HeroSection = () => {
+  const { t } = useTranslation();
+  
   const slides = [
     {
       id: 1,
       image: slider1,
-      heading: 'Stay Connected Everywhere',
-      subheading: 'Experience blazing-fast 5G speeds with our unlimited plans',
-      cta: 'Get Started'
+      heading: t('hero.slide1.heading'),
+      subheading: t('hero.slide1.subheading'),
+      cta: t('hero.slide1.cta')
     },
     {
       id: 2,
       image: slider2,
-      heading: 'Family Plans That Work',
-      subheading: 'Keep your whole family connected with our affordable family plans',
-      cta: 'View Family Plans'
+      heading: t('hero.slide2.heading'),
+      subheading: t('hero.slide2.subheading'),
+      cta: t('hero.slide2.cta')
     },
     {
       id: 3,
       image: slider3,
-      heading: 'Next-Gen 5G Network',
-      subheading: 'Join the future of wireless with our nationwide 5G coverage',
-      cta: 'Check Coverage'
+      heading: t('hero.slide3.heading'),
+      subheading: t('hero.slide3.subheading'),
+      cta: t('hero.slide3.cta')
     }
   ];
 

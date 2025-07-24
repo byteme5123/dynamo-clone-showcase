@@ -6,37 +6,42 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Footer = () => {
+  const { setLanguage } = useLanguage();
+  const { t } = useTranslation();
+  
   const footerLinks = {
-    'Plans & Services': [
-      'Mobile Plans',
-      'International Calling',
-      'Business Plans',
-      'Government Programs',
-      'Add-ons'
+    [t('footer.categories.Plans & Services')]: [
+      t('footer.links.Mobile Plans'),
+      t('footer.links.International Calling'),
+      t('footer.links.Business Plans'),
+      t('footer.links.Government Programs'),
+      t('footer.links.Add-ons')
     ],
-    'Support': [
-      'Help Center',
-      'Contact Us',
-      'Coverage Map',
-      'Store Locator',
-      'Activate SIM'
+    [t('footer.categories.Support')]: [
+      t('footer.links.Help Center'),
+      t('footer.links.Contact Us'),
+      t('footer.links.Coverage Map'),
+      t('footer.links.Store Locator'),
+      t('footer.links.Activate SIM')
     ],
-    'Company': [
-      'About Us',
-      'Careers',
-      'Press',
-      'Investor Relations',
-      'Partner with Us'
+    [t('footer.categories.Company')]: [
+      t('footer.links.About Us'),
+      t('footer.links.Careers'),
+      t('footer.links.Press'),
+      t('footer.links.Investor Relations'),
+      t('footer.links.Partner with Us')
     ],
-    'Legal': [
-      'Terms of Service',
-      'Privacy Policy',
-      'Accessibility',
-      'Open Internet',
-      'Legal Notices'
+    [t('footer.categories.Legal')]: [
+      t('footer.links.Terms of Service'),
+      t('footer.links.Privacy Policy'),
+      t('footer.links.Accessibility'),
+      t('footer.links.Open Internet'),
+      t('footer.links.Legal Notices')
     ]
   };
 
@@ -62,19 +67,18 @@ const Footer = () => {
               />
             </div>
             <p className="text-secondary-foreground/80 text-sm leading-relaxed">
-              Experience the power of reliable, fast, and affordable wireless service. 
-              We're committed to keeping you connected with transparent pricing and exceptional coverage.
+              {t('footer.description')}
             </p>
             
             {/* App Download Buttons */}
             <div className="space-y-2">
-              <p className="text-sm font-semibold">Download Our App</p>
+              <p className="text-sm font-semibold">{t('footer.downloadApp')}</p>
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm" className="bg-white/10 border-white/20 hover:bg-white/20">
-                  App Store
+                  {t('footer.appStore')}
                 </Button>
                 <Button variant="outline" size="sm" className="bg-white/10 border-white/20 hover:bg-white/20">
-                  Google Play
+                  {t('footer.googlePlay')}
                 </Button>
               </div>
             </div>
@@ -106,17 +110,17 @@ const Footer = () => {
             {/* Copyright and Links */}
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
               <p className="text-sm text-secondary-foreground/80">
-                © 2024 Dynamo Wireless. All rights reserved.
+                {t('footer.copyright')}
               </p>
               <div className="flex space-x-4 text-sm">
                 <a href="#" className="text-secondary-foreground/80 hover:text-secondary-foreground">
-                  Privacy
+                  {t('footer.privacy')}
                 </a>
                 <a href="#" className="text-secondary-foreground/80 hover:text-secondary-foreground">
-                  Terms
+                  {t('footer.terms')}
                 </a>
                 <a href="#" className="text-secondary-foreground/80 hover:text-secondary-foreground">
-                  Accessibility
+                  {t('footer.accessibility')}
                 </a>
               </div>
             </div>
@@ -141,12 +145,12 @@ const Footer = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center space-x-1 text-secondary-foreground/80 hover:text-secondary-foreground transition-colors">
                   <Globe className="w-4 h-4" />
-                  <span className="text-sm">English</span>
+                  <span className="text-sm">{t('footer.language')}</span>
                   <ChevronDown className="w-3 h-3" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>English</DropdownMenuItem>
-                  <DropdownMenuItem>Español</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage('es')}>Español</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
