@@ -2,6 +2,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Globe, Signal, CreditCard, MessageSquare, Zap, Smartphone, X, DollarSign, Wifi, UserCheck } from 'lucide-react';
 import { useState } from 'react';
+import PromoBanner from '@/components/PromoBanner';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import MobileBottomBar from '@/components/MobileBottomBar';
 
 const About = () => {
   const [showDestinations, setShowDestinations] = useState(false);
@@ -48,27 +52,18 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <PromoBanner />
+      <Navbar />
+      
       {/* Hero Section */}
-      <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[50vh] overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url(https://images.unsplash.com/photo-1649972904349-6e44c42644a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80)`
           }}
         >
-          <div className="absolute inset-0 bg-black/40"></div>
-        </div>
-        
-        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            Why Dynamo Wireless?
-          </h1>
-          <p className="text-xl md:text-2xl mb-8">
-            More connection. More value. More support.
-          </p>
-          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            Learn More
-          </Button>
+          <div className="absolute inset-0 bg-black/20"></div>
         </div>
       </section>
 
@@ -92,7 +87,7 @@ const About = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
             {features.map((feature, index) => (
               <Card key={index} className="text-center p-6 hover-scale">
                 <CardContent className="pt-6">
@@ -104,6 +99,12 @@ const About = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+          
+          <div className="text-center">
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              Shop Plans
+            </Button>
           </div>
         </div>
       </section>
@@ -256,6 +257,11 @@ const About = () => {
           </div>
         </div>
       </section>
+      
+      <Footer />
+      <MobileBottomBar />
+      {/* Add bottom padding to prevent content from being hidden behind mobile bottom bar */}
+      <div className="h-16 md:h-0" />
     </div>
   );
 };
