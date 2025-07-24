@@ -33,6 +33,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const fetchAdminUser = async (userId: string) => {
     try {
       console.log('Fetching admin user for userId:', userId);
+      
+      // First try the normal query
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
@@ -42,7 +44,23 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (error) {
         console.error('Error fetching admin user:', error);
-        return null;
+        console.error('Error details:', { code: error.code, message: error.message, hint: error.hint });
+        
+        // Try a more permissive query without the is_active filter
+        console.log('Trying query without is_active filter...');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+          
+        if (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          return null;
+        }
+        
+        console.log('Fallback query succeeded:', fallbackData);
+        return fallbackData;
       }
 
       console.log('Admin user data:', data);
@@ -123,6 +141,15 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const isAdmin = adminUser?.is_active && (adminUser?.role === 'admin' || adminUser?.role === 'super_admin');
   const isSuperAdmin = adminUser?.is_active && adminUser?.role === 'super_admin';
+  
+  // Add debug logging for admin status
+  console.log('Admin status check:', { 
+    adminUser, 
+    isAdmin: !!isAdmin, 
+    isSuperAdmin: !!isSuperAdmin,
+    adminUserActive: adminUser?.is_active,
+    adminUserRole: adminUser?.role
+  });
 
   return (
     <AdminAuthContext.Provider value={{
