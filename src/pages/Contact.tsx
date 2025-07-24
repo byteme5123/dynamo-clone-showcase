@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Phone, MessageCircle, Mail, MapPin, Book, Settings, HelpCircle, Clock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import PromoBanner from '@/components/PromoBanner';
 import Footer from '@/components/Footer';
+import MobileBottomBar from '@/components/MobileBottomBar';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -308,6 +310,9 @@ const Contact = () => {
       </div>
 
       <Footer />
+      <MobileBottomBar />
+      {/* Add bottom padding to prevent content from being hidden behind mobile bottom bar */}
+      <div className="h-16 md:h-0" />
     </div>
   );
 };
