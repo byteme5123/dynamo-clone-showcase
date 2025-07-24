@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Signal, Zap, Phone, Globe, Wifi } from 'lucide-react';
 import PromoBanner from '@/components/PromoBanner';
@@ -166,19 +165,21 @@ const Plans = () => {
       {/* Lifestyle Banner Section */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="relative">
+          <div className="relative max-w-4xl mx-auto h-80 md:h-96">
+            {/* First Image - Background */}
+            <div className="absolute inset-0 w-3/5 h-full">
               <img
                 src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                 alt="People using phones in public spaces"
-                className="w-full h-64 object-cover rounded-xl shadow-lg"
+                className="w-full h-full object-cover rounded-xl shadow-lg"
               />
             </div>
-            <div className="relative">
+            {/* Second Image - Overlapping */}
+            <div className="absolute top-8 right-0 w-3/5 h-4/5 md:h-full">
               <img
                 src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                 alt="Happy customers shopping and using technology"
-                className="w-full h-64 object-cover rounded-xl shadow-lg"
+                className="w-full h-full object-cover rounded-xl shadow-lg"
               />
             </div>
           </div>
@@ -194,15 +195,18 @@ const Plans = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {planBenefits.map((benefit, index) => (
-              <Card key={index} className="text-center p-6 hover-scale">
-                <CardContent className="pt-6">
-                  <benefit.icon className="w-12 h-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{benefit.title}</h3>
-                  <p className="text-sm text-muted-foreground">{benefit.description}</p>
-                </CardContent>
-              </Card>
+              <div
+                key={index}
+                className="text-center p-6 rounded-lg hover-lift cursor-pointer bg-background hover:bg-muted/80 transition-colors"
+              >
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <benefit.icon className="w-8 h-8 text-primary-foreground" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">{benefit.title}</h3>
+                <p className="text-sm text-muted-foreground">{benefit.description}</p>
+              </div>
             ))}
           </div>
         </div>
