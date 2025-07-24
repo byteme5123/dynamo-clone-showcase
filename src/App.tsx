@@ -8,6 +8,7 @@ import About from "./pages/About";
 import Plans from "./pages/Plans";
 import PlanDetail from "./pages/PlanDetail";
 import ActivateSIM from "./pages/ActivateSIM";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/plans" element={<Plans />} />
           <Route path="/plans/:slug" element={<PlanDetail />} />
           <Route path="/activate" element={<ActivateSIM />} />
+          <Route path="/contact" element={<Contact />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
