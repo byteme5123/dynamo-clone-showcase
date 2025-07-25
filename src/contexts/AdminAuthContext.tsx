@@ -34,33 +34,17 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       console.log('Fetching admin user for userId:', userId);
       
-      // First try the normal query
+      // Use maybeSingle() to avoid errors when no data is found
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching admin user:', error);
-        console.error('Error details:', { code: error.code, message: error.message, hint: error.hint });
-        
-        // Try a more permissive query without the is_active filter
-        console.log('Trying query without is_active filter...');
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
-          
-        if (fallbackError) {
-          console.error('Fallback query also failed:', fallbackError);
-          return null;
-        }
-        
-        console.log('Fallback query succeeded:', fallbackData);
-        return fallbackData;
+        return null;
       }
 
       console.log('Admin user data:', data);
@@ -83,48 +67,61 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user ?? null);
+    let isMounted = true;
+    let loadingTimeout: NodeJS.Timeout;
 
-        if (session?.user) {
-          // Fetch admin user data
-          const adminData = await fetchAdminUser(session.user.id);
+    const handleAuthChange = async (event: string, session: Session | null) => {
+      if (!isMounted) return;
+      
+      console.log('Auth state change:', event, session?.user?.id);
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        // Fetch admin user data
+        const adminData = await fetchAdminUser(session.user.id);
+        if (isMounted) {
           setAdminUser(adminData as AdminUser);
           console.log('Setting admin user:', adminData);
           
           if (adminData && event === 'SIGNED_IN') {
-            await updateLastLogin(session.user.id);
+            setTimeout(() => updateLastLogin(session.user.id), 0);
           }
-        } else {
+        }
+      } else {
+        if (isMounted) {
           setAdminUser(null);
         }
-        
+      }
+      
+      if (isMounted) {
         setLoading(false);
       }
-    );
+    };
 
-    // Check for existing session
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+
+    // Check for existing session only once
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchAdminUser(session.user.id).then(adminData => {
-          setAdminUser(adminData as AdminUser);
-          console.log('Initial admin user set:', adminData);
-          setLoading(false);
-        });
-      } else {
-        setLoading(false);
+      if (isMounted) {
+        handleAuthChange('INITIAL_SESSION', session);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Safety timeout to prevent infinite loading
+    loadingTimeout = setTimeout(() => {
+      if (isMounted && loading) {
+        console.warn('Loading timeout reached, setting loading to false');
+        setLoading(false);
+      }
+    }, 10000); // 10 second timeout
+
+    return () => {
+      isMounted = false;
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
