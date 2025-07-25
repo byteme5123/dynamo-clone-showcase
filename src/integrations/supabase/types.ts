@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      activate_sim_requests: {
+        Row: {
+          additional_notes: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          id_document_url: string | null
+          phone_number: string
+          plan_preference: string | null
+          sim_card_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          id_document_url?: string | null
+          phone_number: string
+          plan_preference?: string | null
+          sim_card_number: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          additional_notes?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          id_document_url?: string | null
+          phone_number?: string
+          plan_preference?: string | null
+          sim_card_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -119,6 +161,45 @@ export type Database = {
         }
         Relationships: []
       }
+      hero_slides: {
+        Row: {
+          created_at: string
+          cta_text: string | null
+          cta_url: string | null
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           call_minutes: string | null
@@ -182,6 +263,78 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_settings: {
+        Row: {
+          created_at: string
+          id: string
+          keywords: string | null
+          meta_description: string | null
+          meta_title: string
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          page_slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title: string
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          page_slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title?: string
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          page_slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          type: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          type?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          type?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           avatar_url: string | null
@@ -223,6 +376,36 @@ export type Database = {
           name?: string
           rating?: number | null
           title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      translations: {
+        Row: {
+          category: string | null
+          created_at: string
+          en: string
+          es: string
+          id: string
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          en: string
+          es: string
+          id?: string
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          en?: string
+          es?: string
+          id?: string
+          key?: string
           updated_at?: string
         }
         Relationships: []
