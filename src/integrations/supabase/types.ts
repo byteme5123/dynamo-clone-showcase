@@ -211,6 +211,7 @@ export type Database = {
           display_order: number | null
           features: Json | null
           id: string
+          image_url: string | null
           is_active: boolean
           is_featured: boolean
           name: string
@@ -231,6 +232,7 @@ export type Database = {
           display_order?: number | null
           features?: Json | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
           name: string
@@ -251,6 +253,7 @@ export type Database = {
           display_order?: number | null
           features?: Json | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           is_featured?: boolean
           name?: string
