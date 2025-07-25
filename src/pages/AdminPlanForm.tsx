@@ -106,6 +106,15 @@ const AdminPlanForm = () => {
 
   useEffect(() => {
     if (plan) {
+      // Safely convert Json types to string arrays
+      const safeFeatures = Array.isArray(plan.features) 
+        ? plan.features.filter((f): f is string => typeof f === 'string')
+        : [];
+      
+      const safeCountries = Array.isArray(plan.countries) 
+        ? plan.countries.filter((c): c is string => typeof c === 'string')
+        : [];
+
       form.reset({
         name: plan.name,
         slug: plan.slug,
@@ -117,8 +126,8 @@ const AdminPlanForm = () => {
         call_minutes: plan.call_minutes || '',
         sms_limit: plan.sms_limit || '',
         validity_days: plan.validity_days,
-        countries: Array.isArray(plan.countries) ? plan.countries : [],
-        features: Array.isArray(plan.features) ? plan.features : [],
+        countries: safeCountries,
+        features: safeFeatures,
         is_active: plan.is_active,
         is_featured: plan.is_featured,
         display_order: plan.display_order,
@@ -138,7 +147,7 @@ const AdminPlanForm = () => {
       } else {
         const { error } = await supabase
           .from('plans')
-          .insert([data]);
+          .insert(data);
         
         if (error) throw error;
       }
