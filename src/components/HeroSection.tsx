@@ -1,36 +1,31 @@
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useHeroSlides } from '@/hooks/useHeroSlides';
+import { Link } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import slider1 from '@/assets/slider-1.jpg';
 import slider2 from '@/assets/slider-2.jpg';
 import slider3 from '@/assets/slider-3.jpg';
 
 const HeroSection = () => {
   const { t } = useTranslation();
+  const { data: heroSlides, isLoading } = useHeroSlides();
   
-  const slides = [
-    {
-      id: 1,
-      image: slider1,
-      heading: t('hero.slide1.heading'),
-      subheading: t('hero.slide1.subheading'),
-      cta: t('hero.slide1.cta')
-    },
-    {
-      id: 2,
-      image: slider2,
-      heading: t('hero.slide2.heading'),
-      subheading: t('hero.slide2.subheading'),
-      cta: t('hero.slide2.cta')
-    },
-    {
-      id: 3,
-      image: slider3,
-      heading: t('hero.slide3.heading'),
-      subheading: t('hero.slide3.subheading'),
-      cta: t('hero.slide3.cta')
-    }
+  // Fallback slides
+  const fallbackSlides = [
+    { id: 1, image: slider1, heading: t('hero.slide1.heading'), subheading: t('hero.slide1.subheading'), cta: t('hero.slide1.cta'), ctaUrl: '/plans' },
+    { id: 2, image: slider2, heading: t('hero.slide2.heading'), subheading: t('hero.slide2.subheading'), cta: t('hero.slide2.cta'), ctaUrl: '/plans' },
+    { id: 3, image: slider3, heading: t('hero.slide3.heading'), subheading: t('hero.slide3.subheading'), cta: t('hero.slide3.cta'), ctaUrl: '/plans' }
   ];
+
+  const slides = heroSlides?.length > 0 
+    ? heroSlides.map(slide => ({ id: slide.id, image: slide.image_url, heading: slide.title, subheading: slide.subtitle, cta: slide.cta_text, ctaUrl: slide.cta_url || '/plans' }))
+    : fallbackSlides;
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <section className="hero-gradient py-16 md:py-24">
@@ -48,8 +43,10 @@ const HeroSection = () => {
                     <p className="text-xl md:text-2xl text-white/90">
                       {slide.subheading}
                     </p>
-                    <Button variant="hero" size="xl" className="hover-lift">
-                      {slide.cta}
+                    <Button variant="hero" size="xl" className="hover-lift" asChild>
+                      <Link to={slide.ctaUrl}>
+                        {slide.cta}
+                      </Link>
                     </Button>
                   </div>
 
