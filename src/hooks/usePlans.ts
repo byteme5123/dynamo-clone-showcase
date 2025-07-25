@@ -20,6 +20,8 @@ export interface Plan {
   is_active: boolean;
   is_featured: boolean;
   display_order: number;
+  image_url?: string;
+  external_link?: string;
   created_at: string;
   updated_at: string;
 }

@@ -49,6 +49,7 @@ const planSchema = z.object({
   is_featured: z.boolean().default(false),
   display_order: z.number().default(0),
   image_url: z.string().optional(),
+  external_link: z.string().optional(),
 });
 
 type PlanFormData = z.infer<typeof planSchema>;
@@ -135,6 +136,7 @@ const AdminPlanForm = () => {
         is_featured: plan.is_featured,
         display_order: plan.display_order,
         image_url: plan.image_url || '',
+        external_link: plan.external_link || '',
       });
     }
   }, [plan, form]);
@@ -159,6 +161,7 @@ const AdminPlanForm = () => {
         is_featured: data.is_featured,
         display_order: data.display_order,
         image_url: data.image_url,
+        external_link: data.external_link,
       };
 
       if (isEditing) {
@@ -466,15 +469,32 @@ const AdminPlanForm = () => {
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+                   )}
+                 />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Plan Image</CardTitle>
-                </CardHeader>
+                 <FormField
+                   control={form.control}
+                   name="external_link"
+                   render={({ field }) => (
+                     <FormItem>
+                       <FormLabel>External Link</FormLabel>
+                       <FormControl>
+                         <Input {...field} placeholder="https://example.com/signup" />
+                       </FormControl>
+                       <FormDescription>
+                         External URL for the "Choose this plan" button
+                       </FormDescription>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
+               </CardContent>
+             </Card>
+
+             <Card>
+               <CardHeader>
+                 <CardTitle>Plan Image</CardTitle>
+               </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <FormField

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAdminPlans, useDeletePlan } from '@/hooks/usePlans';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,18 +57,8 @@ const AdminPlans = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'prepaid' | 'postpaid'>('all');
 
-  const { data: plans, isLoading, error } = useQuery({
-    queryKey: ['admin-plans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      return data as Plan[];
-    },
-  });
+  const { data: plans, isLoading, error } = useAdminPlans();
+  const deletePlanMutation = useDeletePlan();
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
@@ -86,34 +77,10 @@ const AdminPlans = () => {
       });
     },
     onError: (error) => {
+      console.error('Toggle error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update plan status',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const deletePlanMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('plans')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
-      toast({
-        title: 'Success',
-        description: 'Plan deleted successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete plan',
+        description: `Failed to update plan status: ${error.message}`,
         variant: 'destructive',
       });
     },

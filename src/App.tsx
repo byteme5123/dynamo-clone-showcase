@@ -23,6 +23,11 @@ import AdminContacts from "./pages/AdminContacts";
 import AdminTestimonials from "./pages/AdminTestimonials";
 import AdminFaqs from "./pages/AdminFaqs";
 import AdminLayout from "./components/admin/AdminLayout";
+import AdminMedia from "./pages/AdminMedia";
+import AdminTranslations from "./pages/AdminTranslations";
+import AdminSeo from "./pages/AdminSeo";
+import AdminSettings from "./pages/AdminSettings";
+import AdminUsers from "./pages/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +60,12 @@ const App = () => (
                 <Route path="faqs" element={<AdminFaqs />} />
                 <Route path="contacts" element={<AdminContacts />} />
                 <Route path="activate-sim" element={<AdminActivateSimRequests />} />
+                <Route path="media" element={<AdminMedia />} />
+                <Route path="translations" element={<AdminTranslations />} />
+                <Route path="seo" element={<AdminSeo />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="slider" element={<AdminHeroSlides />} />
               </Route>
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

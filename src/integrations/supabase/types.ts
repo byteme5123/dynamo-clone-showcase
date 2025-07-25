@@ -209,6 +209,7 @@ export type Database = {
           data_limit: string | null
           description: string | null
           display_order: number | null
+          external_link: string | null
           features: Json | null
           id: string
           image_url: string | null
@@ -230,6 +231,7 @@ export type Database = {
           data_limit?: string | null
           description?: string | null
           display_order?: number | null
+          external_link?: string | null
           features?: Json | null
           id?: string
           image_url?: string | null
@@ -251,6 +253,7 @@ export type Database = {
           data_limit?: string | null
           description?: string | null
           display_order?: number | null
+          external_link?: string | null
           features?: Json | null
           id?: string
           image_url?: string | null

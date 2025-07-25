@@ -75,7 +75,7 @@ const PlansSection = () => {
             >
               <div className="mb-4">
                 <img
-                  src={planCardImage}
+                  src={plan.image_url || planCardImage}
                   alt={plan.name}
                   className="w-full h-auto max-w-[200px] mx-auto object-contain"
                 />
@@ -87,9 +87,15 @@ const PlansSection = () => {
                 {plan.description}
               </p>
               <Button variant="cta" className="w-full hover-lift" asChild>
-                <Link to={`/plans/${plan.slug}`}>
-                  {t('plans.choosePlan')}
-                </Link>
+                {plan.external_link ? (
+                  <a href={plan.external_link} target="_blank" rel="noopener noreferrer">
+                    {t('plans.choosePlan')}
+                  </a>
+                ) : (
+                  <Link to={`/plans/${plan.slug}`}>
+                    {t('plans.choosePlan')}
+                  </Link>
+                )}
               </Button>
             </div>
           ))}

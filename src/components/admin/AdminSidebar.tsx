@@ -29,6 +29,7 @@ const navigation = [
     ]
   },
   { name: 'Contact Forms', href: '/admin/contacts', icon: MessageSquare },
+  { name: 'Activate SIM Requests', href: '/admin/activate-sim', icon: MessageSquare },
   { name: 'Media Library', href: '/admin/media', icon: Camera },
   { name: 'Translations', href: '/admin/translations', icon: Languages },
   { name: 'SEO Settings', href: '/admin/seo', icon: Search },
