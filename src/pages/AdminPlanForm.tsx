@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, X, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ImageUpload } from '@/components/ImageUpload';
 import {
   Form,
   FormControl,
@@ -47,6 +48,7 @@ const planSchema = z.object({
   is_active: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   display_order: z.number().default(0),
+  image_url: z.string().optional(),
 });
 
 type PlanFormData = z.infer<typeof planSchema>;
@@ -79,6 +81,7 @@ const AdminPlanForm = () => {
       is_active: true,
       is_featured: false,
       display_order: 0,
+      image_url: '',
     },
   });
 
@@ -131,6 +134,7 @@ const AdminPlanForm = () => {
         is_active: plan.is_active,
         is_featured: plan.is_featured,
         display_order: plan.display_order,
+        image_url: plan.image_url || '',
       });
     }
   }, [plan, form]);
@@ -154,6 +158,7 @@ const AdminPlanForm = () => {
         is_active: data.is_active,
         is_featured: data.is_featured,
         display_order: data.display_order,
+        image_url: data.image_url,
       };
 
       if (isEditing) {
@@ -443,26 +448,56 @@ const AdminPlanForm = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="display_order"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Display Order</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Lower numbers appear first
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="display_order"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Display Order</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Lower numbers appear first
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Plan Image</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="image_url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Plan Image</FormLabel>
+                          <FormControl>
+                            <ImageUpload
+                              bucket="plan-images"
+                              onUploadComplete={field.onChange}
+                              existingImage={field.value}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Upload an image for this plan
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                 <div className="space-y-4">
                   <FormField
