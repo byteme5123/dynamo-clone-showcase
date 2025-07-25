@@ -16,7 +16,7 @@ export interface Plan {
   sms_limit: string;
   validity_days: number;
   countries: string[];
-  features: string[];
+  features: string[]; // This will be converted to/from JSON in the database
   is_active: boolean;
   is_featured: boolean;
   display_order: number;
@@ -35,7 +35,13 @@ export const usePlans = () => {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      return data as Plan[];
+      
+      // Convert features from Json to string[] for frontend use
+      return data.map(plan => ({
+        ...plan,
+        features: Array.isArray(plan.features) ? plan.features : [],
+        countries: Array.isArray(plan.countries) ? plan.countries : []
+      })) as Plan[];
     },
   });
 };
@@ -50,7 +56,13 @@ export const useAdminPlans = () => {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      return data as Plan[];
+      
+      // Convert features from Json to string[] for frontend use
+      return data.map(plan => ({
+        ...plan,
+        features: Array.isArray(plan.features) ? plan.features : [],
+        countries: Array.isArray(plan.countries) ? plan.countries : []
+      })) as Plan[];
     },
   });
 };
@@ -66,7 +78,13 @@ export const usePlan = (id: string) => {
         .single();
 
       if (error) throw error;
-      return data as Plan;
+      
+      // Convert features from Json to string[] for frontend use
+      return {
+        ...data,
+        features: Array.isArray(data.features) ? data.features : [],
+        countries: Array.isArray(data.countries) ? data.countries : []
+      } as Plan;
     },
     enabled: !!id,
   });
@@ -84,7 +102,13 @@ export const usePlanBySlug = (slug: string) => {
         .single();
 
       if (error) throw error;
-      return data as Plan;
+      
+      // Convert features from Json to string[] for frontend use
+      return {
+        ...data,
+        features: Array.isArray(data.features) ? data.features : [],
+        countries: Array.isArray(data.countries) ? data.countries : []
+      } as Plan;
     },
     enabled: !!slug,
   });
@@ -96,9 +120,16 @@ export const useCreatePlan = () => {
 
   return useMutation({
     mutationFn: async (planData: Omit<Plan, 'id' | 'created_at' | 'updated_at'>) => {
+      // Convert features and countries arrays to proper format for database
+      const dbData = {
+        ...planData,
+        features: planData.features, // Keep as array - Supabase will convert to jsonb
+        countries: planData.countries // Keep as array - Supabase will convert to array
+      };
+
       const { data, error } = await supabase
         .from('plans')
-        .insert([planData])
+        .insert(dbData)
         .select()
         .single();
 
@@ -129,9 +160,16 @@ export const useUpdatePlan = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...planData }: Partial<Plan> & { id: string }) => {
+      // Convert features and countries arrays to proper format for database
+      const dbData = {
+        ...planData,
+        features: planData.features, // Keep as array - Supabase will convert to jsonb
+        countries: planData.countries // Keep as array - Supabase will convert to array
+      };
+
       const { data, error } = await supabase
         .from('plans')
-        .update(planData)
+        .update(dbData)
         .eq('id', id)
         .select()
         .single();

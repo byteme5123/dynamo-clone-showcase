@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, X, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -118,8 +117,8 @@ const AdminPlanForm = () => {
         call_minutes: plan.call_minutes || '',
         sms_limit: plan.sms_limit || '',
         validity_days: plan.validity_days,
-        countries: plan.countries || [],
-        features: plan.features || [],
+        countries: Array.isArray(plan.countries) ? plan.countries : [],
+        features: Array.isArray(plan.features) ? plan.features : [],
         is_active: plan.is_active,
         is_featured: plan.is_featured,
         display_order: plan.display_order,
