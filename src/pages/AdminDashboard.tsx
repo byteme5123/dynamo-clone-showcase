@@ -1,281 +1,200 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Package, 
-  MessageSquare, 
-  HelpCircle, 
-  Star, 
-  Users,
-  Eye,
-  Calendar,
-  TrendingUp
-} from 'lucide-react';
+import { useAdminPlans } from '@/hooks/usePlans';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
-interface DashboardStats {
-  totalPlans: number;
-  activePlans: number;
-  totalContacts: number;
-  newContacts: number;
-  totalFaqs: number;
-  totalTestimonials: number;
-  featuredTestimonials: number;
-}
+import { Activity, Users, MessageSquare, FileText, Loader2, Package, HelpCircle, Star } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalPlans: 0,
-    activePlans: 0,
-    totalContacts: 0,
-    newContacts: 0,
-    totalFaqs: 0,
-    totalTestimonials: 0,
-    featuredTestimonials: 0,
+  const { data: plans } = useAdminPlans();
+
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      const [plansResult, testimonialsResult, contactFormsResult, activateSimResult, faqsResult, heroSlidesResult] = await Promise.all([
+        supabase.from('plans').select('id, is_active', { count: 'exact' }),
+        supabase.from('testimonials').select('id, is_featured', { count: 'exact' }),
+        supabase.from('contact_forms').select('id, created_at', { count: 'exact' }),
+        supabase.from('activate_sim_requests').select('id', { count: 'exact', head: true }),
+        supabase.from('faqs').select('id', { count: 'exact', head: true }),
+        supabase.from('hero_slides').select('id', { count: 'exact', head: true }),
+      ]);
+
+      // Calculate new contacts (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const newContacts = contactFormsResult.data?.filter(contact => 
+        new Date(contact.created_at) > sevenDaysAgo
+      ).length || 0;
+
+      return {
+        totalPlans: plansResult.count || 0,
+        activePlans: plansResult.data?.filter(plan => plan.is_active).length || 0,
+        totalTestimonials: testimonialsResult.count || 0,
+        featuredTestimonials: testimonialsResult.data?.filter(t => t.is_featured).length || 0,
+        totalContactForms: contactFormsResult.count || 0,
+        newContacts,
+        totalActivateSim: activateSimResult.count || 0,
+        totalFaqs: faqsResult.count || 0,
+        totalHeroSlides: heroSlidesResult.count || 0,
+      };
+    },
   });
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Fetch plans stats
-        const { data: plans, error: plansError } = await supabase
-          .from('plans')
-          .select('is_active');
-        
-        // Fetch contacts stats
-        const { data: contacts, error: contactsError } = await supabase
-          .from('contact_forms')
-          .select('created_at');
-        
-        // Fetch FAQs stats
-        const { data: faqs, error: faqsError } = await supabase
-          .from('faqs')
-          .select('id');
-        
-        // Fetch testimonials stats
-        const { data: testimonials, error: testimonialsError } = await supabase
-          .from('testimonials')
-          .select('is_featured');
+  const { data: recentContacts } = useQuery({
+    queryKey: ['recent-contacts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contact_forms')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-        if (plansError || contactsError || faqsError || testimonialsError) {
-          console.error('Error fetching stats:', { plansError, contactsError, faqsError, testimonialsError });
-          return;
-        }
+      if (error) throw error;
+      return data;
+    },
+  });
 
-        // Calculate new contacts (last 7 days)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        const newContacts = contacts?.filter(contact => 
-          new Date(contact.created_at) > sevenDaysAgo
-        ).length || 0;
-
-        setStats({
-          totalPlans: plans?.length || 0,
-          activePlans: plans?.filter(plan => plan.is_active).length || 0,
-          totalContacts: contacts?.length || 0,
-          newContacts,
-          totalFaqs: faqs?.length || 0,
-          totalTestimonials: testimonials?.length || 0,
-          featuredTestimonials: testimonials?.filter(testimonial => testimonial.is_featured).length || 0,
-        });
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const statCards = [
-    {
-      title: 'Total Plans',
-      value: stats.totalPlans,
-      description: `${stats.activePlans} active`,
-      icon: Package,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: 'Contact Forms',
-      value: stats.totalContacts,
-      description: `${stats.newContacts} new this week`,
-      icon: MessageSquare,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: 'FAQs',
-      value: stats.totalFaqs,
-      description: 'Total questions',
-      icon: HelpCircle,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      title: 'Testimonials',
-      value: stats.totalTestimonials,
-      description: `${stats.featuredTestimonials} featured`,
-      icon: Star,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-    },
-  ];
-
-  const quickActions = [
-    {
-      title: 'Add New Plan',
-      description: 'Create a new mobile plan',
-      href: '/admin/plans/new',
-      icon: Package,
-      color: 'bg-blue-500 hover:bg-blue-600',
-    },
-    {
-      title: 'View Contacts',
-      description: 'Review customer inquiries',
-      href: '/admin/contacts',
-      icon: MessageSquare,
-      color: 'bg-green-500 hover:bg-green-600',
-    },
-    {
-      title: 'Manage FAQs',
-      description: 'Update frequently asked questions',
-      href: '/admin/faqs',
-      icon: HelpCircle,
-      color: 'bg-purple-500 hover:bg-purple-600',
-    },
-    {
-      title: 'Site Settings',
-      description: 'Configure global settings',
-      href: '/admin/settings',
-      icon: Users,
-      color: 'bg-gray-500 hover:bg-gray-600',
-    },
-  ];
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-16 bg-muted rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome to your Dynamo Wireless admin dashboard
+          Welcome to your admin dashboard. Here's an overview of your content.
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {stat.description}
-                  </p>
-                </div>
-                <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {quickActions.map((action) => (
-          <Card key={action.title} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className={`p-3 rounded-full text-white ${action.color}`}>
-                  <action.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{action.title}</h3>
-                  <p className="text-sm text-muted-foreground">{action.description}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="mr-2 h-5 w-5" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>
-              Latest updates and changes
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Plans</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">System initialized</p>
-                  <p className="text-xs text-muted-foreground">Database and admin system ready</p>
-                </div>
-                <Badge variant="secondary">Just now</Badge>
-              </div>
-            </div>
+            <div className="text-2xl font-bold">{stats?.totalPlans || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              +{stats?.activePlans || 0} active
+            </p>
           </CardContent>
         </Card>
 
         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Testimonials</CardTitle>
+            <Star className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalTestimonials || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              +{stats?.featuredTestimonials || 0} featured
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Contact Forms</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalContactForms || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              +{stats?.newContacts || 0} new this week
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">SIM Activations</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalActivateSim || 0}</div>
+            <p className="text-xs text-muted-foreground">Activation requests</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="mr-2 h-5 w-5" />
-              System Status
-            </CardTitle>
-            <CardDescription>
-              Current system health
-            </CardDescription>
+            <CardTitle>Recent Contact Forms</CardTitle>
+            <CardDescription>Latest form submissions from customers</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Database</span>
-                <Badge variant="default" className="bg-green-500">Online</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Authentication</span>
-                <Badge variant="default" className="bg-green-500">Active</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Storage</span>
-                <Badge variant="default" className="bg-green-500">Ready</Badge>
-              </div>
+              {recentContacts?.map((contact) => (
+                <div key={contact.id} className="flex items-center justify-between border-b pb-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">{contact.name}</p>
+                    <p className="text-sm text-muted-foreground">{contact.email}</p>
+                    <p className="text-xs text-muted-foreground">{contact.subject || 'No subject'}</p>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant={contact.status === 'new' ? 'default' : 'secondary'}>
+                      {contact.status}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(contact.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {!recentContacts?.length && (
+                <p className="text-muted-foreground text-center py-4">No recent contact forms</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-2">
+              <a 
+                href="/admin/plans/new" 
+                className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
+              >
+                <Activity className="h-4 w-4 mr-3" />
+                <span className="text-sm">Add New Plan</span>
+              </a>
+              <a 
+                href="/admin/hero-slides" 
+                className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
+              >
+                <FileText className="h-4 w-4 mr-3" />
+                <span className="text-sm">Manage Hero Slides</span>
+              </a>
+              <a 
+                href="/admin/testimonials" 
+                className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
+              >
+                <Users className="h-4 w-4 mr-3" />
+                <span className="text-sm">Add Testimonial</span>
+              </a>
+              <a 
+                href="/admin/contact-forms" 
+                className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
+              >
+                <MessageSquare className="h-4 w-4 mr-3" />
+                <span className="text-sm">View Messages</span>
+              </a>
             </div>
           </CardContent>
         </Card>
