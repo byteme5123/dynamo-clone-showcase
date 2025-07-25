@@ -137,17 +137,36 @@ const AdminPlanForm = () => {
 
   const savePlanMutation = useMutation({
     mutationFn: async (data: PlanFormData) => {
+      // Convert form data to database format
+      const dbData = {
+        name: data.name,
+        slug: data.slug,
+        description: data.description,
+        price: data.price,
+        currency: data.currency,
+        plan_type: data.plan_type,
+        data_limit: data.data_limit,
+        call_minutes: data.call_minutes,
+        sms_limit: data.sms_limit,
+        validity_days: data.validity_days,
+        countries: data.countries || [],
+        features: data.features || [], // This will be converted to jsonb by Supabase
+        is_active: data.is_active,
+        is_featured: data.is_featured,
+        display_order: data.display_order,
+      };
+
       if (isEditing) {
         const { error } = await supabase
           .from('plans')
-          .update(data)
+          .update(dbData)
           .eq('id', id);
         
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('plans')
-          .insert(data);
+          .insert(dbData);
         
         if (error) throw error;
       }
