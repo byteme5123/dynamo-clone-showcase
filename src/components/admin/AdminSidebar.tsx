@@ -13,7 +13,8 @@ import {
   FileText,
   Languages,
   Camera,
-  Search
+  Search,
+  Smartphone
 } from 'lucide-react';
 
 const navigation = [
@@ -28,8 +29,14 @@ const navigation = [
       { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
     ]
   },
-  { name: 'Contact Forms', href: '/admin/contacts', icon: MessageSquare },
-  { name: 'Activate SIM Requests', href: '/admin/activate-sim', icon: MessageSquare },
+  { 
+    name: 'Customer Requests', 
+    icon: MessageSquare,
+    children: [
+      { name: 'Contact Forms', href: '/admin/contacts', icon: MessageSquare },
+      { name: 'Activate SIM Requests', href: '/admin/activate-sim', icon: Smartphone },
+    ]
+  },
   { name: 'Media Library', href: '/admin/media', icon: Camera },
   { name: 'Translations', href: '/admin/translations', icon: Languages },
   { name: 'SEO Settings', href: '/admin/seo', icon: Search },
