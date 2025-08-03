@@ -15,15 +15,17 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { signIn, isAdmin, loading: authLoading, adminUser, error: authError } = useAdminAuth();
+  const { signIn, isAdmin, loading: authLoading, adminUser } = useAdminAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isAdmin && !authLoading) {
+    console.log('AdminLogin: isAdmin:', isAdmin, 'authLoading:', authLoading, 'adminUser:', adminUser);
+    if (isAdmin && !authLoading && adminUser) {
+      console.log('Redirecting to dashboard');
       navigate('/admin/dashboard');
     }
-  }, [isAdmin, authLoading, navigate]);
+  }, [isAdmin, authLoading, adminUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,11 +42,10 @@ const AdminLogin = () => {
       const { error } = await signIn(email, password);
       
       if (error) {
-        const errorMessage = error.message || 'Failed to sign in';
-        setError(errorMessage);
+        setError(error.message || 'Failed to sign in');
         toast({
           title: "Login Failed",
-          description: errorMessage,
+          description: error.message || 'Failed to sign in',
           variant: "destructive"
         });
       } else {
@@ -52,13 +53,14 @@ const AdminLogin = () => {
           title: "Welcome!",
           description: "Successfully logged in to admin dashboard.",
         });
+        // Don't navigate here - let the useEffect handle it after admin verification
+        console.log('Sign in successful, waiting for admin verification...');
       }
     } catch (err) {
-      const errorMessage = 'An unexpected error occurred';
-      setError(errorMessage);
+      setError('An unexpected error occurred');
       toast({
         title: "Error",
-        description: errorMessage,
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
     } finally {
@@ -88,9 +90,9 @@ const AdminLogin = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {(error || authError) && (
+            {error && (
               <Alert variant="destructive">
-                <AlertDescription>{error || authError}</AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
             
