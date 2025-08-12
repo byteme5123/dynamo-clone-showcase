@@ -16,7 +16,7 @@ const Plans = () => {
   const { t } = useTranslation();
   const { data: plans, isLoading, error } = usePlans();
 
-  if (isLoading) {
+  if (isLoading && !plans) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -106,6 +106,7 @@ const Plans = () => {
                   <img
                     src={planCardImage}
                     alt={plan.name}
+                    loading="lazy"
                     className="w-full h-auto max-w-[200px] mx-auto object-contain"
                   />
                 </div>

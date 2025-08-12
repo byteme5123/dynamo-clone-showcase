@@ -23,14 +23,14 @@ const HeroSection = () => {
     ? heroSlides.map(slide => ({ id: slide.id, image: slide.image_url, heading: slide.title, subheading: slide.subtitle, cta: slide.cta_text, ctaUrl: slide.cta_url || '/plans' }))
     : fallbackSlides;
 
-  if (isLoading) {
+  if (isLoading && !heroSlides) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (
-    <section className="hero-gradient py-16 md:py-24">
+    <section className="hero-gradient py-16 md:py-24" aria-label="Hero">
       <div className="container mx-auto px-4">
-        <Carousel className="w-full">
+        <Carousel className="w-full" opts={{ loop: true }}>
           <CarouselContent>
             {slides.map((slide) => (
               <CarouselItem key={slide.id}>
@@ -54,7 +54,8 @@ const HeroSection = () => {
                   <div className="flex justify-center lg:justify-end fade-in">
                     <img
                       src={slide.image}
-                      alt={slide.heading}
+                      alt={slide.heading || 'Dynamo Wireless hero slide'}
+                      loading="lazy"
                       className="max-w-md w-full h-auto object-cover rounded-lg"
                     />
                   </div>
@@ -62,8 +63,8 @@ const HeroSection = () => {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-4 lg:left-8" />
-          <CarouselNext className="right-4 lg:right-8" />
+          <CarouselPrevious className="left-4 lg:left-8" aria-label="Previous" />
+          <CarouselNext className="right-4 lg:right-8" aria-label="Next" />
         </Carousel>
       </div>
     </section>

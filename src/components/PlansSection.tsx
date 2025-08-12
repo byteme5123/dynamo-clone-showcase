@@ -10,7 +10,7 @@ const PlansSection = () => {
   const { t } = useTranslation();
   const { data: plans, isLoading, error } = usePlans();
 
-  if (isLoading) {
+  if (isLoading && !plans) {
     return (
       <section id="plans" className="py-16 bg-muted">
         <div className="container mx-auto px-4">
@@ -77,6 +77,7 @@ const PlansSection = () => {
                 <img
                   src={plan.image_url || planCardImage}
                   alt={plan.name}
+                  loading="lazy"
                   className="w-full h-auto max-w-[200px] mx-auto object-contain"
                 />
               </div>
