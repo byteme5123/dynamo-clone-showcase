@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowRight, X, Globe, Zap, Phone, MessageCircle, Wifi } from 'lucide-react';
-import simCardImage from '@/assets/dynamo-plan-card.png';
+const newPlanImage = '/lovable-uploads/14e519e0-437e-4d3c-bb38-1abfe9002f53.png';
 
 type PlanType = 'domestic' | 'special';
 
@@ -165,45 +165,15 @@ const FigmaPlansSection = () => {
               {/* Plan Image */}
               <div className="relative">
                 <img
-                  src={plan.image_url || simCardImage}
+                  src={plan.image_url || newPlanImage}
                   alt={`${plan.name} SIM card package`}
                   loading="lazy"
-                  className="w-full h-48 object-cover rounded-t-2xl"
+                  className="w-full h-72 object-cover rounded-t-2xl"
                 />
               </div>
               
               {/* Plan Content */}
               <div className="p-6">
-                {/* Pricing */}
-                <div className="text-center mb-4">
-                  <div className="flex items-center justify-center gap-1 mb-2">
-                    <span className="text-3xl font-bold font-poppins text-primary">
-                      {plan.currency}{plan.price}
-                    </span>
-                    <span className="text-sm text-muted-foreground">/mo</span>
-                  </div>
-                </div>
-
-                {/* UNLIMITED Talk & Text Bar */}
-                <div className="bg-primary text-primary-foreground text-center py-2 px-4 rounded-lg mb-3">
-                  <span className="text-sm font-bold font-poppins">UNLIMITED Talk & Text</span>
-                </div>
-
-                {/* Data Amount - Yellow on Red */}
-                <div className="bg-primary text-center py-3 px-4 rounded-lg mb-4 relative">
-                  <span 
-                    className="text-2xl font-bold font-poppins"
-                    style={{ color: 'hsl(var(--primary-yellow))' }}
-                  >
-                    {getDataAmount(plan)}
-                  </span>
-                </div>
-
-                {/* Network Icons */}
-                <div className="flex justify-center gap-3 mb-6">
-                  {getNetworkIcons(plan)}
-                </div>
-
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   {/* See Plan Features - Collapsible */}
@@ -256,7 +226,7 @@ const FigmaPlansSection = () => {
                           <div className="pt-8">
                             {/* Plan Image */}
                             <img
-                              src={selectedPlan.image_url || simCardImage}
+                              src={selectedPlan.image_url || newPlanImage}
                               alt={`${selectedPlan.name} SIM card package`}
                               className="w-full h-48 object-cover rounded-lg mb-6"
                             />
