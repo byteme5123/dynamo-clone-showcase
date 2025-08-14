@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import Index from "./pages/Index";
 import About from "./pages/About";
+import WirelessPBX from "./pages/WirelessPBX";
 import Plans from "./pages/Plans";
 import PlanDetail from "./pages/PlanDetail";
 import ActivateSIM from "./pages/ActivateSIM";
@@ -43,6 +44,7 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />
+              <Route path="/wireless-pbx" element={<WirelessPBX />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/plans/:slug" element={<PlanDetail />} />
               <Route path="/activate" element={<ActivateSIM />} />
