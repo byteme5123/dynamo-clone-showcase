@@ -1,3 +1,4 @@
+
 import { useTranslation } from '@/hooks/useTranslation';
 import { usePlans } from '@/hooks/usePlans';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,15 +13,13 @@ const FigmaPlansSection = () => {
   const { t } = useTranslation();
   const { data: plans, isLoading, error } = usePlans();
   const [activeTab, setActiveTab] = useState<PlanType>('domestic');
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+
+  console.log('FigmaPlansSection: plans data:', plans);
+  console.log('FigmaPlansSection: isLoading:', isLoading);
+  console.log('FigmaPlansSection: error:', error);
 
   // Filter plans based on active tab
   const filteredPlans = filterPlansByType(plans || [], activeTab);
-
-  const handleDropdownToggle = (planId: string) => {
-    setOpenDropdown(openDropdown === planId ? null : planId);
-  };
 
   if (isLoading && !plans) {
     return (
@@ -53,6 +52,7 @@ const FigmaPlansSection = () => {
   }
 
   if (error) {
+    console.error('FigmaPlansSection: Error loading plans:', error);
     return (
       <section className="py-20 md:py-20 lg:py-20" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <div className="container mx-auto px-4">
@@ -91,8 +91,6 @@ const FigmaPlansSection = () => {
             <PlanCard
               key={plan.id}
               plan={plan}
-              openDropdown={openDropdown}
-              onDropdownToggle={handleDropdownToggle}
             />
           ))}
         </div>

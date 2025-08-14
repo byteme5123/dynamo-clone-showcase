@@ -15,14 +15,13 @@ const Plans = () => {
   const { t } = useTranslation();
   const { data: plans, isLoading, error } = usePlans();
   const [activeTab, setActiveTab] = useState<PlanType>('domestic');
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  console.log('Plans page: plans data:', plans);
+  console.log('Plans page: isLoading:', isLoading);
+  console.log('Plans page: error:', error);
 
   // Filter plans based on active tab
   const filteredPlans = filterPlansByType(plans || [], activeTab);
-
-  const handleDropdownToggle = (planId: string) => {
-    setOpenDropdown(openDropdown === planId ? null : planId);
-  };
 
   if (isLoading && !plans) {
     return (
@@ -54,6 +53,7 @@ const Plans = () => {
   }
 
   if (error) {
+    console.error('Plans page: Error loading plans:', error);
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <Navbar />
@@ -95,8 +95,6 @@ const Plans = () => {
             <PlanCard
               key={plan.id}
               plan={plan}
-              openDropdown={openDropdown}
-              onDropdownToggle={handleDropdownToggle}
             />
           ))}
         </div>

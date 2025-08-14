@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
@@ -9,12 +10,13 @@ const newPlanImage = '/lovable-uploads/3a841a06-7552-4eaa-98cd-086aa058a533.png'
 
 interface PlanCardProps {
   plan: any;
-  openDropdown: string | null;
-  onDropdownToggle: (planId: string) => void;
 }
 
-const PlanCard = ({ plan, openDropdown, onDropdownToggle }: PlanCardProps) => {
+const PlanCard = ({ plan }: PlanCardProps) => {
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [isFeatureExpanded, setIsFeatureExpanded] = useState(false);
+
+  console.log(`PlanCard ${plan.id}: isFeatureExpanded = ${isFeatureExpanded}`);
 
   return (
     <div className="bg-card rounded-2xl shadow-lg hover-lift relative w-full max-w-[280px] mx-auto">
@@ -34,16 +36,20 @@ const PlanCard = ({ plan, openDropdown, onDropdownToggle }: PlanCardProps) => {
         <div className="space-y-3">
           {/* See Plan Features - Collapsible */}
           <Collapsible 
-            open={openDropdown === plan.id}
-            onOpenChange={() => onDropdownToggle(plan.id)}
+            open={isFeatureExpanded}
+            onOpenChange={setIsFeatureExpanded}
           >
             <CollapsibleTrigger asChild>
               <Button 
                 variant="outline" 
                 className="w-full justify-between font-poppins bg-card border-border text-foreground hover:bg-muted rounded-lg"
+                onClick={() => {
+                  console.log(`Plan ${plan.id}: Toggling features from ${isFeatureExpanded} to ${!isFeatureExpanded}`);
+                  setIsFeatureExpanded(!isFeatureExpanded);
+                }}
               >
                 See Plan Features
-                {openDropdown === plan.id ? 
+                {isFeatureExpanded ? 
                   <ChevronUp className="w-4 h-4" /> : 
                   <ChevronDown className="w-4 h-4" />
                 }
