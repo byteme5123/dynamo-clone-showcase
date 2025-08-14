@@ -31,70 +31,35 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchAdminUser = async (userId: string, retryCount = 0): Promise<AdminUser | null> => {
+  const fetchAdminUser = async (userId: string): Promise<AdminUser | null> => {
     try {
-      console.log(`Fetching admin user for userId: ${userId} (attempt ${retryCount + 1})`);
-      
-      // First, validate that we have a valid session
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
-        console.log('No valid session found, retrying...');
-        if (retryCount < 3) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return fetchAdminUser(userId, retryCount + 1);
-        }
-        return null;
-      }
-
-      // Use the new database function to fetch admin user
+      // Use the database function to fetch admin user
       const { data, error } = await supabase
         .rpc('get_admin_user_by_id', { target_user_id: userId });
 
       if (error) {
-        console.error('Error fetching admin user with RPC:', error);
+        console.error('RPC error, trying direct query:', error);
         
-        // Fallback to direct query if RPC fails
-        if (retryCount < 2) {
-          console.log('Falling back to direct query...');
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('admin_users')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-            .maybeSingle();
+        // Single fallback to direct query
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .maybeSingle();
 
-          if (fallbackError) {
-            console.error('Fallback query also failed:', fallbackError);
-            return null;
-          }
-
-          console.log('Fallback query succeeded:', fallbackData);
-          return fallbackData;
+        if (fallbackError) {
+          console.error('Direct query failed:', fallbackError);
+          return null;
         }
-        return null;
+
+        return fallbackData;
       }
 
-      console.log('Admin user data from RPC:', data);
-      
       // The RPC returns an array, so we need to get the first item
-      const adminData = data && data.length > 0 ? data[0] : null;
-      
-      if (!adminData) {
-        console.log('No admin user found for this user ID');
-        return null;
-      }
-
-      return adminData;
+      return data && data.length > 0 ? data[0] : null;
     } catch (error) {
-      console.error('Error in fetchAdminUser:', error);
-      
-      // Retry logic for network errors
-      if (retryCount < 2) {
-        console.log(`Retrying fetchAdminUser... (attempt ${retryCount + 2})`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return fetchAdminUser(userId, retryCount + 1);
-      }
-      
+      console.error('fetchAdminUser error:', error);
       return null;
     }
   };
@@ -117,35 +82,19 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const handleAuthChange = async (event: string, session: Session | null) => {
       if (!isMounted) return;
       
-      console.log('Auth state change:', event, session?.user?.id);
-      console.log('Session details:', { 
-        hasSession: !!session, 
-        hasUser: !!session?.user, 
-        userId: session?.user?.id,
-        accessToken: session?.access_token ? 'present' : 'missing'
-      });
-      
       setSession(session);
       setUser(session?.user ?? null);
 
-      if (session?.user) {
-        // Add a small delay to ensure session is fully established
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Fetch admin user data with retry logic
+      if (session?.user) {        
+        // Fetch admin user data
         const adminData = await fetchAdminUser(session.user.id);
         
         if (isMounted) {
           setAdminUser(adminData as AdminUser);
-          console.log('Setting admin user:', adminData);
-          console.log('Admin status will be:', {
-            isAdmin: adminData?.is_active && (adminData?.role === 'admin' || adminData?.role === 'super_admin'),
-            isSuperAdmin: adminData?.is_active && adminData?.role === 'super_admin'
-          });
           
           if (adminData && event === 'SIGNED_IN') {
             // Update last login in background
-            setTimeout(() => updateLastLogin(session.user.id), 0);
+            updateLastLogin(session.user.id);
           }
         }
       } else {
@@ -175,7 +124,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         console.warn('Loading timeout reached, setting loading to false');
         setLoading(false);
       }
-    }, 5000); // 5 second timeout (reduced from 10)
+    }, 8000); // 8 second timeout to allow for network delays
 
     return () => {
       isMounted = false;
@@ -198,15 +147,6 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const isAdmin = adminUser?.is_active && (adminUser?.role === 'admin' || adminUser?.role === 'super_admin');
   const isSuperAdmin = adminUser?.is_active && adminUser?.role === 'super_admin';
-  
-  // Add debug logging for admin status
-  console.log('Admin status check:', { 
-    adminUser, 
-    isAdmin: !!isAdmin, 
-    isSuperAdmin: !!isSuperAdmin,
-    adminUserActive: adminUser?.is_active,
-    adminUserRole: adminUser?.role
-  });
 
   return (
     <AdminAuthContext.Provider value={{
