@@ -29,6 +29,7 @@ import AdminTranslations from "./pages/AdminTranslations";
 import AdminSeo from "./pages/AdminSeo";
 import AdminSettings from "./pages/AdminSettings";
 import AdminUsers from "./pages/AdminUsers";
+import AdminWirelessPBX from "./pages/AdminWirelessPBX";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="plans" element={<AdminPlans />} />
                 <Route path="plans/new" element={<AdminPlanForm />} />
                 <Route path="plans/edit/:id" element={<AdminPlanForm />} />
+                <Route path="wireless-pbx" element={<AdminWirelessPBX />} />
                 <Route path="hero-slides" element={<AdminHeroSlides />} />
                 <Route path="testimonials" element={<AdminTestimonials />} />
                 <Route path="faqs" element={<AdminFaqs />} />

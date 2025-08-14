@@ -25,6 +25,7 @@ const navigation = [
     children: [
       { name: 'Plans', href: '/admin/plans', icon: Package },
       { name: 'Hero Slider', href: '/admin/slider', icon: Images },
+      { name: 'Wireless PBX', href: '/admin/wireless-pbx', icon: Smartphone },
       { name: 'Testimonials', href: '/admin/testimonials', icon: Star },
       { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
     ]

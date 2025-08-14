@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -416,6 +416,54 @@ export type Database = {
         }
         Relationships: []
       }
+      wireless_pbx_content: {
+        Row: {
+          content: string | null
+          created_at: string
+          cta_text: string | null
+          cta_url: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          section: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          section: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          cta_text?: string | null
+          cta_url?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          section?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -424,15 +472,15 @@ export type Database = {
       get_admin_user_by_id: {
         Args: { target_user_id: string }
         Returns: {
-          id: string
-          user_id: string
-          role: Database["public"]["Enums"]["app_role"]
-          first_name: string
-          last_name: string
-          is_active: boolean
           created_at: string
-          updated_at: string
+          first_name: string
+          id: string
+          is_active: boolean
           last_login_at: string
+          last_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
         }[]
       }
       get_current_admin_user: {
