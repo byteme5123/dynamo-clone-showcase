@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogClose } from '@/components/
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowRight, X, Globe, Zap, Phone, MessageCircle, Wifi } from 'lucide-react';
-const newPlanImage = '/lovable-uploads/14e519e0-437e-4d3c-bb38-1abfe9002f53.png';
+const newPlanImage = '/lovable-uploads/3a841a06-7552-4eaa-98cd-086aa058a533.png';
 
 type PlanType = 'domestic' | 'special';
 
