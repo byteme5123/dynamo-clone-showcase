@@ -17,10 +17,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 15%;
 
-    /* Dynamo Wireless Brand Colors */
-    --primary: 0 74% 44%; /* #e12626 */
+    /* Dynamo Wireless Brand Colors - Figma Design */
+    --primary: 355 89% 47%; /* #E30613 */
     --primary-foreground: 0 0% 100%;
-    --primary-light: 0 74% 60%;
+    --primary-light: 0 100% 71%; /* #FF4B4B for gradient */
 
     --secondary: 0 0% 24%; /* #3c3c3b */
     --secondary-foreground: 0 0% 98%;
@@ -107,7 +107,13 @@ All colors MUST be HSL.
 
   /* Gradient backgrounds for hero sections */
   .hero-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light) / 0.9) 100%);
+    background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%);
+  }
+
+  /* Notification bar styling */
+  .notification-bar {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 
   /* Custom animations */

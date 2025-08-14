@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Link } from 'react-router-dom';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
@@ -17,35 +18,38 @@ const Navbar = () => {
   const { t } = useTranslation();
 
   const navItems = [
-    { name: t('navbar.home'), href: '/' },
-    { name: t('navbar.about'), href: '/about' },
-    { name: t('navbar.plans'), href: '/plans' },
-    { name: t('navbar.contact'), href: '/contact' },
+    { name: 'Home', href: '/' },
+    { name: 'About', href: '/about' },
+    { name: 'WirelessPBX', href: '/wireless-pbx' },
+    { name: 'Plans', href: '/plans' },
+    { name: 'Contact', href: '/contact' },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 h-[70px]">
+      <div className="container mx-auto px-4 h-full">
+        <div className="flex items-center justify-between h-full">
           {/* Logo */}
           <div className="flex items-center">
-            <img 
-              src={logoImage} 
-              alt="Dynamo Wireless" 
-              className="h-8 w-auto object-contain"
-            />
+            <Link to="/">
+              <img 
+                src={logoImage} 
+                alt="Dynamo Wireless" 
+                className="h-10 w-auto object-contain"
+              />
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
-                className="text-foreground hover:text-primary transition-colors duration-200 font-medium"
+                to={item.href}
+                className="text-black hover:underline transition-all duration-200 font-bold text-sm px-3 py-2"
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -53,19 +57,36 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {/* Language Dropdown */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center space-x-1 text-foreground hover:text-primary transition-colors">
-                <Globe className="w-4 h-4" />
-                <span className="text-sm">{t('navbar.language')}</span>
-                <ChevronDown className="w-3 h-3" />
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-1">
+                  <span className="text-sm font-medium">
+                    {language === 'en' ? 'EN' : 'ES'}
+                  </span>
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLanguage('es')}>Español</DropdownMenuItem>
+              <DropdownMenuContent align="end" className="bg-white border shadow-lg z-50">
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('en')}
+                  className={language === 'en' ? 'bg-gray-100' : ''}
+                >
+                  English
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('es')}
+                  className={language === 'es' ? 'bg-gray-100' : ''}
+                >
+                  Español
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button variant="cta" size="default" className="hover-lift" asChild>
-              <a href="/activate">{t('navbar.activateSim')}</a>
+            <Button 
+              variant="default" 
+              className="bg-primary text-white font-bold rounded-lg px-6 py-2 hover:bg-primary/90"
+              asChild
+            >
+              <Link to="/activate">Activate SIM</Link>
             </Button>
           </div>
 
@@ -84,32 +105,36 @@ const Navbar = () => {
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-background border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
               {navItems.map((item) => (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
-                  className="block px-3 py-2 text-foreground hover:text-primary transition-colors duration-200"
+                  to={item.href}
+                  className="block px-3 py-2 text-black hover:text-primary transition-colors duration-200"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.name}
-                </a>
+                </Link>
               ))}
               <div className="pt-4 pb-2 space-y-2">
                 <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center space-x-1 px-3 py-2 text-foreground hover:text-primary transition-colors">
+                  <DropdownMenuTrigger className="flex items-center space-x-1 px-3 py-2 text-black hover:text-primary transition-colors">
                     <Globe className="w-4 h-4" />
                     <span className="text-sm">{language === 'en' ? 'Language' : 'Idioma'}</span>
                     <ChevronDown className="w-3 h-3" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
+                  <DropdownMenuContent className="bg-white border shadow-lg">
                     <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setLanguage('es')}>Español</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <div className="px-3">
-                  <Button variant="cta" size="default" className="w-full" asChild>
-                    <a href="/activate">{t('navbar.activateSim')}</a>
+                  <Button 
+                    variant="default" 
+                    className="w-full bg-primary text-white font-bold" 
+                    asChild
+                  >
+                    <Link to="/activate">Activate SIM</Link>
                   </Button>
                 </div>
               </div>
