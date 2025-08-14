@@ -1,72 +1,99 @@
-import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
 const FigmaHeroSection = () => {
   const { t } = useTranslation();
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  const planOffers = [
-    { data: '5GB', price: '$20' },
-    { data: '5GB', price: '$20' },
-    { data: '5GB', price: '$20' },
-    { data: '5GB', price: '$20' }
+  // Auto-slide every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % 3); // Cycle through 3 slides
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const slides = [
+    {
+      image: "/lovable-uploads/f4415327-5a77-424f-b801-fa611a192866.png",
+      alt: "Dynamo Wireless - Even more data promotion"
+    },
+    {
+      image: "/lovable-uploads/abb5ee4d-66fd-40a4-8c6f-899521b74171.png", 
+      alt: "Woman holding phone - Dynamo Wireless"
+    },
+    {
+      image: "/lovable-uploads/f4415327-5a77-424f-b801-fa611a192866.png",
+      alt: "Dynamo Wireless mobile plans"
+    }
   ];
 
   return (
-    <section className="hero-gradient py-16 md:py-24 relative overflow-hidden">
-      {/* Subtle wave shape at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-8 bg-white transform -skew-y-1 origin-bottom-left"></div>
-      
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[500px]">
-          
-          {/* Left Column */}
-          <div className="text-white space-y-8 slide-up">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-wide">
-              Even more data!
-            </h1>
-            
-            {/* Plan Offers Pills */}
-            <div className="flex flex-wrap gap-4 justify-start">
-              {planOffers.map((offer, index) => (
-                <div 
-                  key={index}
-                  className="bg-white rounded-xl p-4 text-center min-w-[120px] md:min-w-[150px] hover-lift"
-                >
-                  <div className="text-primary text-xl md:text-2xl font-bold">
-                    {offer.data}
-                  </div>
-                  <div className="text-black text-lg md:text-xl font-bold">
-                    {offer.price}
-                  </div>
-                </div>
-              ))}
+    <section className="relative overflow-hidden min-h-[600px] md:min-h-[700px]">
+      {/* Slider Container */}
+      <div className="relative w-full h-full">
+        {slides.map((slide, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-all duration-1000 ease-in-out transform ${
+              index === currentSlide
+                ? 'opacity-100 scale-100 translate-x-0'
+                : index < currentSlide
+                ? 'opacity-0 scale-110 -translate-x-full'
+                : 'opacity-0 scale-90 translate-x-full'
+            }`}
+          >
+            <div className="w-full h-full relative">
+              <img
+                src={slide.image}
+                alt={slide.alt}
+                className="w-full h-full object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
+              />
+              
+              {/* Animated Overlay Gradient */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-primary/10 transition-opacity duration-2000 ${
+                  index === currentSlide ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+              
+              {/* Floating Animation Elements */}
+              <div className={`absolute top-1/4 left-1/4 w-4 h-4 bg-white/30 rounded-full transition-all duration-3000 ${
+                index === currentSlide ? 'animate-pulse scale-100' : 'scale-0'
+              }`} />
+              
+              <div className={`absolute top-3/4 right-1/3 w-6 h-6 bg-primary/20 rounded-full transition-all duration-4000 delay-500 ${
+                index === currentSlide ? 'animate-bounce scale-100' : 'scale-0'
+              }`} />
+              
+              <div className={`absolute bottom-1/3 left-1/3 w-3 h-3 bg-white/40 rounded-full transition-all duration-2500 delay-1000 ${
+                index === currentSlide ? 'animate-pulse scale-100' : 'scale-0'
+              }`} />
             </div>
-            
-            {/* CTA Button */}
-            <Button 
-              variant="secondary" 
-              size="lg" 
-              className="bg-black text-white hover:bg-gray-800 rounded-lg px-8 py-6 text-lg font-medium"
-              asChild
-            >
-              <Link to="/plans">
-                See Plans
-              </Link>
-            </Button>
           </div>
+        ))}
+      </div>
 
-          {/* Right Column - Woman with Phone Image */}
-          <div className="flex justify-center lg:justify-end fade-in">
-            <img
-              src="/lovable-uploads/abb5ee4d-66fd-40a4-8c6f-899521b74171.png"
-              alt="Woman holding phone - Dynamo Wireless"
-              loading="lazy"
-              className="max-w-md w-full h-auto object-contain"
-              style={{ height: '500px', objectFit: 'contain' }}
-            />
-          </div>
-        </div>
+      {/* Slide Indicators */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
+        {slides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentSlide(index)}
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              index === currentSlide
+                ? 'bg-white scale-125 shadow-lg'
+                : 'bg-white/50 hover:bg-white/75'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Enhanced Pulsing Border Effect */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-white to-primary opacity-30 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-white to-primary opacity-30 animate-pulse delay-1000" />
       </div>
     </section>
   );
