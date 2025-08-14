@@ -29,7 +29,7 @@ const FigmaHeroSection = () => {
   ];
 
   return (
-    <section className="relative overflow-hidden min-h-[600px] md:min-h-[700px]">
+    <section className="relative overflow-hidden h-[600px] md:h-[700px]">
       {/* Slider Container */}
       <div className="relative w-full h-full">
         {slides.map((slide, index) => (
