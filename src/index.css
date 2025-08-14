@@ -21,6 +21,10 @@ All colors MUST be HSL.
     --primary: 355 89% 47%; /* #E30613 */
     --primary-foreground: 0 0% 100%;
     --primary-light: 0 100% 71%; /* #FF4B4B for gradient */
+    --primary-yellow: 48 100% 67%; /* #FFD700 for plan data amounts */
+    
+    /* Plan section specific colors */
+    --plans-background: 0 0% 96%; /* #F5F5F5 */
 
     --secondary: 0 0% 24%; /* #3c3c3b */
     --secondary-foreground: 0 0% 98%;
