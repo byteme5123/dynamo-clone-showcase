@@ -26,46 +26,58 @@ export interface Plan {
   updated_at: string;
 }
 
+// Core plan fetching function with better error handling
+const fetchPlans = async (activeOnly: boolean = true) => {
+  console.log(`Fetching plans (activeOnly: ${activeOnly})`);
+  
+  try {
+    const query = supabase
+      .from('plans')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    if (activeOnly) {
+      query.eq('is_active', true);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Plans fetch error:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} plans`);
+    
+    // Convert features from Json to string[] for frontend use
+    return data?.map(plan => ({
+      ...plan,
+      features: Array.isArray(plan.features) ? plan.features : [],
+      countries: Array.isArray(plan.countries) ? plan.countries : []
+    })) as Plan[] || [];
+  } catch (error) {
+    console.error('Error in fetchPlans:', error);
+    throw error;
+  }
+};
+
 export const usePlans = () => {
   return useQuery({
-    queryKey: ['plans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      
-      // Convert features from Json to string[] for frontend use
-      return data.map(plan => ({
-        ...plan,
-        features: Array.isArray(plan.features) ? plan.features : [],
-        countries: Array.isArray(plan.countries) ? plan.countries : []
-      })) as Plan[];
-    },
+    queryKey: ['plans', 'active'],
+    queryFn: () => fetchPlans(true),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
 export const useAdminPlans = () => {
   return useQuery({
-    queryKey: ['admin-plans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      
-      // Convert features from Json to string[] for frontend use
-      return data.map(plan => ({
-        ...plan,
-        features: Array.isArray(plan.features) ? plan.features : [],
-        countries: Array.isArray(plan.countries) ? plan.countries : []
-      })) as Plan[];
-    },
+    queryKey: ['plans', 'all'],
+    queryFn: () => fetchPlans(false),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -73,13 +85,18 @@ export const usePlan = (id: string) => {
   return useQuery({
     queryKey: ['plan', id],
     queryFn: async () => {
+      console.log(`Fetching plan by id: ${id}`);
+      
       const { data, error } = await supabase
         .from('plans')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Plan fetch error:', error);
+        throw error;
+      }
       
       // Convert features from Json to string[] for frontend use
       return {
@@ -89,13 +106,16 @@ export const usePlan = (id: string) => {
       } as Plan;
     },
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
 export const usePlanBySlug = (slug: string) => {
   return useQuery({
-    queryKey: ['plan-by-slug', slug],
+    queryKey: ['plan', 'slug', slug],
     queryFn: async () => {
+      console.log(`Fetching plan by slug: ${slug}`);
+      
       const { data, error } = await supabase
         .from('plans')
         .select('*')
@@ -103,7 +123,10 @@ export const usePlanBySlug = (slug: string) => {
         .eq('is_active', true)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Plan by slug fetch error:', error);
+        throw error;
+      }
       
       // Convert features from Json to string[] for frontend use
       return {
@@ -113,6 +136,7 @@ export const usePlanBySlug = (slug: string) => {
       } as Plan;
     },
     enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -139,14 +163,15 @@ export const useCreatePlan = () => {
       return data;
     },
     onSuccess: () => {
+      // Invalidate both query variations to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
       toast({
         title: 'Success',
         description: 'Plan created successfully',
       });
     },
     onError: (error) => {
+      console.error('Create plan error:', error);
       toast({
         title: 'Error',
         description: 'Failed to create plan',
@@ -180,14 +205,15 @@ export const useUpdatePlan = () => {
       return data;
     },
     onSuccess: () => {
+      // Invalidate both query variations to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
       toast({
         title: 'Success',
         description: 'Plan updated successfully',
       });
     },
     onError: (error) => {
+      console.error('Update plan error:', error);
       toast({
         title: 'Error',
         description: 'Failed to update plan',
@@ -211,14 +237,15 @@ export const useDeletePlan = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalidate both query variations to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-plans'] });
       toast({
         title: 'Success',
         description: 'Plan deleted successfully',
       });
     },
     onError: (error) => {
+      console.error('Delete plan error:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete plan',
