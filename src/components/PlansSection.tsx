@@ -77,7 +77,7 @@ const PlansSection = () => {
                 <img
                   src={plan.image_url || planCardImage}
                   alt={plan.name}
-                  loading="lazy"
+                  loading="eager"
                   className="w-full h-auto max-w-[200px] mx-auto object-contain"
                 />
               </div>

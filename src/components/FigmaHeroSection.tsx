@@ -48,7 +48,7 @@ const FigmaHeroSection = () => {
                 src={slide.image}
                 alt={slide.alt}
                 className="w-full h-full object-cover"
-                loading={index === 0 ? "eager" : "lazy"}
+                loading="eager"
               />
               
               {/* Animated Overlay Gradient */}

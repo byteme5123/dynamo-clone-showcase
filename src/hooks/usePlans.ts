@@ -65,9 +65,12 @@ export const usePlans = () => {
   return useQuery({
     queryKey: ['plans', 'active'],
     queryFn: () => fetchPlans(true),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 10 * 60 * 1000, // 10 minutes - longer cache for better performance
+    gcTime: 15 * 60 * 1000, // 15 minutes - keep in memory longer
+    retry: 1, // Faster failure recovery
+    retryDelay: 500, // Shorter retry delay
+    refetchOnMount: false, // Don't refetch on mount if data exists
+    refetchOnWindowFocus: false, // Don't refetch on focus
   });
 };
 
@@ -75,9 +78,12 @@ export const useAdminPlans = () => {
   return useQuery({
     queryKey: ['plans', 'all'],
     queryFn: () => fetchPlans(false),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    retry: 1,
+    retryDelay: 500,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -106,7 +112,10 @@ export const usePlan = (id: string) => {
       } as Plan;
     },
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -136,7 +145,10 @@ export const usePlanBySlug = (slug: string) => {
       } as Plan;
     },
     enabled: !!slug,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 };
 

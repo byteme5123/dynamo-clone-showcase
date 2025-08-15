@@ -25,7 +25,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
         <img
           src={plan.image_url || newPlanImage}
           alt={`${plan.name} SIM card package`}
-          loading="lazy"
+          loading="eager"
           className="w-full h-72 object-cover rounded-t-2xl"
         />
       </div>

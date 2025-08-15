@@ -31,7 +31,24 @@ import AdminSettings from "./pages/AdminSettings";
 import AdminUsers from "./pages/AdminUsers";
 import AdminWirelessPBX from "./pages/AdminWirelessPBX";
 
-const queryClient = new QueryClient();
+// Optimized QueryClient for better performance and caching
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
+      gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
+      retry: 1, // Reduce retry attempts for faster failures
+      retryDelay: 1000, // Shorter retry delay
+      refetchOnWindowFocus: false, // Prevent unnecessary refetches
+      refetchOnReconnect: true, // Only refetch on reconnect
+      networkMode: 'online', // Only run queries when online
+    },
+    mutations: {
+      retry: 1,
+      networkMode: 'online',
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
