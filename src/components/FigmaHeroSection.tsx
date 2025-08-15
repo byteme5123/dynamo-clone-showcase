@@ -1,19 +1,14 @@
 import { useTranslation } from '@/hooks/useTranslation';
+import { useHomeHeroSlides } from '@/hooks/useHeroSlides';
 import { useEffect, useState } from 'react';
 
 const FigmaHeroSection = () => {
   const { t } = useTranslation();
+  const { data: heroSlides, isLoading } = useHomeHeroSlides();
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Auto-slide every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 3); // Cycle through 3 slides
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const slides = [
+  // Fallback slides if database is empty
+  const fallbackSlides = [
     {
       image: "/lovable-uploads/f4415327-5a77-424f-b801-fa611a192866.png",
       alt: "Dynamo Wireless - Even more data promotion"
@@ -27,6 +22,22 @@ const FigmaHeroSection = () => {
       alt: "Dynamo Wireless mobile plans"
     }
   ];
+
+  // Use database slides if available, otherwise use fallback
+  const slides = heroSlides && heroSlides.length > 0 
+    ? heroSlides.map(slide => ({
+        image: slide.image_url,
+        alt: slide.title
+      }))
+    : fallbackSlides;
+
+  // Auto-slide every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [slides.length]);
 
   return (
     <section className="relative overflow-hidden h-[600px] md:h-[700px]">
