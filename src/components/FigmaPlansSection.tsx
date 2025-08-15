@@ -20,8 +20,13 @@ const FigmaPlansSection = () => {
 
   // Filter plans based on active tab
   const filteredPlans = filterPlansByType(plans || [], activeTab);
+  
+  console.log('FigmaPlansSection: filteredPlans:', filteredPlans);
+  console.log('FigmaPlansSection: activeTab:', activeTab);
+  console.log('FigmaPlansSection: filteredPlans length:', filteredPlans?.length);
 
-  if (isLoading && !plans) {
+  // Show loading state when data is loading OR when we have no filtered plans yet
+  if (isLoading || (!plans && !error)) {
     return (
       <section className="py-20 md:py-20 lg:py-20" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <div className="container mx-auto px-4">
@@ -87,12 +92,23 @@ const FigmaPlansSection = () => {
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {filteredPlans.slice(0, 6).map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-            />
-          ))}
+          {filteredPlans && filteredPlans.length > 0 ? (
+            filteredPlans.slice(0, 6).map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-muted-foreground">
+                {activeTab === 'special' 
+                  ? 'No special plans available at the moment.' 
+                  : 'No plans available at the moment.'
+                }
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>

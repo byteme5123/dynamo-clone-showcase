@@ -22,8 +22,13 @@ const Plans = () => {
 
   // Filter plans based on active tab
   const filteredPlans = filterPlansByType(plans || [], activeTab);
+  
+  console.log('Plans page: filteredPlans:', filteredPlans);
+  console.log('Plans page: activeTab:', activeTab);
+  console.log('Plans page: filteredPlans length:', filteredPlans?.length);
 
-  if (isLoading && !plans) {
+  // Show loading state when data is loading OR when we have no filtered plans yet
+  if (isLoading || (!plans && !error)) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <Navbar />
@@ -91,12 +96,23 @@ const Plans = () => {
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {filteredPlans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-            />
-          ))}
+          {filteredPlans && filteredPlans.length > 0 ? (
+            filteredPlans.slice(0, 6).map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-muted-foreground">
+                {activeTab === 'special' 
+                  ? 'No special plans available at the moment.' 
+                  : 'No plans available at the moment.'
+                }
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
