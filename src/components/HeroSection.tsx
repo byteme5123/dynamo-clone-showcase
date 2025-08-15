@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useHeroSlides } from '@/hooks/useHeroSlides';
+import { useHomeHeroSlides } from '@/hooks/useHeroSlides';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import slider1 from '@/assets/slider-1.jpg';
@@ -10,7 +10,7 @@ import slider3 from '@/assets/slider-3.jpg';
 
 const HeroSection = () => {
   const { t } = useTranslation();
-  const { data: heroSlides, isLoading } = useHeroSlides();
+  const { data: heroSlides, isLoading } = useHomeHeroSlides();
   
   // Fallback slides
   const fallbackSlides = [

@@ -11,24 +11,43 @@ export interface HeroSlide {
   cta_url?: string;
   display_order: number;
   is_active: boolean;
+  page_type: 'home' | 'about' | 'wireless_pbx';
   created_at: string;
   updated_at: string;
 }
 
-export const useHeroSlides = () => {
+export const useHeroSlides = (pageType?: 'home' | 'about' | 'wireless_pbx') => {
   return useQuery({
-    queryKey: ['hero-slides'],
+    queryKey: ['hero-slides', pageType],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('hero_slides')
         .select('*')
-        .eq('is_active', true)
-        .order('display_order');
+        .eq('is_active', true);
+      
+      if (pageType) {
+        query = query.eq('page_type', pageType);
+      }
+      
+      const { data, error } = await query.order('display_order');
 
       if (error) throw error;
       return data as HeroSlide[];
     },
   });
+};
+
+// Page-specific hooks
+export const useHomeHeroSlides = () => {
+  return useHeroSlides('home');
+};
+
+export const useAboutHeroSlides = () => {
+  return useHeroSlides('about');
+};
+
+export const useWirelessPBXHeroSlides = () => {
+  return useHeroSlides('wireless_pbx');
 };
 
 export const useAdminHeroSlides = () => {

@@ -26,9 +26,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileBottomBar from "@/components/MobileBottomBar";
 import { useWirelessPBXContent } from "@/hooks/useWirelessPBXContent";
+import { useWirelessPBXHeroSlides } from "@/hooks/useHeroSlides";
 
 const WirelessPBX = () => {
   const { data: content = [] } = useWirelessPBXContent();
+  const { data: heroSlides } = useWirelessPBXHeroSlides();
+  const heroSlide = heroSlides?.[0]; // Get the first (and should be only) wireless PBX hero slide
   
   const getContentBySection = (section: string) => {
     return content.find(item => item.section === section);
@@ -59,21 +62,21 @@ const WirelessPBX = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `url('/lovable-uploads/cebb0026-0cbe-451d-9fbc-90e7cc4ab8e9.png')`
+            backgroundImage: `url(${heroSlide?.image_url || '/lovable-uploads/cebb0026-0cbe-451d-9fbc-90e7cc4ab8e9.png'})`
           }}
         />
         <div className="absolute inset-0 bg-black/40" />
         
         <div className="relative z-10 text-center text-white max-w-4xl px-4">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            {heroContent?.title || "Dynamo Wireless Mobile PBX"}
+            {heroSlide?.title || heroContent?.title || "Dynamo Wireless Mobile PBX"}
           </h1>
           <p className="text-xl md:text-2xl mb-8 leading-relaxed">
-            {heroContent?.subtitle || "Transform your business communications with our cutting-edge Mobile PBX solution"}
+            {heroSlide?.subtitle || heroContent?.subtitle || "Transform your business communications with our cutting-edge Mobile PBX solution"}
           </p>
           <Button size="xl" className="bg-destructive hover:bg-destructive/90 text-white" asChild>
-            <Link to={heroContent?.features?.cta_url || "/contact"}>
-              {heroContent?.features?.cta_text || "Get Started Today"}
+            <Link to={heroSlide?.cta_url || heroContent?.features?.cta_url || "/contact"}>
+              {heroSlide?.cta_text || heroContent?.features?.cta_text || "Get Started Today"}
             </Link>
           </Button>
         </div>

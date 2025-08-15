@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Loader2, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { ImageUpload } from '@/components/ImageUpload';
 import { toast } from '@/hooks/use-toast';
 
 const AdminHeroSlides = () => {
@@ -28,7 +30,8 @@ const AdminHeroSlides = () => {
     cta_text: '',
     cta_url: '',
     display_order: 0,
-    is_active: true
+    is_active: true,
+    page_type: 'home' as 'home' | 'about' | 'wireless_pbx'
   });
 
   const resetForm = () => {
@@ -39,13 +42,45 @@ const AdminHeroSlides = () => {
       cta_text: '',
       cta_url: '',
       display_order: 0,
-      is_active: true
+      is_active: true,
+      page_type: 'home' as 'home' | 'about' | 'wireless_pbx'
     });
     setEditingSlide(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate image upload
+    if (!formData.image_url) {
+      toast({
+        title: "Error",
+        description: "Please upload an image for the hero slide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate slide limits per page type
+    if (formData.is_active) {
+      const activeSlides = slides?.filter(slide => 
+        slide.page_type === formData.page_type && 
+        slide.is_active && 
+        (!editingSlide || slide.id !== editingSlide.id)
+      ) || [];
+      
+      const maxSlides = formData.page_type === 'home' ? 3 : 1;
+      
+      if (activeSlides.length >= maxSlides) {
+        toast({
+          title: "Limit Exceeded",
+          description: `Maximum ${maxSlides} active slide${maxSlides > 1 ? 's' : ''} allowed for ${formData.page_type === 'home' ? 'Home' : formData.page_type === 'about' ? 'About' : 'Wireless PBX'} page`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       if (editingSlide) {
         await updateMutation.mutateAsync({ id: editingSlide.id, ...formData });
@@ -68,7 +103,8 @@ const AdminHeroSlides = () => {
       cta_text: slide.cta_text || '',
       cta_url: slide.cta_url || '',
       display_order: slide.display_order || 0,
-      is_active: slide.is_active
+      is_active: slide.is_active,
+      page_type: slide.page_type || 'home'
     });
     setShowDialog(true);
   };
@@ -126,7 +162,7 @@ const AdminHeroSlides = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="title">Title *</Label>
                   <Input
@@ -135,6 +171,22 @@ const AdminHeroSlides = () => {
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
                   />
+                </div>
+                <div>
+                  <Label htmlFor="page_type">Page Type *</Label>
+                  <Select
+                    value={formData.page_type}
+                    onValueChange={(value) => setFormData({ ...formData, page_type: value as 'home' | 'about' | 'wireless_pbx' })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select page type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="home">Home Page</SelectItem>
+                      <SelectItem value="about">About Page</SelectItem>
+                      <SelectItem value="wireless_pbx">Wireless PBX</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="display_order">Display Order</Label>
@@ -157,14 +209,19 @@ const AdminHeroSlides = () => {
               </div>
 
               <div>
-                <Label htmlFor="image_url">Image URL *</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                  required
+                <Label>Hero Image *</Label>
+                <ImageUpload
+                  bucket="hero-images"
+                  folder="slides"
+                  onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
+                  existingImage={formData.image_url}
+                  className="mt-2"
                 />
+                {!formData.image_url && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please upload an image for the hero slide
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -201,7 +258,10 @@ const AdminHeroSlides = () => {
                 <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button 
+                  type="submit" 
+                  disabled={createMutation.isPending || updateMutation.isPending || !formData.image_url}
+                >
                   {(createMutation.isPending || updateMutation.isPending) && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   )}
@@ -223,6 +283,7 @@ const AdminHeroSlides = () => {
               <TableRow>
                 <TableHead>Order</TableHead>
                 <TableHead>Title</TableHead>
+                <TableHead>Page</TableHead>
                 <TableHead>Subtitle</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
@@ -233,6 +294,13 @@ const AdminHeroSlides = () => {
                 <TableRow key={slide.id}>
                   <TableCell>{slide.display_order}</TableCell>
                   <TableCell className="font-medium">{slide.title}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {slide.page_type === 'home' && 'Home'}
+                      {slide.page_type === 'about' && 'About'}
+                      {slide.page_type === 'wireless_pbx' && 'Wireless PBX'}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="max-w-xs truncate">{slide.subtitle}</TableCell>
                   <TableCell>
                     <Badge variant={slide.is_active ? "default" : "secondary"}>
