@@ -17,7 +17,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
   console.log(`PlanCard ${plan.id}: isFeatureExpanded = ${isFeatureExpanded}`);
 
   return (
-    <div className="bg-card rounded-2xl shadow-lg hover-lift relative w-full max-w-[280px] mx-auto">
+    <div className={`bg-card rounded-2xl shadow-lg hover-lift relative w-full max-w-[280px] mx-auto ${isFeatureExpanded ? 'z-50' : ''}`}>
       {/* Plan Image */}
       <div className="relative">
         <img
@@ -39,7 +39,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
       </div>
       
       {/* Plan Content */}
-      <div className="p-6">
+      <div className="p-6 pb-6">
         {/* Action Buttons */}
         <div className="space-y-3">
           {/* See Plan Features - Collapsible */}
@@ -63,8 +63,8 @@ const PlanCard = ({ plan }: PlanCardProps) => {
                 }
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3">
-              <div className="bg-muted rounded-lg p-4 space-y-2">
+            <CollapsibleContent className="absolute left-0 right-0 mt-3 z-10">
+              <div className="bg-card border border-border rounded-lg p-4 space-y-2 shadow-xl mx-6">
                 {plan.features?.slice(0, 6).map((feature: string, index: number) => (
                   <div key={index} className="flex items-start text-sm text-foreground leading-relaxed">
                     <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
