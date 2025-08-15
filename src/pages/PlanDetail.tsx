@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Check, ShoppingCart, ArrowLeft, Star } from 'lucide-react';
-import { getPlanBySlug, getRelatedPlans } from '@/data/plans';
+import { usePlanBySlug, usePlans } from '@/hooks/usePlans';
 import PromoBanner from '@/components/PromoBanner';
 import Navbar from '@/components/Navbar';
 import CTASection from '@/components/CTASection';
@@ -16,15 +16,26 @@ const PlanDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [selectedDuration, setSelectedDuration] = useState<'monthly' | 'quarterly'>('monthly');
   
-  const plan = slug ? getPlanBySlug(slug) : null;
-  const relatedPlans = plan ? getRelatedPlans(plan.id, 4) : [];
+  const { data: plan, isLoading, isError } = usePlanBySlug(slug || '');
+  const { data: allPlans } = usePlans();
+  
+  // Get related plans from the same countries or type
+  const relatedPlans = allPlans?.filter(p => 
+    p.id !== plan?.id && 
+    (p.plan_type === plan?.plan_type || 
+     (plan?.countries && p.countries && p.countries.some(c => plan.countries.includes(c))))
+  ).slice(0, 4) || [];
 
-  if (!plan) {
+  if (isLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  }
+
+  if (isError || !plan) {
     return <Navigate to="/plans" replace />;
   }
 
-  const currentPrice = selectedDuration === 'quarterly' && plan.hasDiscount ? plan.price - 10 : plan.price;
-  const savings = selectedDuration === 'quarterly' && plan.hasDiscount ? 30 : 0; // $10 x 3 months
+  const currentPrice = plan.price; // Simplified for now - quarterly pricing can be added later
+  const savings = 0; // Simplified for now
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,7 +49,7 @@ const PlanDetail = () => {
           <span>/</span>
           <Link to="/plans" className="hover:text-foreground">Plans</Link>
           <span>/</span>
-          <span className="text-foreground">{plan.title}</span>
+          <span className="text-foreground">{plan.name}</span>
         </nav>
       </div>
 
@@ -50,8 +61,8 @@ const PlanDetail = () => {
             <div className="space-y-4">
               <div className="relative">
                 <img 
-                  src={plan.image} 
-                  alt={plan.title}
+                  src={plan.image_url || '/lovable-uploads/3a841a06-7552-4eaa-98cd-086aa058a533.png'} 
+                  alt={plan.name}
                   className="w-full max-w-md mx-auto rounded-lg shadow-lg"
                 />
                 <div className="absolute top-4 left-4 space-y-2">
@@ -62,7 +73,7 @@ const PlanDetail = () => {
                     No Annual Contract
                   </Badge>
                 </div>
-                {plan.type === 'domestic' && (
+                {plan.plan_type === 'domestic' && (
                   <div className="absolute bottom-4 right-4">
                     <div className="flex space-x-1">
                       <span className="text-xs bg-background px-2 py-1 rounded shadow">🇺🇸</span>
@@ -78,7 +89,7 @@ const PlanDetail = () => {
             <div className="space-y-6">
               <div>
                 <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                  {plan.title}
+                  {plan.name}
                 </h1>
                 <p className="text-lg text-muted-foreground">
                   {plan.description}
@@ -99,60 +110,35 @@ const PlanDetail = () => {
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
                   <div className="text-3xl font-bold text-foreground">
-                    ${currentPrice}.00
+                    {plan.currency}{currentPrice}
                   </div>
-                  {selectedDuration === 'quarterly' && plan.hasDiscount && (
-                    <div className="text-lg text-muted-foreground line-through">
-                      ${plan.price}.00
-                    </div>
-                  )}
                   <span className="text-muted-foreground">/ month</span>
                 </div>
 
-                {/* Duration Toggle */}
-                <div className="space-y-2">
-                  <div className="flex space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="duration"
-                        value="monthly"
-                        checked={selectedDuration === 'monthly'}
-                        onChange={() => setSelectedDuration('monthly')}
-                        className="w-4 h-4 text-primary"
-                      />
-                      <span>Monthly</span>
-                    </label>
-                    {plan.hasDiscount && (
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="duration"
-                          value="quarterly"
-                          checked={selectedDuration === 'quarterly'}
-                          onChange={() => setSelectedDuration('quarterly')}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span>3 Months</span>
-                        <Badge variant="destructive" className="ml-2">
-                          Save ${savings}
-                        </Badge>
-                      </label>
-                    )}
-                  </div>
-                </div>
+                {/* Duration Toggle - Simplified for now */}
               </div>
 
               {/* Buy Now Button */}
-              <Button size="xl" className="w-full md:w-auto">
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Buy Now
+              <Button size="xl" className="w-full md:w-auto" asChild>
+                {plan.external_link ? (
+                  <a href={plan.external_link} target="_blank" rel="noopener noreferrer">
+                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    Buy Now
+                  </a>
+                ) : (
+                  <Link to="/activate-sim">
+                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    Buy Now
+                  </Link>
+                )}
               </Button>
 
-              {/* SKU and Category */}
+              {/* Plan Type and Countries */}
               <div className="text-sm text-muted-foreground space-y-1">
-                <div>SKU: {plan.sku}</div>
-                <div>Category: {plan.category}</div>
+                <div>Type: {plan.plan_type}</div>
+                {plan.countries && plan.countries.length > 0 && (
+                  <div>Countries: {plan.countries.join(', ')}</div>
+                )}
               </div>
 
               <p className="text-xs text-muted-foreground">
@@ -177,7 +163,7 @@ const PlanDetail = () => {
               <div className="max-w-4xl">
                 <h3 className="text-2xl font-semibold mb-4">Plan Features</h3>
                 <div className="space-y-3">
-                  {plan.detailedFeatures.map((feature, index) => (
+                  {plan.features?.map((feature, index) => (
                     <div key={index} className="flex items-start space-x-3">
                       <Check className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
                       <p className="text-muted-foreground">{feature}</p>
@@ -194,11 +180,11 @@ const PlanDetail = () => {
                   <div>
                     <h4 className="font-semibold mb-2">Network Technology</h4>
                     <p className="text-muted-foreground mb-4">
-                      {plan.type === 'domestic' ? '5G/4G LTE' : '4G LTE'} network with nationwide coverage
+                      {plan.plan_type === 'domestic' ? '5G/4G LTE' : '4G LTE'} network with nationwide coverage
                     </p>
                     
                     <h4 className="font-semibold mb-2">Data Allowance</h4>
-                    <p className="text-muted-foreground mb-4">{plan.data}</p>
+                    <p className="text-muted-foreground mb-4">{plan.data_limit || 'Unlimited'}</p>
                     
                     <h4 className="font-semibold mb-2">Contract Terms</h4>
                     <p className="text-muted-foreground">No annual contract required</p>
@@ -206,9 +192,9 @@ const PlanDetail = () => {
                   <div>
                     <h4 className="font-semibold mb-2">Coverage Area</h4>
                     <p className="text-muted-foreground mb-4">
-                      {plan.type === 'domestic' 
+                      {plan.plan_type === 'domestic' 
                         ? 'United States, Mexico, and Canada' 
-                        : `${plan.country} with international calling to US/Canada`
+                        : `${plan.countries?.join(', ') || 'International'} with calling to US/Canada`
                       }
                     </p>
                     
@@ -255,18 +241,18 @@ const PlanDetail = () => {
               <Card key={relatedPlan.id} className="group hover:shadow-lg transition-shadow">
                 <CardHeader className="p-4">
                   <img 
-                    src={relatedPlan.image} 
-                    alt={relatedPlan.title}
+                    src={relatedPlan.image_url || '/lovable-uploads/3a841a06-7552-4eaa-98cd-086aa058a533.png'} 
+                    alt={relatedPlan.name}
                     className="w-full h-32 object-cover rounded-lg mb-3"
                   />
-                  <CardTitle className="text-lg">{relatedPlan.title}</CardTitle>
+                  <CardTitle className="text-lg">{relatedPlan.name}</CardTitle>
                   <CardDescription className="text-sm">
                     {relatedPlan.description}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl font-bold">${relatedPlan.price}</span>
+                    <span className="text-2xl font-bold">{relatedPlan.currency}{relatedPlan.price}</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                   <Link to={`/plans/${relatedPlan.slug}`}>
