@@ -10,7 +10,7 @@ export interface Plan {
   description: string;
   price: number;
   currency: string;
-  plan_type: 'prepaid' | 'postpaid';
+  plan_type: 'domestic' | 'special';
   data_limit: string;
   call_minutes: string;
   sms_limit: string;

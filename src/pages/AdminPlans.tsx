@@ -37,7 +37,7 @@ interface Plan {
   description: string;
   price: number;
   currency: string;
-  plan_type: 'prepaid' | 'postpaid';
+  plan_type: 'domestic' | 'special';
   data_limit: string;
   call_minutes: string;
   sms_limit: string;
@@ -55,7 +55,7 @@ const AdminPlans = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'prepaid' | 'postpaid'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'domestic' | 'special'>('all');
 
   const { data: plans, isLoading, error } = useAdminPlans();
   const deletePlanMutation = useDeletePlan();
@@ -141,12 +141,12 @@ const AdminPlans = () => {
             </div>
             <select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value as 'all' | 'prepaid' | 'postpaid')}
+              onChange={(e) => setFilterType(e.target.value as 'all' | 'domestic' | 'special')}
               className="px-3 py-2 border border-input rounded-md bg-background"
             >
               <option value="all">All Types</option>
-              <option value="prepaid">Prepaid</option>
-              <option value="postpaid">Postpaid</option>
+              <option value="domestic">Domestic</option>
+              <option value="special">Special</option>
             </select>
           </div>
         </CardHeader>

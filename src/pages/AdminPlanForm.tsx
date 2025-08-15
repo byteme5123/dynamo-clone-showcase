@@ -38,7 +38,7 @@ const planSchema = z.object({
   description: z.string().optional(),
   price: z.number().min(0, 'Price must be non-negative'),
   currency: z.string().default('USD'),
-  plan_type: z.enum(['prepaid', 'postpaid']),
+  plan_type: z.enum(['domestic', 'special']),
   data_limit: z.string().optional(),
   call_minutes: z.string().optional(),
   sms_limit: z.string().optional(),
@@ -72,7 +72,7 @@ const AdminPlanForm = () => {
       description: '',
       price: 0,
       currency: 'USD',
-      plan_type: 'prepaid',
+      plan_type: 'domestic',
       data_limit: '',
       call_minutes: '',
       sms_limit: '',
@@ -125,7 +125,7 @@ const AdminPlanForm = () => {
         description: plan.description || '',
         price: plan.price,
         currency: plan.currency,
-        plan_type: plan.plan_type,
+        plan_type: plan.plan_type as 'domestic' | 'special',
         data_limit: plan.data_limit || '',
         call_minutes: plan.call_minutes || '',
         sms_limit: plan.sms_limit || '',
@@ -375,8 +375,8 @@ const AdminPlanForm = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="prepaid">Prepaid</SelectItem>
-                          <SelectItem value="postpaid">Postpaid</SelectItem>
+                          <SelectItem value="domestic">Domestic</SelectItem>
+                          <SelectItem value="special">Special</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

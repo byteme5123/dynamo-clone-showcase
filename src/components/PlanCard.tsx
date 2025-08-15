@@ -30,6 +30,16 @@ const PlanCard = ({ plan }: PlanCardProps) => {
         />
       </div>
       
+      {/* Plan Name */}
+      <div className="px-6 py-4 border-b border-border">
+        <h3 className="text-xl font-bold font-poppins text-foreground text-center">
+          {plan.name}
+        </h3>
+        <div className="text-2xl font-bold font-poppins text-primary text-center mt-2">
+          {plan.currency}{plan.price}/mo
+        </div>
+      </div>
+      
       {/* Plan Content */}
       <div className="p-6">
         {/* Action Buttons */}
