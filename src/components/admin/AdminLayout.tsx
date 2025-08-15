@@ -8,7 +8,20 @@ import AdminHeader from './AdminHeader';
 const AdminLayout = () => {
   const { isAdmin, loading } = useAdminAuth();
 
-  if (loading) {
+  // Add timeout fallback for loading state
+  const [forceLoad, setForceLoad] = React.useState(false);
+  
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        setForceLoad(true);
+      }
+    }, 2000); // Force load after 2 seconds to prevent stuck states
+    
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  if (loading && !forceLoad) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />

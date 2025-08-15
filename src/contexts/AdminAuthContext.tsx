@@ -79,32 +79,35 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     let isMounted = true;
     let loadingTimeout: NodeJS.Timeout;
 
-    const handleAuthChange = async (event: string, session: Session | null) => {
+    const handleAuthChange = (event: string, session: Session | null) => {
       if (!isMounted) return;
       
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {        
-        // Fetch admin user data
-        const adminData = await fetchAdminUser(session.user.id);
-        
-        if (isMounted) {
-          setAdminUser(adminData as AdminUser);
-          
-          if (adminData && event === 'SIGNED_IN') {
-            // Update last login in background
-            updateLastLogin(session.user.id);
+        // Fetch admin user data and update state
+        fetchAdminUser(session.user.id).then(adminData => {
+          if (isMounted) {
+            setAdminUser(adminData as AdminUser);
+            setLoading(false);
+            
+            if (adminData && event === 'SIGNED_IN') {
+              // Update last login in background without blocking
+              setTimeout(() => updateLastLogin(session.user.id), 0);
+            }
           }
-        }
+        }).catch(() => {
+          if (isMounted) {
+            setAdminUser(null);
+            setLoading(false);
+          }
+        });
       } else {
         if (isMounted) {
           setAdminUser(null);
+          setLoading(false);
         }
-      }
-      
-      if (isMounted) {
-        setLoading(false);
       }
     };
 
@@ -116,22 +119,25 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (isMounted) {
         handleAuthChange('INITIAL_SESSION', session);
       }
-    });
-
-    // Safety timeout to prevent infinite loading
-    loadingTimeout = setTimeout(() => {
-      if (isMounted && loading) {
-        console.warn('Loading timeout reached, setting loading to false');
+    }).catch(() => {
+      if (isMounted) {
         setLoading(false);
       }
-    }, 8000); // 8 second timeout to allow for network delays
+    });
+
+    // Shorter timeout to prevent stuck states
+    loadingTimeout = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 3000); // Reduced to 3 seconds
 
     return () => {
       isMounted = false;
       clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Remove loading dependency
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

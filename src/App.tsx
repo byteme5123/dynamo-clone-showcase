@@ -37,14 +37,20 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
       gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
-      retry: 1, // Reduce retry attempts for faster failures
-      retryDelay: 1000, // Shorter retry delay
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors or if we've already retried once
+        if (error?.status >= 400 && error?.status < 500) return false;
+        return failureCount < 1;
+      },
+      retryDelay: 500, // Very short retry delay
       refetchOnWindowFocus: false, // Prevent unnecessary refetches
       refetchOnReconnect: true, // Only refetch on reconnect
+      refetchOnMount: false, // Don't refetch on mount if data exists
       networkMode: 'online', // Only run queries when online
     },
     mutations: {
       retry: 1,
+      retryDelay: 500,
       networkMode: 'online',
     },
   },

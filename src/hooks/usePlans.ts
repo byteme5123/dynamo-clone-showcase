@@ -67,10 +67,11 @@ export const usePlans = () => {
     queryFn: () => fetchPlans(true),
     staleTime: 10 * 60 * 1000, // 10 minutes - longer cache for better performance
     gcTime: 15 * 60 * 1000, // 15 minutes - keep in memory longer
-    retry: 1, // Faster failure recovery
-    retryDelay: 500, // Shorter retry delay
+    retry: false, // Disable retry for faster loading
     refetchOnMount: false, // Don't refetch on mount if data exists
     refetchOnWindowFocus: false, // Don't refetch on focus
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false,
   });
 };
 
@@ -80,10 +81,10 @@ export const useAdminPlans = () => {
     queryFn: () => fetchPlans(false),
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes
-    retry: 1,
-    retryDelay: 500,
+    retry: false, // Disable retry for faster loading
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    refetchInterval: false, // Disable automatic refetching
   });
 };
 
