@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import PromoBanner from "@/components/PromoBanner";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import FigmaFooter from "@/components/FigmaFooter";
 import MobileBottomBar from "@/components/MobileBottomBar";
 import { useWirelessPBXContent } from "@/hooks/useWirelessPBXContent";
 import { useWirelessPBXHeroSlides } from "@/hooks/useHeroSlides";
@@ -103,17 +103,25 @@ const WirelessPBX = () => {
               </p>
             </div>
             <div className="relative">
-              <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-center text-white">
-                <div className="text-6xl font-bold mb-4">
-                  {introContent?.features?.highlight?.split(' ')[0] || "5G"}
+              {introContent?.image_url ? (
+                <img 
+                  src={introContent.image_url} 
+                  alt="Revolutionary Mobile Communication"
+                  className="rounded-2xl shadow-2xl w-full"
+                />
+              ) : (
+                <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-8 text-center text-white">
+                  <div className="text-6xl font-bold mb-4">
+                    {introContent?.features?.highlight?.split(' ')[0] || "5G"}
+                  </div>
+                  <div className="text-xl font-semibold mb-2">
+                    {introContent?.features?.highlight || "5G Powered Network"}
+                  </div>
+                  <div className="text-sm opacity-90">
+                    {introContent?.features?.description || "Ultra-fast, ultra-reliable communications"}
+                  </div>
                 </div>
-                <div className="text-xl font-semibold mb-2">
-                  {introContent?.features?.highlight || "5G Powered Network"}
-                </div>
-                <div className="text-sm opacity-90">
-                  {introContent?.features?.description || "Ultra-fast, ultra-reliable communications"}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -125,7 +133,7 @@ const WirelessPBX = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <img 
-                src="/lovable-uploads/f4415327-5a77-424f-b801-fa611a192866.png" 
+                src={featuresContent?.image_url || "/lovable-uploads/f4415327-5a77-424f-b801-fa611a192866.png"} 
                 alt="Professional video calling"
                 className="rounded-2xl shadow-2xl w-full"
               />
@@ -347,7 +355,7 @@ const WirelessPBX = () => {
         </div>
       </section>
       
-      <Footer />
+      <FigmaFooter />
       <MobileBottomBar />
       
       {/* Padding for mobile bottom bar */}
