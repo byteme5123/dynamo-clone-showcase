@@ -1,6 +1,9 @@
 import { Button } from '@/components/ui/button';
+import { useHomepageSettings } from '@/hooks/useHomepageSettings';
+import { Link } from 'react-router-dom';
 
 const FigmaCoverageSection = () => {
+  const settings = useHomepageSettings();
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
@@ -9,32 +12,45 @@ const FigmaCoverageSection = () => {
           {/* Left Column - Text Content */}
           <div className="space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-black">
-              America's Largest 5G networks.
+              {settings?.coverageTitle || "America's Largest 5G networks."}
             </h2>
             
             <p className="text-gray-600 text-base leading-relaxed">
-              Experience the power of our nationwide 5G network. With coverage in 99% of the United States, 
-              you'll stay connected whether you're in the city or exploring the great outdoors.
+              {settings?.coverageDescription || 'Experience the power of our nationwide 5G network. With coverage in 99% of the United States, you\'ll stay connected whether you\'re in the city or exploring the great outdoors.'}
             </p>
             
             {/* Statistics Cards */}
             <div className="space-y-4">
               <div className="bg-gray-50 p-6 rounded-lg">
-                <div className="text-4xl font-bold text-primary mb-2">98%</div>
-                <div className="text-gray-900 font-medium mb-1">Population Coverage</div>
-                <div className="text-gray-600 text-sm">Reliable signal where you live and work</div>
+                <div className="text-4xl font-bold text-primary mb-2">
+                  {settings?.coverageStat1Number || '98%'}
+                </div>
+                <div className="text-gray-900 font-medium mb-1">
+                  {settings?.coverageStat1Title || 'Population Coverage'}
+                </div>
+                <div className="text-gray-600 text-sm">
+                  {settings?.coverageStat1Desc || 'Reliable signal where you live and work'}
+                </div>
               </div>
               
               <div className="bg-gray-50 p-6 rounded-lg">
-                <div className="text-4xl font-bold text-primary mb-2">300+</div>
-                <div className="text-gray-900 font-medium mb-1">Cities</div>
-                <div className="text-gray-600 text-sm">5G available in major metropolitan areas</div>
+                <div className="text-4xl font-bold text-primary mb-2">
+                  {settings?.coverageStat2Number || '300+'}
+                </div>
+                <div className="text-gray-900 font-medium mb-1">
+                  {settings?.coverageStat2Title || 'Cities'}
+                </div>
+                <div className="text-gray-600 text-sm">
+                  {settings?.coverageStat2Desc || '5G available in major metropolitan areas'}
+                </div>
               </div>
             </div>
             
             {/* CTA Button */}
-            <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium">
-              Check Network Coverage
+            <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium" asChild>
+              <Link to={settings?.coverageButtonUrl || '/coverage'}>
+                {settings?.coverageButtonText || 'Check Network Coverage'}
+              </Link>
             </Button>
           </div>
 

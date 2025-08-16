@@ -10,12 +10,14 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Link } from 'react-router-dom';
+import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
+  const settings = useHomepageSettings();
 
   const navItems = [
     { name: 'Home', href: '/' },
@@ -33,7 +35,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/">
               <img 
-                src={logoImage} 
+                src={settings?.navbarLogo || logoImage} 
                 alt="Dynamo Wireless" 
                 className="h-10 w-auto object-contain"
               />
@@ -86,7 +88,9 @@ const Navbar = () => {
               className="bg-primary text-white font-bold rounded-lg px-6 py-2 hover:bg-primary/90"
               asChild
             >
-              <Link to="/activate">Activate SIM</Link>
+              <Link to={settings?.navbarActivateButtonUrl || '/activate'}>
+                {settings?.navbarActivateButtonText || 'Activate SIM'}
+              </Link>
             </Button>
           </div>
 
@@ -134,7 +138,9 @@ const Navbar = () => {
                     className="w-full bg-primary text-white font-bold" 
                     asChild
                   >
-                    <Link to="/activate">Activate SIM</Link>
+                    <Link to={settings?.navbarActivateButtonUrl || '/activate'}>
+                      {settings?.navbarActivateButtonText || 'Activate SIM'}
+                    </Link>
                   </Button>
                 </div>
               </div>

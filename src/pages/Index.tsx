@@ -4,6 +4,8 @@ import FigmaHeroSection from '@/components/FigmaHeroSection';
 import FigmaFeaturesSection from '@/components/FigmaFeaturesSection';
 import FigmaPlansSection from '@/components/FigmaPlansSection';
 import FigmaCoverageSection from '@/components/FigmaCoverageSection';
+import TestimonialsSection from '@/components/TestimonialsSection';
+import FAQsSection from '@/components/FAQsSection';
 import FigmaCTASection from '@/components/FigmaCTASection';
 import FigmaFooter from '@/components/FigmaFooter';
 import MobileBottomBar from '@/components/MobileBottomBar';
@@ -17,6 +19,8 @@ const Index = () => {
       <FigmaFeaturesSection />
       <FigmaPlansSection />
       <FigmaCoverageSection />
+      <TestimonialsSection />
+      <FAQsSection />
       <FigmaCTASection />
       <FigmaFooter />
       <MobileBottomBar />

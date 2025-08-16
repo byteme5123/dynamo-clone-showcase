@@ -1,26 +1,29 @@
 import { Smartphone, Zap, MessageCircle, Globe, Wifi } from 'lucide-react';
+import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 
 const FigmaFeaturesSection = () => {
+  const settings = useHomepageSettings();
+
   const features = [
     {
       icon: Smartphone,
-      title: "Access to America's largest 5G network"
+      title: settings?.feature1Title || "Access to America's largest 5G network"
     },
     {
       icon: Zap,
-      title: "5G High speed data"
+      title: settings?.feature2Title || "5G High speed data"
     },
     {
       icon: MessageCircle,
-      title: "Unlimited talk & text"
+      title: settings?.feature3Title || "Unlimited talk & text"
     },
     {
       icon: Globe,
-      title: "Unlimited calling to 100+ destinations"
+      title: settings?.feature4Title || "Unlimited calling to 100+ destinations"
     },
     {
       icon: Wifi,
-      title: "Free mobile hotspot"
+      title: settings?.feature5Title || "Free mobile hotspot"
     }
   ];
 
@@ -30,7 +33,7 @@ const FigmaFeaturesSection = () => {
         {/* Section Title */}
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
-            Our affordable wireless plans include:
+            {settings?.featuresTitle || 'Our affordable wireless plans include:'}
           </h2>
         </div>
 

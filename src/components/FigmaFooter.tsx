@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 import dynamoLogo from '@/assets/dynamo-wireless-logo.png';
 
 const FigmaFooter = () => {
+  const settings = useHomepageSettings();
+
   const planLinks = [
     { name: 'Prepaid Plans', href: '/plans' },
     { name: 'Business Plans', href: '/plans' },
@@ -18,10 +21,10 @@ const FigmaFooter = () => {
   ];
 
   const socialLinks = [
-    { name: 'Facebook', icon: Facebook, href: '#', hoverColor: 'hover:text-blue-600' },
-    { name: 'Twitter', icon: Twitter, href: '#', hoverColor: 'hover:text-blue-400' },
-    { name: 'Instagram', icon: Instagram, href: '#', hoverColor: 'hover:text-pink-600' },
-    { name: 'LinkedIn', icon: Linkedin, href: '#', hoverColor: 'hover:text-blue-700' }
+    { name: 'Facebook', icon: Facebook, href: settings?.footerFacebookUrl || '#', hoverColor: 'hover:text-blue-600' },
+    { name: 'Twitter', icon: Twitter, href: settings?.footerTwitterUrl || '#', hoverColor: 'hover:text-blue-400' },
+    { name: 'Instagram', icon: Instagram, href: settings?.footerInstagramUrl || '#', hoverColor: 'hover:text-pink-600' },
+    { name: 'LinkedIn', icon: Linkedin, href: settings?.footerLinkedinUrl || '#', hoverColor: 'hover:text-blue-700' }
   ];
 
   return (
@@ -33,20 +36,19 @@ const FigmaFooter = () => {
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
               <img
-                src={dynamoLogo}
+                src={settings?.footerLogo || dynamoLogo}
                 alt="Dynamo Wireless"
                 className="h-10 w-auto"
               />
             </Link>
             <p className="text-gray-600 text-sm leading-relaxed mb-6">
-              America's most reliable wireless network with nationwide 5G coverage, 
-              unlimited plans, and exceptional customer service.
+              {settings?.footerDescription || 'America\'s most reliable wireless network with nationwide 5G coverage, unlimited plans, and exceptional customer service.'}
             </p>
             
             {/* Contact Info */}
             <div className="text-sm text-gray-600 space-y-1">
-              <p>Call: (1-800) DYNAMO</p>
-              <p>Email: support@dynamowireless.com</p>
+              <p>Call: {settings?.footerPhone || '(1-800) DYNAMO'}</p>
+              <p>Email: {settings?.footerEmail || 'support@dynamowireless.com'}</p>
             </div>
           </div>
 

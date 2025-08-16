@@ -1,19 +1,22 @@
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 
 const FigmaCTASection = () => {
+  const settings = useHomepageSettings();
+
   const keyPoints = [
     {
-      number: "2 min",
-      label: "Quick Setup"
+      number: settings?.ctaPoint1Number || "2 min",
+      label: settings?.ctaPoint1Label || "Quick Setup"
     },
     {
-      number: "$0",
-      label: "Activation Fee"
+      number: settings?.ctaPoint2Number || "$0",
+      label: settings?.ctaPoint2Label || "Activation Fee"
     },
     {
-      number: "24/7",
-      label: "Support"
+      number: settings?.ctaPoint3Number || "24/7",
+      label: settings?.ctaPoint3Label || "Support"
     }
   ];
 
@@ -23,13 +26,12 @@ const FigmaCTASection = () => {
         
         {/* Main Title */}
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-          Ready to Switch to Dynamo Wireless?
+          {settings?.ctaTitle || 'Ready to Switch to Dynamo Wireless?'}
         </h2>
         
         {/* Subtitle */}
         <p className="text-white text-lg mb-12 max-w-2xl mx-auto leading-relaxed">
-          Join thousands of satisfied customers who've made the switch to better coverage, 
-          more data, and unbeatable prices.
+          {settings?.ctaSubtitle || 'Join thousands of satisfied customers who\'ve made the switch to better coverage, more data, and unbeatable prices.'}
         </p>
         
         {/* Key Points Row */}
@@ -54,16 +56,16 @@ const FigmaCTASection = () => {
             className="bg-black text-white hover:bg-gray-800 rounded-xl px-8 py-4 text-lg font-medium"
             asChild
           >
-            <Link to="/activate">
-              Make a Switch
+            <Link to={settings?.ctaPrimaryButtonUrl || '/activate'}>
+              {settings?.ctaPrimaryButtonText || 'Make a Switch'}
             </Link>
           </Button>
           
           <Link 
-            to="/plans" 
+            to={settings?.ctaSecondaryButtonUrl || '/plans'}
             className="text-white hover:underline text-lg font-medium"
           >
-            Learn about offers
+            {settings?.ctaSecondaryButtonText || 'Learn about offers'}
           </Link>
         </div>
       </div>
