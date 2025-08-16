@@ -14,17 +14,32 @@ import {
   Languages,
   Camera,
   Search,
-  Smartphone
+  Smartphone,
+  Home,
+  Navigation,
+  Palette
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { 
+    name: 'Homepage Management', 
+    icon: Home,
+    children: [
+      { name: 'Notification Bar', href: '/admin/homepage/notification', icon: MessageSquare },
+      { name: 'Navigation & Branding', href: '/admin/homepage/branding', icon: Navigation },
+      { name: 'Hero Slider', href: '/admin/slider', icon: Images },
+      { name: 'Features Section', href: '/admin/homepage/features', icon: Star },
+      { name: 'Coverage Section', href: '/admin/homepage/coverage', icon: Smartphone },
+      { name: 'CTA Section', href: '/admin/homepage/cta', icon: MessageSquare },
+      { name: 'Footer Settings', href: '/admin/homepage/footer', icon: FileText },
+    ]
+  },
+  { 
     name: 'Content Management', 
     icon: FileText,
     children: [
       { name: 'Plans', href: '/admin/plans', icon: Package },
-      { name: 'Hero Slider', href: '/admin/slider', icon: Images },
       { name: 'Wireless PBX', href: '/admin/wireless-pbx', icon: Smartphone },
       { name: 'Testimonials', href: '/admin/testimonials', icon: Star },
       { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },

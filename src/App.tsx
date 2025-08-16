@@ -30,6 +30,12 @@ import AdminSeo from "./pages/AdminSeo";
 import AdminSettings from "./pages/AdminSettings";
 import AdminUsers from "./pages/AdminUsers";
 import AdminWirelessPBX from "./pages/AdminWirelessPBX";
+import AdminHomepageNotification from "./pages/AdminHomepageNotification";
+import AdminHomepageBranding from "./pages/AdminHomepageBranding";
+import AdminHomepageFeatures from "./pages/AdminHomepageFeatures";
+import AdminHomepageCoverage from "./pages/AdminHomepageCoverage";
+import AdminHomepageCTA from "./pages/AdminHomepageCTA";
+import AdminHomepageFooter from "./pages/AdminHomepageFooter";
 
 // Optimized QueryClient for better performance and caching
 const queryClient = new QueryClient({
@@ -93,6 +99,12 @@ const App = () => (
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="slider" element={<AdminHeroSlides />} />
+                <Route path="homepage/notification" element={<AdminHomepageNotification />} />
+                <Route path="homepage/branding" element={<AdminHomepageBranding />} />
+                <Route path="homepage/features" element={<AdminHomepageFeatures />} />
+                <Route path="homepage/coverage" element={<AdminHomepageCoverage />} />
+                <Route path="homepage/cta" element={<AdminHomepageCTA />} />
+                <Route path="homepage/footer" element={<AdminHomepageFooter />} />
               </Route>
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

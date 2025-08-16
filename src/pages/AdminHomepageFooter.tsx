@@ -1,0 +1,299 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useSiteSettings, useUpdateSiteSetting, useCreateSiteSetting } from '@/hooks/useSiteSettings';
+import { toast } from '@/hooks/use-toast';
+import { Loader2, Save, Eye } from 'lucide-react';
+
+const AdminHomepageFooter = () => {
+  const { data: settings, isLoading } = useSiteSettings();
+  const updateSetting = useUpdateSiteSetting();
+  const createSetting = useCreateSiteSetting();
+  
+  const [formData, setFormData] = useState({
+    footerDescription: '',
+    footerEmail: '',
+    footerPhone: '',
+    footerAddress: '',
+    footerSocialFacebook: '',
+    footerSocialTwitter: '',
+    footerSocialInstagram: '',
+    footerSocialLinkedin: '',
+    footerCopyright: ''
+  });
+
+  React.useEffect(() => {
+    if (settings) {
+      const settingsMap = settings.reduce((acc, setting) => {
+        acc[setting.key] = setting.value || '';
+        return acc;
+      }, {} as Record<string, string>);
+
+      setFormData({
+        footerDescription: settingsMap.footerDescription || 'Dynamo Wireless provides reliable and affordable wireless services across Central America. Stay connected with our comprehensive coverage and exceptional customer service.',
+        footerEmail: settingsMap.footerEmail || 'info@dynamowireless.com',
+        footerPhone: settingsMap.footerPhone || '+1 (555) 123-4567',
+        footerAddress: settingsMap.footerAddress || 'Guatemala City, Guatemala',
+        footerSocialFacebook: settingsMap.footerSocialFacebook || 'https://facebook.com/dynamowireless',
+        footerSocialTwitter: settingsMap.footerSocialTwitter || 'https://twitter.com/dynamowireless',
+        footerSocialInstagram: settingsMap.footerSocialInstagram || 'https://instagram.com/dynamowireless',
+        footerSocialLinkedin: settingsMap.footerSocialLinkedin || 'https://linkedin.com/company/dynamowireless',
+        footerCopyright: settingsMap.footerCopyright || '© 2024 Dynamo Wireless. All rights reserved.'
+      });
+    }
+  }, [settings]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      for (const [key, value] of Object.entries(formData)) {
+        const existingSetting = settings?.find(s => s.key === key);
+        
+        if (existingSetting) {
+          await updateSetting.mutateAsync({
+            id: existingSetting.id,
+            value
+          });
+        } else {
+          await createSetting.mutateAsync({
+            key,
+            value,
+            type: 'text',
+            category: 'footer',
+            description: `Footer ${key} setting`
+          });
+        }
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Footer settings updated successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update footer settings',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Footer Settings</h1>
+          <p className="text-muted-foreground">
+            Manage footer content, contact information, and social media links
+          </p>
+        </div>
+      </div>
+
+      {/* Preview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            Live Preview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-gray-900 text-white p-8 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="md:col-span-2">
+                <h3 className="font-bold text-lg mb-4">Dynamo Wireless</h3>
+                <p className="text-gray-300 text-sm mb-4">{formData.footerDescription}</p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-4">Contact Info</h4>
+                <div className="space-y-2 text-sm text-gray-300">
+                  <p>{formData.footerEmail}</p>
+                  <p>{formData.footerPhone}</p>
+                  <p>{formData.footerAddress}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-4">Follow Us</h4>
+                <div className="flex space-x-4">
+                  <div className="w-8 h-8 bg-blue-600 rounded"></div>
+                  <div className="w-8 h-8 bg-blue-400 rounded"></div>
+                  <div className="w-8 h-8 bg-pink-600 rounded"></div>
+                  <div className="w-8 h-8 bg-blue-700 rounded"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+              {formData.footerCopyright}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Company Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Company Information</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure your company description and basic information
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="footerDescription">Company Description</Label>
+            <Textarea
+              id="footerDescription"
+              value={formData.footerDescription}
+              onChange={(e) => handleInputChange('footerDescription', e.target.value)}
+              placeholder="Dynamo Wireless provides reliable and affordable wireless services..."
+              className="min-h-[100px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Brief description of your company that appears in the footer
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="footerCopyright">Copyright Text</Label>
+            <Input
+              id="footerCopyright"
+              value={formData.footerCopyright}
+              onChange={(e) => handleInputChange('footerCopyright', e.target.value)}
+              placeholder="© 2024 Dynamo Wireless. All rights reserved."
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Contact Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact Information</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure the contact details displayed in the footer
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="footerEmail">Email Address</Label>
+              <Input
+                id="footerEmail"
+                type="email"
+                value={formData.footerEmail}
+                onChange={(e) => handleInputChange('footerEmail', e.target.value)}
+                placeholder="info@dynamowireless.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="footerPhone">Phone Number</Label>
+              <Input
+                id="footerPhone"
+                value={formData.footerPhone}
+                onChange={(e) => handleInputChange('footerPhone', e.target.value)}
+                placeholder="+1 (555) 123-4567"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="footerAddress">Business Address</Label>
+            <Input
+              id="footerAddress"
+              value={formData.footerAddress}
+              onChange={(e) => handleInputChange('footerAddress', e.target.value)}
+              placeholder="Guatemala City, Guatemala"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Social Media Links */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Social Media Links</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure your social media presence
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="footerSocialFacebook">Facebook URL</Label>
+              <Input
+                id="footerSocialFacebook"
+                value={formData.footerSocialFacebook}
+                onChange={(e) => handleInputChange('footerSocialFacebook', e.target.value)}
+                placeholder="https://facebook.com/dynamowireless"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="footerSocialTwitter">Twitter URL</Label>
+              <Input
+                id="footerSocialTwitter"
+                value={formData.footerSocialTwitter}
+                onChange={(e) => handleInputChange('footerSocialTwitter', e.target.value)}
+                placeholder="https://twitter.com/dynamowireless"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="footerSocialInstagram">Instagram URL</Label>
+              <Input
+                id="footerSocialInstagram"
+                value={formData.footerSocialInstagram}
+                onChange={(e) => handleInputChange('footerSocialInstagram', e.target.value)}
+                placeholder="https://instagram.com/dynamowireless"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="footerSocialLinkedin">LinkedIn URL</Label>
+              <Input
+                id="footerSocialLinkedin"
+                value={formData.footerSocialLinkedin}
+                onChange={(e) => handleInputChange('footerSocialLinkedin', e.target.value)}
+                placeholder="https://linkedin.com/company/dynamowireless"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button 
+              onClick={handleSave}
+              disabled={updateSetting.isPending || createSetting.isPending}
+              className="flex items-center gap-2"
+            >
+              {(updateSetting.isPending || createSetting.isPending) ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save Changes
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AdminHomepageFooter;
