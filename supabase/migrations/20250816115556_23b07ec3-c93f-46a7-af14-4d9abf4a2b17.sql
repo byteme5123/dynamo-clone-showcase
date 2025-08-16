@@ -1,0 +1,21 @@
+-- Insert Contact Us page settings into site_settings table
+INSERT INTO site_settings (key, value, type, category, description) VALUES
+  ('contact-hero-title', 'Get in Touch', 'text', 'contact', 'Contact page hero section title'),
+  ('contact-hero-subtitle', 'We''re here to help you get connected and stay connected with reliable wireless solutions.', 'textarea', 'contact', 'Contact page hero section subtitle'),
+  ('contact-phone-number', '+1 (877) 468-7989', 'text', 'contact', 'Contact phone number'),
+  ('contact-phone-hours', 'Mon-Fri 8AM-6PM PST', 'text', 'contact', 'Business hours for phone support'),
+  ('contact-email-address', 'activations@dynamowireless.com', 'email', 'contact', 'Contact email address'),
+  ('contact-email-response-time', 'We typically respond within 24 hours', 'text', 'contact', 'Email response time description'),
+  ('contact-chat-description', 'Get instant help with our live chat support', 'text', 'contact', 'Live chat help description'),
+  ('contact-office-title', 'Visit Our Office', 'text', 'contact', 'Office location section title'),
+  ('contact-office-address', '18000 Studebaker Rd, Suite 700\nCerritos, CA 90703', 'textarea', 'contact', 'Office address'),
+  ('contact-office-map-url', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3307.7891234567!2d-118.08123456789!3d33.8234567890!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z18000+Studebaker+Rd,+Suite+700,+Cerritos,+CA+90703!5e0!3m2!1sen!2sus!4v1234567890123', 'url', 'contact', 'Google Maps embed URL'),
+  ('contact-form-title', 'Send us a Message', 'text', 'contact', 'Contact form section title'),
+  ('contact-form-subtitle', 'Fill out the form below and we''ll get back to you as soon as possible', 'text', 'contact', 'Contact form section subtitle'),
+  ('contact-self-help-title', 'Self-Service Options', 'text', 'contact', 'Self help section title'),
+  ('contact-self-help-subtitle', 'Find answers quickly with our self-service resources', 'text', 'contact', 'Self help section subtitle'),
+  ('contact-friendly-title', 'We''re Here to Help!', 'text', 'contact', 'Friendly message title'),
+  ('contact-friendly-subtitle', 'Our team is dedicated to providing you with the best wireless experience possible.', 'text', 'contact', 'Friendly message subtitle'),
+  ('contact-help-center-url', '/help', 'url', 'contact', 'Help center page URL'),
+  ('contact-activation-guide-url', '/activate', 'url', 'contact', 'Activation guide page URL'),
+  ('contact-faq-url', '#faqs', 'url', 'contact', 'FAQ page URL');

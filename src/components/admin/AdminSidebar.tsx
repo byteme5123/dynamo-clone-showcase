@@ -36,6 +36,7 @@ const navigation = [
     ]
   },
   { name: 'About Us Management', href: '/admin/about', icon: FileText },
+  { name: 'Contact Us Management', href: '/admin/contact', icon: MessageSquare },
   { 
     name: 'Content Management', 
     icon: FileText,
