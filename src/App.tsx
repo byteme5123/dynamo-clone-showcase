@@ -36,6 +36,7 @@ import AdminHomepageFeatures from "./pages/AdminHomepageFeatures";
 import AdminHomepageCoverage from "./pages/AdminHomepageCoverage";
 import AdminHomepageCTA from "./pages/AdminHomepageCTA";
 import AdminHomepageFooter from "./pages/AdminHomepageFooter";
+import AdminAbout from "./pages/AdminAbout";
 
 // Optimized QueryClient for better performance and caching
 const queryClient = new QueryClient({
@@ -105,6 +106,7 @@ const App = () => (
                 <Route path="homepage/coverage" element={<AdminHomepageCoverage />} />
                 <Route path="homepage/cta" element={<AdminHomepageCTA />} />
                 <Route path="homepage/footer" element={<AdminHomepageFooter />} />
+                <Route path="about" element={<AdminAbout />} />
               </Route>
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

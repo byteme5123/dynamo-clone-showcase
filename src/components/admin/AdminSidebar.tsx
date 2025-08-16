@@ -35,6 +35,7 @@ const navigation = [
       { name: 'Footer Settings', href: '/admin/homepage/footer', icon: FileText },
     ]
   },
+  { name: 'About Us Management', href: '/admin/about', icon: FileText },
   { 
     name: 'Content Management', 
     icon: FileText,
