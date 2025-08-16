@@ -14,15 +14,15 @@ const AdminHomepageFooter = () => {
   const createSetting = useCreateSiteSetting();
   
   const [formData, setFormData] = useState({
-    footerDescription: '',
-    footerEmail: '',
-    footerPhone: '',
-    footerAddress: '',
-    footerSocialFacebook: '',
-    footerSocialTwitter: '',
-    footerSocialInstagram: '',
-    footerSocialLinkedin: '',
-    footerCopyright: ''
+    footer_description: '',
+    footer_email: '',
+    footer_phone: '',
+    footer_address: '',
+    facebook_url: '',
+    twitter_url: '',
+    instagram_url: '',
+    linkedin_url: '',
+    footer_copyright: ''
   });
 
   React.useEffect(() => {
@@ -33,15 +33,15 @@ const AdminHomepageFooter = () => {
       }, {} as Record<string, string>);
 
       setFormData({
-        footerDescription: settingsMap.footerDescription || 'Dynamo Wireless provides reliable and affordable wireless services across Central America. Stay connected with our comprehensive coverage and exceptional customer service.',
-        footerEmail: settingsMap.footerEmail || 'info@dynamowireless.com',
-        footerPhone: settingsMap.footerPhone || '+1 (555) 123-4567',
-        footerAddress: settingsMap.footerAddress || 'Guatemala City, Guatemala',
-        footerSocialFacebook: settingsMap.footerSocialFacebook || 'https://facebook.com/dynamowireless',
-        footerSocialTwitter: settingsMap.footerSocialTwitter || 'https://twitter.com/dynamowireless',
-        footerSocialInstagram: settingsMap.footerSocialInstagram || 'https://instagram.com/dynamowireless',
-        footerSocialLinkedin: settingsMap.footerSocialLinkedin || 'https://linkedin.com/company/dynamowireless',
-        footerCopyright: settingsMap.footerCopyright || '© 2024 Dynamo Wireless. All rights reserved.'
+        footer_description: settingsMap.footer_description || 'Dynamo Wireless provides reliable and affordable wireless services across Central America. Stay connected with our comprehensive coverage and exceptional customer service.',
+        footer_email: settingsMap.footer_email || 'info@dynamowireless.com',
+        footer_phone: settingsMap.footer_phone || '+1 (555) 123-4567',
+        footer_address: settingsMap.footer_address || 'Guatemala City, Guatemala',
+        facebook_url: settingsMap.facebook_url || 'https://facebook.com/dynamowireless',
+        twitter_url: settingsMap.twitter_url || 'https://twitter.com/dynamowireless',
+        instagram_url: settingsMap.instagram_url || 'https://instagram.com/dynamowireless',
+        linkedin_url: settingsMap.linkedin_url || 'https://linkedin.com/company/dynamowireless',
+        footer_copyright: settingsMap.footer_copyright || '© 2024 Dynamo Wireless. All rights reserved.'
       });
     }
   }, [settings]);
@@ -116,15 +116,15 @@ const AdminHomepageFooter = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="md:col-span-2">
                 <h3 className="font-bold text-lg mb-4">Dynamo Wireless</h3>
-                <p className="text-gray-300 text-sm mb-4">{formData.footerDescription}</p>
+                <p className="text-gray-300 text-sm mb-4">{formData.footer_description}</p>
               </div>
               
               <div>
                 <h4 className="font-semibold mb-4">Contact Info</h4>
                 <div className="space-y-2 text-sm text-gray-300">
-                  <p>{formData.footerEmail}</p>
-                  <p>{formData.footerPhone}</p>
-                  <p>{formData.footerAddress}</p>
+                  <p>{formData.footer_email}</p>
+                  <p>{formData.footer_phone}</p>
+                  <p>{formData.footer_address}</p>
                 </div>
               </div>
               
@@ -140,7 +140,7 @@ const AdminHomepageFooter = () => {
             </div>
             
             <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-              {formData.footerCopyright}
+              {formData.footer_copyright}
             </div>
           </div>
         </CardContent>
@@ -159,8 +159,8 @@ const AdminHomepageFooter = () => {
             <Label htmlFor="footerDescription">Company Description</Label>
             <Textarea
               id="footerDescription"
-              value={formData.footerDescription}
-              onChange={(e) => handleInputChange('footerDescription', e.target.value)}
+              value={formData.footer_description}
+              onChange={(e) => handleInputChange('footer_description', e.target.value)}
               placeholder="Dynamo Wireless provides reliable and affordable wireless services..."
               className="min-h-[100px]"
             />
@@ -173,8 +173,8 @@ const AdminHomepageFooter = () => {
             <Label htmlFor="footerCopyright">Copyright Text</Label>
             <Input
               id="footerCopyright"
-              value={formData.footerCopyright}
-              onChange={(e) => handleInputChange('footerCopyright', e.target.value)}
+              value={formData.footer_copyright}
+              onChange={(e) => handleInputChange('footer_copyright', e.target.value)}
               placeholder="© 2024 Dynamo Wireless. All rights reserved."
             />
           </div>
@@ -196,8 +196,8 @@ const AdminHomepageFooter = () => {
               <Input
                 id="footerEmail"
                 type="email"
-                value={formData.footerEmail}
-                onChange={(e) => handleInputChange('footerEmail', e.target.value)}
+                value={formData.footer_email}
+                onChange={(e) => handleInputChange('footer_email', e.target.value)}
                 placeholder="info@dynamowireless.com"
               />
             </div>
@@ -206,8 +206,8 @@ const AdminHomepageFooter = () => {
               <Label htmlFor="footerPhone">Phone Number</Label>
               <Input
                 id="footerPhone"
-                value={formData.footerPhone}
-                onChange={(e) => handleInputChange('footerPhone', e.target.value)}
+                value={formData.footer_phone}
+                onChange={(e) => handleInputChange('footer_phone', e.target.value)}
                 placeholder="+1 (555) 123-4567"
               />
             </div>
@@ -217,8 +217,8 @@ const AdminHomepageFooter = () => {
             <Label htmlFor="footerAddress">Business Address</Label>
             <Input
               id="footerAddress"
-              value={formData.footerAddress}
-              onChange={(e) => handleInputChange('footerAddress', e.target.value)}
+              value={formData.footer_address}
+              onChange={(e) => handleInputChange('footer_address', e.target.value)}
               placeholder="Guatemala City, Guatemala"
             />
           </div>
@@ -239,8 +239,8 @@ const AdminHomepageFooter = () => {
               <Label htmlFor="footerSocialFacebook">Facebook URL</Label>
               <Input
                 id="footerSocialFacebook"
-                value={formData.footerSocialFacebook}
-                onChange={(e) => handleInputChange('footerSocialFacebook', e.target.value)}
+                value={formData.facebook_url}
+                onChange={(e) => handleInputChange('facebook_url', e.target.value)}
                 placeholder="https://facebook.com/dynamowireless"
               />
             </div>
@@ -249,8 +249,8 @@ const AdminHomepageFooter = () => {
               <Label htmlFor="footerSocialTwitter">Twitter URL</Label>
               <Input
                 id="footerSocialTwitter"
-                value={formData.footerSocialTwitter}
-                onChange={(e) => handleInputChange('footerSocialTwitter', e.target.value)}
+                value={formData.twitter_url}
+                onChange={(e) => handleInputChange('twitter_url', e.target.value)}
                 placeholder="https://twitter.com/dynamowireless"
               />
             </div>
@@ -259,8 +259,8 @@ const AdminHomepageFooter = () => {
               <Label htmlFor="footerSocialInstagram">Instagram URL</Label>
               <Input
                 id="footerSocialInstagram"
-                value={formData.footerSocialInstagram}
-                onChange={(e) => handleInputChange('footerSocialInstagram', e.target.value)}
+                value={formData.instagram_url}
+                onChange={(e) => handleInputChange('instagram_url', e.target.value)}
                 placeholder="https://instagram.com/dynamowireless"
               />
             </div>
@@ -269,8 +269,8 @@ const AdminHomepageFooter = () => {
               <Label htmlFor="footerSocialLinkedin">LinkedIn URL</Label>
               <Input
                 id="footerSocialLinkedin"
-                value={formData.footerSocialLinkedin}
-                onChange={(e) => handleInputChange('footerSocialLinkedin', e.target.value)}
+                value={formData.linkedin_url}
+                onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
                 placeholder="https://linkedin.com/company/dynamowireless"
               />
             </div>

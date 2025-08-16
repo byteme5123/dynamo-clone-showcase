@@ -14,11 +14,11 @@ const AdminHomepageNotification = () => {
   const createSetting = useCreateSiteSetting();
   
   const [formData, setFormData] = useState({
-    notificationText: '',
-    notificationAccountText: '',
-    notificationAccountLink: '',
-    notificationActivateText: '',
-    notificationActivateLink: ''
+    notification_bar_text: '',
+    notification_bar_account_text: '',
+    notification_bar_account_link: '',
+    notification_bar_activate_text: '',
+    notification_bar_activate_link: ''
   });
 
   React.useEffect(() => {
@@ -29,11 +29,11 @@ const AdminHomepageNotification = () => {
       }, {} as Record<string, string>);
 
       setFormData({
-        notificationText: settingsMap.notificationText || 'Get up to 25% off when you purchase a 3 month plan!',
-        notificationAccountText: settingsMap.notificationAccountText || 'My Account',
-        notificationAccountLink: settingsMap.notificationAccountLink || '/account',
-        notificationActivateText: settingsMap.notificationActivateText || 'Activate',
-        notificationActivateLink: settingsMap.notificationActivateLink || '/activate'
+        notification_bar_text: settingsMap.notification_bar_text || 'Get up to 25% off when you purchase a 3 month plan!',
+        notification_bar_account_text: settingsMap.notification_bar_account_text || 'My Account',
+        notification_bar_account_link: settingsMap.notification_bar_account_link || '/account',
+        notification_bar_activate_text: settingsMap.notification_bar_activate_text || 'Activate',
+        notification_bar_activate_link: settingsMap.notification_bar_activate_link || '/activate'
       });
     }
   }, [settings]);
@@ -106,14 +106,14 @@ const AdminHomepageNotification = () => {
         <CardContent>
           <div className="notification-bar h-10 px-4 flex items-center justify-between text-sm bg-primary text-primary-foreground rounded">
             <div className="text-white">
-              {formData.notificationText}
+              {formData.notification_bar_text}
             </div>
             <div className="hidden md:flex space-x-4">
               <span className="text-white hover:underline cursor-pointer">
-                {formData.notificationAccountText}
+                {formData.notification_bar_account_text}
               </span>
               <span className="text-white hover:underline cursor-pointer">
-                {formData.notificationActivateText}
+                {formData.notification_bar_activate_text}
               </span>
             </div>
           </div>
@@ -133,8 +133,8 @@ const AdminHomepageNotification = () => {
             <Label htmlFor="notificationText">Notification Message</Label>
             <Textarea
               id="notificationText"
-              value={formData.notificationText}
-              onChange={(e) => handleInputChange('notificationText', e.target.value)}
+              value={formData.notification_bar_text}
+              onChange={(e) => handleInputChange('notification_bar_text', e.target.value)}
               placeholder="Enter the main notification message"
               className="min-h-[60px]"
             />
@@ -148,8 +148,8 @@ const AdminHomepageNotification = () => {
               <Label htmlFor="notificationAccountText">Account Link Text</Label>
               <Input
                 id="notificationAccountText"
-                value={formData.notificationAccountText}
-                onChange={(e) => handleInputChange('notificationAccountText', e.target.value)}
+                value={formData.notification_bar_account_text}
+                onChange={(e) => handleInputChange('notification_bar_account_text', e.target.value)}
                 placeholder="My Account"
               />
               <p className="text-xs text-muted-foreground">
@@ -161,8 +161,8 @@ const AdminHomepageNotification = () => {
               <Label htmlFor="notificationAccountLink">Account Link URL</Label>
               <Input
                 id="notificationAccountLink"
-                value={formData.notificationAccountLink}
-                onChange={(e) => handleInputChange('notificationAccountLink', e.target.value)}
+                value={formData.notification_bar_account_link}
+                onChange={(e) => handleInputChange('notification_bar_account_link', e.target.value)}
                 placeholder="/account"
               />
               <p className="text-xs text-muted-foreground">
@@ -176,8 +176,8 @@ const AdminHomepageNotification = () => {
               <Label htmlFor="notificationActivateText">Activate Link Text</Label>
               <Input
                 id="notificationActivateText"
-                value={formData.notificationActivateText}
-                onChange={(e) => handleInputChange('notificationActivateText', e.target.value)}
+                value={formData.notification_bar_activate_text}
+                onChange={(e) => handleInputChange('notification_bar_activate_text', e.target.value)}
                 placeholder="Activate"
               />
               <p className="text-xs text-muted-foreground">
@@ -189,8 +189,8 @@ const AdminHomepageNotification = () => {
               <Label htmlFor="notificationActivateLink">Activate Link URL</Label>
               <Input
                 id="notificationActivateLink"
-                value={formData.notificationActivateLink}
-                onChange={(e) => handleInputChange('notificationActivateLink', e.target.value)}
+                value={formData.notification_bar_activate_link}
+                onChange={(e) => handleInputChange('notification_bar_activate_link', e.target.value)}
                 placeholder="/activate"
               />
               <p className="text-xs text-muted-foreground">

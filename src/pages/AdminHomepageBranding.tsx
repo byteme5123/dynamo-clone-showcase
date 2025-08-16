@@ -14,10 +14,10 @@ const AdminHomepageBranding = () => {
   const createSetting = useCreateSiteSetting();
   
   const [formData, setFormData] = useState({
-    logoUrl: '',
-    logoAlt: '',
-    navbarActivateText: '',
-    navbarActivateUrl: ''
+    logo_url: '',
+    logo_alt: '',
+    navbar_activate_button_text: '',
+    navbar_activate_button_url: ''
   });
 
   React.useEffect(() => {
@@ -28,10 +28,10 @@ const AdminHomepageBranding = () => {
       }, {} as Record<string, string>);
 
       setFormData({
-        logoUrl: settingsMap.logoUrl || '',
-        logoAlt: settingsMap.logoAlt || 'Dynamo Wireless',
-        navbarActivateText: settingsMap.navbarActivateText || 'Activate SIM',
-        navbarActivateUrl: settingsMap.navbarActivateUrl || '/activate'
+        logo_url: settingsMap.logo_url || '',
+        logo_alt: settingsMap.logo_alt || 'Dynamo Wireless',
+        navbar_activate_button_text: settingsMap.navbar_activate_button_text || 'Activate SIM',
+        navbar_activate_button_url: settingsMap.navbar_activate_button_url || '/activate'
       });
     }
   }, [settings]);
@@ -54,7 +54,7 @@ const AdminHomepageBranding = () => {
           await createSetting.mutateAsync({
             key,
             value,
-            type: key === 'logoUrl' ? 'image' : 'text',
+            type: key === 'logo_url' ? 'image' : 'text',
             category: 'branding',
             description: `Branding ${key} setting`
           });
@@ -105,10 +105,10 @@ const AdminHomepageBranding = () => {
           <div className="bg-white border rounded p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                {formData.logoUrl ? (
+                {formData.logo_url ? (
                   <img 
-                    src={formData.logoUrl} 
-                    alt={formData.logoAlt}
+                    src={formData.logo_url} 
+                    alt={formData.logo_alt}
                     className="h-8 w-auto"
                   />
                 ) : (
@@ -120,7 +120,7 @@ const AdminHomepageBranding = () => {
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-muted-foreground">Navigation Links</span>
                 <Button size="sm" variant="default">
-                  {formData.navbarActivateText}
+                  {formData.navbar_activate_button_text}
                 </Button>
               </div>
             </div>
@@ -140,8 +140,8 @@ const AdminHomepageBranding = () => {
           <div className="space-y-2">
             <Label>Logo Image</Label>
             <ImageUpload
-              existingImage={formData.logoUrl}
-              onUploadComplete={(url) => handleInputChange('logoUrl', url)}
+              existingImage={formData.logo_url}
+              onUploadComplete={(url) => handleInputChange('logo_url', url)}
               bucket="logos"
             />
             <p className="text-xs text-muted-foreground">
@@ -153,8 +153,8 @@ const AdminHomepageBranding = () => {
             <Label htmlFor="logoAlt">Logo Alt Text</Label>
             <Input
               id="logoAlt"
-              value={formData.logoAlt}
-              onChange={(e) => handleInputChange('logoAlt', e.target.value)}
+              value={formData.logo_alt}
+              onChange={(e) => handleInputChange('logo_alt', e.target.value)}
               placeholder="Your Brand Name"
             />
             <p className="text-xs text-muted-foreground">
@@ -178,8 +178,8 @@ const AdminHomepageBranding = () => {
               <Label htmlFor="navbarActivateText">CTA Button Text</Label>
               <Input
                 id="navbarActivateText"
-                value={formData.navbarActivateText}
-                onChange={(e) => handleInputChange('navbarActivateText', e.target.value)}
+                value={formData.navbar_activate_button_text}
+                onChange={(e) => handleInputChange('navbar_activate_button_text', e.target.value)}
                 placeholder="Activate SIM"
               />
               <p className="text-xs text-muted-foreground">
@@ -191,8 +191,8 @@ const AdminHomepageBranding = () => {
               <Label htmlFor="navbarActivateUrl">CTA Button URL</Label>
               <Input
                 id="navbarActivateUrl"
-                value={formData.navbarActivateUrl}
-                onChange={(e) => handleInputChange('navbarActivateUrl', e.target.value)}
+                value={formData.navbar_activate_button_url}
+                onChange={(e) => handleInputChange('navbar_activate_button_url', e.target.value)}
                 placeholder="/activate"
               />
               <p className="text-xs text-muted-foreground">
