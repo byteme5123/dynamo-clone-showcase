@@ -38,9 +38,6 @@ const PlanCard = ({ plan }: PlanCardProps) => {
         <h3 className="text-lg sm:text-xl font-bold font-poppins text-foreground text-center mb-2">
           {plan.name}
         </h3>
-        <div className="text-xl sm:text-2xl font-bold font-poppins text-primary text-center">
-          {plan.price}/mo
-        </div>
       </div>
       
       {/* Plan Content */}
