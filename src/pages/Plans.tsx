@@ -99,10 +99,10 @@ const Plans = () => {
         </div>
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-12 md:gap-16 lg:gap-20 max-w-7xl mx-auto">
           {filteredPlans && filteredPlans.length > 0 ? (
             filteredPlans.slice(0, 6).map((plan) => (
-              <div key={plan.id} className="flex justify-center">
+              <div key={plan.id} className="flex justify-center mb-8">
                 <PlanCard
                   plan={plan}
                 />
