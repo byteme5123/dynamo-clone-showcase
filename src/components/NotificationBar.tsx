@@ -12,7 +12,7 @@ const NotificationBar = () => {
   const activateText = settings?.notificationActivateText || 'Activate';
 
   return (
-    <div className="notification-bar h-10 px-4 flex items-center justify-center text-sm">
+    <div className="notification-bar h-10 px-4 flex items-center justify-center text-sm mb-4">
       <div className="text-white text-center">
         {notificationText}
       </div>
