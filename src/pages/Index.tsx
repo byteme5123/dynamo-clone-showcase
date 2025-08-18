@@ -7,7 +7,7 @@ import FigmaCoverageSection from '@/components/FigmaCoverageSection';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import FAQsSection from '@/components/FAQsSection';
 import FigmaCTASection from '@/components/FigmaCTASection';
-import FigmaFooter from '@/components/FigmaFooter';
+import Footer from '@/components/FigmaFooter';
 import MobileBottomBar from '@/components/MobileBottomBar';
 
 const Index = () => {
