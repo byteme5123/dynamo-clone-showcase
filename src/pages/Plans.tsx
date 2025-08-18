@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { usePlans } from '@/hooks/usePlans';
 import { Skeleton } from '@/components/ui/skeleton';
+import NotificationBar from '@/components/NotificationBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PlanCard from '@/components/PlanCard';
@@ -31,6 +32,7 @@ const Plans = () => {
   if (isLoading || (!plans && !error)) {
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
+        <NotificationBar />
         <Navbar />
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-12">
@@ -61,6 +63,7 @@ const Plans = () => {
     console.error('Plans page: Error loading plans:', error);
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
+        <NotificationBar />
         <Navbar />
         <div className="container mx-auto px-4 py-16">
           <div className="text-center">
@@ -79,6 +82,7 @@ const Plans = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
+      <NotificationBar />
       <Navbar />
       
       <div className="container mx-auto px-4 py-16">

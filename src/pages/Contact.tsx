@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useContactPageSettings } from '@/hooks/useContactPageSettings';
 import { Phone, MessageCircle, Mail, MapPin, Book, Settings, HelpCircle, Clock } from 'lucide-react';
+import NotificationBar from '@/components/NotificationBar';
 import Navbar from '@/components/Navbar';
 import PromoBanner from '@/components/PromoBanner';
 import FigmaFooter from '@/components/FigmaFooter';
@@ -86,6 +87,7 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <NotificationBar />
       <Navbar />
       
       {/* Hero Header */}

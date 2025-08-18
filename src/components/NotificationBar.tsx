@@ -12,11 +12,11 @@ const NotificationBar = () => {
   const activateText = settings?.notificationActivateText || 'Activate';
 
   return (
-    <div className="notification-bar h-10 px-4 flex items-center justify-between text-sm">
-      <div className="text-white">
+    <div className="notification-bar h-10 px-4 flex items-center justify-center text-sm">
+      <div className="text-white text-center">
         {notificationText}
       </div>
-      <div className="hidden md:flex space-x-4">
+      <div className="hidden md:flex space-x-4 absolute right-4">
         <Link 
           to={accountLink}
           className="text-white hover:underline"

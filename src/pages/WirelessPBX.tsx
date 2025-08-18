@@ -22,6 +22,7 @@ import {
   UserCheck
 } from "lucide-react";
 import PromoBanner from "@/components/PromoBanner";
+import NotificationBar from '@/components/NotificationBar';
 import Navbar from "@/components/Navbar";
 import FigmaFooter from "@/components/FigmaFooter";
 import MobileBottomBar from "@/components/MobileBottomBar";
@@ -46,7 +47,7 @@ const WirelessPBX = () => {
 
   return (
     <div className="min-h-screen">
-      <PromoBanner />
+      <NotificationBar />
       <Navbar />
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-2">
