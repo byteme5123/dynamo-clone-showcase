@@ -44,7 +44,7 @@ const Plans = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12 max-w-6xl mx-auto">
             {[...Array(6)].map((_, index) => (
               <div key={index} className="bg-card rounded-2xl p-6 shadow-lg max-w-[280px] mx-auto">
                 <Skeleton className="w-full h-72 mb-4 rounded-lg" />
@@ -99,7 +99,7 @@ const Plans = () => {
         </div>
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-12 max-w-6xl mx-auto">
           {filteredPlans && filteredPlans.length > 0 ? (
             filteredPlans.slice(0, 6).map((plan) => (
               <PlanCard
