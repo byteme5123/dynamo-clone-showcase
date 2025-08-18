@@ -61,7 +61,7 @@ const Footer = () => {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center">
               <img 
-                src="/lovable-uploads/abb5ee4d-66fd-40a4-8c6f-899521b74171.png" 
+                src={logoImage} 
                 alt="Dynamo Wireless" 
                 className="h-20 w-auto object-contain"
               />
