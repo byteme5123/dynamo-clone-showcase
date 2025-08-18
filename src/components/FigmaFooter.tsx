@@ -36,7 +36,7 @@ const FigmaFooter = () => {
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
               <img
-                src={settings?.footerLogo || dynamoLogo}
+                src={settings?.navbarLogo || dynamoLogo}
                 alt="Dynamo Wireless"
                 className="h-10 w-auto"
               />
