@@ -17,7 +17,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
   console.log(`PlanCard ${plan.id}: isFeatureExpanded = ${isFeatureExpanded}`);
 
   return (
-    <div className={`bg-card rounded-2xl shadow-lg hover-lift relative w-full max-w-[320px] sm:max-w-[280px] mx-auto transition-all duration-300 ${isFeatureExpanded ? 'z-[100] scale-105' : 'z-10'}`}>
+    <div className={`bg-card rounded-2xl shadow-lg hover-lift relative w-full max-w-[320px] sm:max-w-[280px] mx-auto transition-all duration-300 ${isFeatureExpanded ? 'z-40' : 'z-10'}`}>
       {/* Plan Image */}
       <div className="relative">
         <img
@@ -64,9 +64,9 @@ const PlanCard = ({ plan }: PlanCardProps) => {
               </Button>
             </CollapsibleTrigger>
             
-            {/* Features Content - Using relative positioning to avoid overlap */}
-            <CollapsibleContent className="mt-3">
-              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 space-y-2 shadow-lg">
+            {/* Features Content - Properly positioned below navbar */}
+            <CollapsibleContent className="mt-3 relative z-30">
+              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 space-y-2 shadow-lg max-h-[calc(100vh-200px)] overflow-y-auto">
                 {plan.features?.slice(0, 6).map((feature: string, index: number) => (
                   <div key={index} className="flex items-start text-xs sm:text-sm text-foreground leading-relaxed">
                     <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 sm:mt-2 mr-2 sm:mr-3 flex-shrink-0"></div>
