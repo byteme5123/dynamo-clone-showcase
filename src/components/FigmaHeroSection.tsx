@@ -40,7 +40,7 @@ const FigmaHeroSection = () => {
   }, [slides.length]);
 
   return (
-    <section className="relative overflow-hidden h-[600px] md:h-[700px]">
+    <section className="relative overflow-hidden h-[500px] md:h-[580px]">
       {/* Slider Container */}
       <div className="relative w-full h-full">
         {slides.map((slide, index) => (
@@ -58,8 +58,9 @@ const FigmaHeroSection = () => {
               <img
                 src={slide.image}
                 alt={slide.alt}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center"
                 loading="eager"
+                style={{ imageRendering: 'crisp-edges' }}
               />
               
               {/* Animated Overlay Gradient */}
