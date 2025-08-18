@@ -39,7 +39,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
           {plan.name}
         </h3>
         <div className="text-xl sm:text-2xl font-bold font-poppins text-primary text-center">
-          {plan.currency}{plan.price}/mo
+          {plan.price}/mo
         </div>
       </div>
       
