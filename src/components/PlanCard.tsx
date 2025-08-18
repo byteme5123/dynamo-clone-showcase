@@ -17,31 +17,31 @@ const PlanCard = ({ plan }: PlanCardProps) => {
   console.log(`PlanCard ${plan.id}: isFeatureExpanded = ${isFeatureExpanded}`);
 
   return (
-    <div className={`bg-card rounded-2xl shadow-lg hover-lift relative w-full max-w-[280px] mx-auto ${isFeatureExpanded ? 'z-50' : ''}`}>
+    <div className={`bg-card rounded-2xl shadow-lg hover-lift relative w-full max-w-[320px] sm:max-w-[280px] mx-auto transition-all duration-300 ${isFeatureExpanded ? 'z-[100]' : 'z-10'}`}>
       {/* Plan Image */}
       <div className="relative">
         <img
           src={plan.image_url || newPlanImage}
           alt={`${plan.name} SIM card package`}
           loading="eager"
-          className="w-full h-72 object-cover rounded-t-2xl"
+          className="w-full h-64 sm:h-72 object-cover rounded-t-2xl"
         />
       </div>
       
       {/* Plan Name */}
-      <div className="px-6 py-4 border-b border-border">
-        <h3 className="text-xl font-bold font-poppins text-foreground text-center">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border">
+        <h3 className="text-lg sm:text-xl font-bold font-poppins text-foreground text-center">
           {plan.name}
         </h3>
-        <div className="text-2xl font-bold font-poppins text-primary text-center mt-2">
+        <div className="text-xl sm:text-2xl font-bold font-poppins text-primary text-center mt-2">
           {plan.currency}{plan.price}/mo
         </div>
       </div>
       
       {/* Plan Content */}
-      <div className="p-6 pb-6">
+      <div className="p-4 sm:p-6 pb-4 sm:pb-6">
         {/* Action Buttons */}
-        <div className="space-y-3">
+        <div className="space-y-3 relative">
           {/* See Plan Features - Collapsible */}
           <Collapsible 
             open={isFeatureExpanded}
@@ -50,7 +50,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
             <CollapsibleTrigger asChild>
               <Button 
                 variant="outline" 
-                className="w-full justify-between font-poppins bg-card border-border text-foreground hover:bg-muted rounded-lg"
+                className="w-full justify-between font-poppins bg-card border-border text-foreground hover:bg-muted rounded-lg text-sm sm:text-base"
                 onClick={() => {
                   console.log(`Plan ${plan.id}: Toggling features from ${isFeatureExpanded} to ${!isFeatureExpanded}`);
                   setIsFeatureExpanded(!isFeatureExpanded);
@@ -63,11 +63,11 @@ const PlanCard = ({ plan }: PlanCardProps) => {
                 }
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="absolute left-0 right-0 mt-3 z-10">
-              <div className="bg-card border border-border rounded-lg p-4 space-y-2 shadow-xl mx-6">
+            <CollapsibleContent className="absolute left-0 right-0 top-full mt-2 z-[110]">
+              <div className="bg-card border border-border rounded-lg p-3 sm:p-4 space-y-2 shadow-2xl mx-2 sm:mx-0">
                 {plan.features?.slice(0, 6).map((feature: string, index: number) => (
-                  <div key={index} className="flex items-start text-sm text-foreground leading-relaxed">
-                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                  <div key={index} className="flex items-start text-xs sm:text-sm text-foreground leading-relaxed">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 sm:mt-2 mr-2 sm:mr-3 flex-shrink-0"></div>
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -77,7 +77,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
 
           {/* Get the Plan - Navigate to Detail Page */}
           <Button 
-            className="w-full font-bold font-poppins bg-card border border-border text-foreground hover:bg-muted rounded-lg transition-all duration-200 hover:shadow-md"
+            className="w-full font-bold font-poppins bg-card border border-border text-foreground hover:bg-muted rounded-lg transition-all duration-200 hover:shadow-md text-sm sm:text-base"
             asChild
           >
             <Link to={`/plans/${plan.slug}`}>
