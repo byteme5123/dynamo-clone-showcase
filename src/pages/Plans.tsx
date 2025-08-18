@@ -5,7 +5,7 @@ import { usePlans } from '@/hooks/usePlans';
 import { Skeleton } from '@/components/ui/skeleton';
 import NotificationBar from '@/components/NotificationBar';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/FigmaFooter';
+import FigmaFooter from '@/components/FigmaFooter';
 import PlanCard from '@/components/PlanCard';
 import PlanFilter from '@/components/PlanFilter';
 import { filterPlansByType } from '@/utils/planFilters';
