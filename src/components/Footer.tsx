@@ -61,12 +61,10 @@ const Footer = () => {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center">
               <img 
-                src={logoImage} 
+                src="/lovable-uploads/abb5ee4d-66fd-40a4-8c6f-899521b74171.png" 
                 alt="Dynamo Wireless" 
-                className="h-16 w-auto object-contain brightness-0 invert"
-                onError={(e) => {
-                  console.error('Logo failed to load:', e);
-                }}
+                className="h-16 w-auto object-contain"
+                style={{ filter: 'brightness(0) invert(1)' }}
               />
             </div>
             <p className="text-secondary-foreground/80 text-sm leading-relaxed">
