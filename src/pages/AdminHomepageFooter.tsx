@@ -41,7 +41,7 @@ const AdminHomepageFooter = () => {
         twitter_url: settingsMap.twitter_url || 'https://twitter.com/dynamowireless',
         instagram_url: settingsMap.instagram_url || 'https://instagram.com/dynamowireless',
         linkedin_url: settingsMap.linkedin_url || 'https://linkedin.com/company/dynamowireless',
-        footer_copyright: settingsMap.footer_copyright || '© 2024 Dynamo Wireless. All rights reserved.'
+        footer_copyright: settingsMap.footer_copyright || '© 2025 Dynamo Wireless. All rights reserved.'
       });
     }
   }, [settings]);

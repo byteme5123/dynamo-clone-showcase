@@ -63,7 +63,10 @@ const Footer = () => {
               <img 
                 src={logoImage} 
                 alt="Dynamo Wireless" 
-                className="h-12 w-auto object-contain"
+                className="h-16 w-auto object-contain brightness-0 invert"
+                onError={(e) => {
+                  console.error('Logo failed to load:', e);
+                }}
               />
             </div>
             <p className="text-secondary-foreground/80 text-sm leading-relaxed">
