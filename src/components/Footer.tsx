@@ -63,8 +63,7 @@ const Footer = () => {
               <img 
                 src="/lovable-uploads/abb5ee4d-66fd-40a4-8c6f-899521b74171.png" 
                 alt="Dynamo Wireless" 
-                className="h-16 w-auto object-contain"
-                style={{ filter: 'brightness(0) invert(1)' }}
+                className="h-20 w-auto object-contain filter brightness-0 invert"
               />
             </div>
             <p className="text-secondary-foreground/80 text-sm leading-relaxed">

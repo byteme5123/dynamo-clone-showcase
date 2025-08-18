@@ -124,7 +124,7 @@ const FigmaFooter = () => {
         {/* Bottom Bar */}
         <div className="border-t border-gray-200 mt-8 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-            <p>&copy; 2024 Dynamo Wireless. All rights reserved.</p>
+            <p>&copy; 2025 Dynamo Wireless. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to="/privacy" className="hover:text-primary transition-colors">
                 Privacy Policy

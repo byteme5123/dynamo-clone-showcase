@@ -175,7 +175,7 @@ const AdminHomepageFooter = () => {
               id="footerCopyright"
               value={formData.footer_copyright}
               onChange={(e) => handleInputChange('footer_copyright', e.target.value)}
-              placeholder="© 2024 Dynamo Wireless. All rights reserved."
+              placeholder="© 2025 Dynamo Wireless. All rights reserved."
             />
           </div>
         </CardContent>
