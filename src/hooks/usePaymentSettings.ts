@@ -19,15 +19,24 @@ export const usePaymentSettings = () => {
   return useQuery({
     queryKey: ['payment-settings'],
     queryFn: async () => {
+      console.log('Fetching payment settings...');
+      
       const { data, error } = await supabase
         .from('payment_settings')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      return data as PaymentSettings;
+      if (error) {
+        console.error('Payment settings fetch error:', error);
+        throw error;
+      }
+      
+      console.log('Fetched payment settings:', data);
+      return data as PaymentSettings | null;
     },
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -37,15 +46,45 @@ export const useUpdatePaymentSettings = () => {
 
   return useMutation({
     mutationFn: async (settings: Partial<PaymentSettings>) => {
-      const { data, error } = await supabase
+      console.log('Updating payment settings:', settings);
+      
+      // First, try to get existing settings
+      const { data: existing } = await supabase
         .from('payment_settings')
-        .update(settings)
+        .select('*')
         .eq('is_active', true)
-        .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      let result;
+      
+      if (existing) {
+        // Update existing record
+        const { data, error } = await supabase
+          .from('payment_settings')
+          .update(settings)
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = data;
+      } else {
+        // Create new record
+        const { data, error } = await supabase
+          .from('payment_settings')
+          .insert({
+            ...settings,
+            is_active: true
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        result = data;
+      }
+
+      console.log('Payment settings updated:', result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-settings'] });
@@ -55,9 +94,10 @@ export const useUpdatePaymentSettings = () => {
       });
     },
     onError: (error) => {
+      console.error('Update payment settings error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update payment settings.',
+        description: 'Failed to update payment settings. Please try again.',
         variant: 'destructive',
       });
     },

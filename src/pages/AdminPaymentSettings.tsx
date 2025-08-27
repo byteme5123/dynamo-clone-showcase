@@ -35,11 +35,16 @@ const AdminPaymentSettings = () => {
         live_client_secret: settings.live_client_secret || '',
       });
       setIsFormReady(true);
+    } else if (!settings && !isLoading && !isFormReady) {
+      // No settings exist yet, set up defaults
+      setIsFormReady(true);
     }
-  }, [settings, isFormReady]);
+  }, [settings, isFormReady, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('Submitting payment settings:', formData);
     
     try {
       await updateSettings.mutateAsync(formData);
@@ -103,6 +108,7 @@ const AdminPaymentSettings = () => {
   }
 
   if (error) {
+    console.error('Payment settings error:', error);
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
@@ -133,7 +139,7 @@ const AdminPaymentSettings = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Environment</Label>
-                <p className="text-lg font-semibold capitalize">{settings?.environment}</p>
+                <p className="text-lg font-semibold capitalize">{settings?.environment || 'sandbox'}</p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Status</Label>

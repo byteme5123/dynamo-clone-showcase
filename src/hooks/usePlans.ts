@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +15,7 @@ export interface Plan {
   sms_limit: string;
   validity_days: number;
   countries: string[];
-  features: string[]; // This will be converted to/from JSON in the database
+  features: string[];
   is_active: boolean;
   is_featured: boolean;
   display_order: number;
@@ -31,13 +30,13 @@ const fetchPlans = async (activeOnly: boolean = true) => {
   console.log(`Fetching plans (activeOnly: ${activeOnly})`);
   
   try {
-    const query = supabase
+    let query = supabase
       .from('plans')
       .select('*')
       .order('display_order', { ascending: true });
 
     if (activeOnly) {
-      query.eq('is_active', true);
+      query = query.eq('is_active', true);
     }
 
     const { data, error } = await query;
@@ -47,14 +46,17 @@ const fetchPlans = async (activeOnly: boolean = true) => {
       throw error;
     }
     
-    console.log(`Fetched ${data?.length || 0} plans`);
+    console.log(`Fetched ${data?.length || 0} plans:`, data);
     
     // Convert features from Json to string[] for frontend use
-    return data?.map(plan => ({
+    const processedPlans = data?.map(plan => ({
       ...plan,
       features: Array.isArray(plan.features) ? plan.features : [],
       countries: Array.isArray(plan.countries) ? plan.countries : []
     })) as Plan[] || [];
+
+    console.log('Processed plans:', processedPlans);
+    return processedPlans;
   } catch (error) {
     console.error('Error in fetchPlans:', error);
     throw error;
@@ -65,13 +67,12 @@ export const usePlans = () => {
   return useQuery({
     queryKey: ['plans', 'active'],
     queryFn: () => fetchPlans(true),
-    staleTime: 10 * 60 * 1000, // 10 minutes - longer cache for better performance
-    gcTime: 15 * 60 * 1000, // 15 minutes - keep in memory longer
-    retry: false, // Disable retry for faster loading
-    refetchOnMount: false, // Don't refetch on mount if data exists
-    refetchOnWindowFocus: false, // Don't refetch on focus
-    refetchInterval: false, // Disable automatic refetching
-    refetchIntervalInBackground: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
   });
 };
 
@@ -79,12 +80,12 @@ export const useAdminPlans = () => {
   return useQuery({
     queryKey: ['plans', 'all'],
     queryFn: () => fetchPlans(false),
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 15 * 60 * 1000, // 15 minutes
-    retry: false, // Disable retry for faster loading
-    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 1,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
-    refetchInterval: false, // Disable automatic refetching
+    refetchInterval: false,
   });
 };
 
@@ -105,7 +106,6 @@ export const usePlan = (id: string) => {
         throw error;
       }
       
-      // Convert features from Json to string[] for frontend use
       return {
         ...data,
         features: Array.isArray(data.features) ? data.features : [],
@@ -138,7 +138,6 @@ export const usePlanBySlug = (slug: string) => {
         throw error;
       }
       
-      // Convert features from Json to string[] for frontend use
       return {
         ...data,
         features: Array.isArray(data.features) ? data.features : [],
@@ -159,11 +158,10 @@ export const useCreatePlan = () => {
 
   return useMutation({
     mutationFn: async (planData: Omit<Plan, 'id' | 'created_at' | 'updated_at'>) => {
-      // Convert features and countries arrays to proper format for database
       const dbData = {
         ...planData,
-        features: planData.features, // Keep as array - Supabase will convert to jsonb
-        countries: planData.countries // Keep as array - Supabase will convert to array
+        features: planData.features,
+        countries: planData.countries
       };
 
       const { data, error } = await supabase
@@ -176,7 +174,6 @@ export const useCreatePlan = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate both query variations to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       toast({
         title: 'Success',
@@ -200,11 +197,10 @@ export const useUpdatePlan = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...planData }: Partial<Plan> & { id: string }) => {
-      // Convert features and countries arrays to proper format for database
       const dbData = {
         ...planData,
-        features: planData.features, // Keep as array - Supabase will convert to jsonb
-        countries: planData.countries // Keep as array - Supabase will convert to array
+        features: planData.features,
+        countries: planData.countries
       };
 
       const { data, error } = await supabase
@@ -218,7 +214,6 @@ export const useUpdatePlan = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate both query variations to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       toast({
         title: 'Success',
@@ -250,7 +245,6 @@ export const useDeletePlan = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      // Invalidate both query variations to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       toast({
         title: 'Success',

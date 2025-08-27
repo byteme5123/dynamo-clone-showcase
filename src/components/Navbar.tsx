@@ -35,31 +35,31 @@ const Navbar = () => {
               to="/" 
               className="text-foreground hover:text-primary transition-colors font-medium"
             >
-              {t('nav.home')}
+              {t('navbar.home')}
             </Link>
             <Link 
               to="/about" 
               className="text-foreground hover:text-primary transition-colors font-medium"
             >
-              {t('nav.about')}
+              {t('navbar.about')}
             </Link>
             <Link 
               to="/plans" 
               className="text-foreground hover:text-primary transition-colors font-medium"
             >
-              {t('nav.plans')}
+              {t('navbar.plans')}
             </Link>
             <Link 
               to="/wireless-pbx" 
               className="text-foreground hover:text-primary transition-colors font-medium"
             >
-              {t('nav.wirelessPBX')}
+              Wireless PBX
             </Link>
             <Link 
               to="/contact" 
               className="text-foreground hover:text-primary transition-colors font-medium"
             >
-              {t('nav.contact')}
+              {t('navbar.contact')}
             </Link>
           </div>
 
@@ -121,35 +121,35 @@ const Navbar = () => {
                 className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.home')}
+                {t('navbar.home')}
               </Link>
               <Link
                 to="/about"
                 className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.about')}
+                {t('navbar.about')}
               </Link>
               <Link
                 to="/plans"
                 className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.plans')}
+                {t('navbar.plans')}
               </Link>
               <Link
                 to="/wireless-pbx"
                 className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.wirelessPBX')}
+                Wireless PBX
               </Link>
               <Link
                 to="/contact"
                 className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
-                {t('nav.contact')}
+                {t('navbar.contact')}
               </Link>
               
               {/* Mobile Auth Section */}
