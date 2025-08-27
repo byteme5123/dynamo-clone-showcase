@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import FigmaFooter from '@/components/FigmaFooter';
 import PlanCard from '@/components/PlanCard';
 import PlanFilter from '@/components/PlanFilter';
+import SupabaseTest from '@/components/SupabaseTest';
 import { filterPlansByType } from '@/utils/planFilters';
 import { Button } from '@/components/ui/button';
 
@@ -17,6 +18,7 @@ const Plans = () => {
   const { t } = useTranslation();
   const { data: plans, isLoading, error, refetch, isError, isPending, isFetching } = usePlans();
   const [activeTab, setActiveTab] = useState<PlanType>('domestic');
+  const [showDebug, setShowDebug] = useState(false);
 
   // Enhanced logging for debugging
   console.log('=== PLANS PAGE DEBUG ===');
@@ -60,6 +62,26 @@ const Plans = () => {
             <p className="text-muted-foreground text-base mb-8">
               Get more data for less with our flexible plans. No contracts, no hidden fees.
             </p>
+            
+            {/* Debug Section */}
+            <div className="mb-8">
+              <Button onClick={() => setShowDebug(!showDebug)} variant="outline" size="sm">
+                {showDebug ? 'Hide Debug' : 'Show Debug'}
+              </Button>
+              {showDebug && (
+                <div className="mt-4 space-y-4">
+                  <SupabaseTest />
+                  <div className="text-left text-sm bg-muted p-4 rounded">
+                    <p><strong>Loading State:</strong> {isLoading ? 'Yes' : 'No'}</p>
+                    <p><strong>Pending State:</strong> {isPending ? 'Yes' : 'No'}</p>
+                    <p><strong>Fetching State:</strong> {isFetching ? 'Yes' : 'No'}</p>
+                    <p><strong>Error State:</strong> {isError ? 'Yes' : 'No'}</p>
+                    <p><strong>Error:</strong> {error?.message || 'None'}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="mb-4">
               <Button onClick={handleRefresh} variant="outline">
                 Refresh Plans
@@ -97,6 +119,19 @@ const Plans = () => {
             <p className="text-base text-destructive mb-4">
               Error loading plans: {error?.message || 'Unknown error'}
             </p>
+            
+            {/* Debug Section */}
+            <div className="mb-8">
+              <Button onClick={() => setShowDebug(!showDebug)} variant="outline" size="sm">
+                {showDebug ? 'Hide Debug' : 'Show Debug'}
+              </Button>
+              {showDebug && (
+                <div className="mt-4">
+                  <SupabaseTest />
+                </div>
+              )}
+            </div>
+            
             <Button onClick={handleRefresh} variant="outline">
               Try Again
             </Button>

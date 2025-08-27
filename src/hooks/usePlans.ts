@@ -25,49 +25,132 @@ export interface Plan {
   updated_at: string;
 }
 
-// Simplified plan fetching function
 const fetchPlans = async (): Promise<Plan[]> => {
-  console.log('🔄 Fetching plans from Supabase...');
+  console.log('🔄 [FETCH] Starting fetchPlans...');
   
-  const { data, error } = await supabase
-    .from('plans')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
+  try {
+    console.log('🔄 [FETCH] Calling supabase.from("plans")...');
+    
+    const query = supabase
+      .from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+    
+    console.log('🔄 [FETCH] Query created, executing...');
+    
+    // Set a timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000);
+    });
+    
+    const queryPromise = query;
+    
+    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+    
+    console.log('🔄 [FETCH] Query completed');
+    console.log('📊 [FETCH] Data:', data);
+    console.log('📊 [FETCH] Error:', error);
 
-  if (error) {
-    console.error('❌ Plans fetch error:', error);
-    throw new Error(`Failed to fetch plans: ${error.message}`);
-  }
-  
-  if (!data) {
-    console.warn('⚠️ No plans data returned');
-    return [];
-  }
-  
-  console.log(`✅ Successfully fetched ${data.length} plans`);
-  
-  // Process the plans data
-  const processedPlans = data.map(plan => ({
-    ...plan,
-    features: Array.isArray(plan.features) ? plan.features : [],
-    countries: Array.isArray(plan.countries) ? plan.countries : []
-  })) as Plan[];
+    if (error) {
+      console.error('❌ [FETCH] Supabase error:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Supabase error: ${error.message}`);
+    }
+    
+    if (!data) {
+      console.warn('⚠️ [FETCH] No data returned');
+      return [];
+    }
+    
+    console.log(`✅ [FETCH] Successfully fetched ${data.length} plans`);
+    
+    const processedPlans = data.map(plan => ({
+      ...plan,
+      features: Array.isArray(plan.features) ? plan.features : [],
+      countries: Array.isArray(plan.countries) ? plan.countries : []
+    })) as Plan[];
 
-  return processedPlans;
+    console.log('✅ [FETCH] Plans processed successfully');
+    return processedPlans;
+    
+  } catch (error) {
+    console.error('💥 [FETCH] Fetch error:', error);
+    
+    // Try a simpler query as fallback
+    try {
+      console.log('🔄 [FALLBACK] Trying fallback query...');
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('plans')
+        .select('id, name, slug, description, price, currency, plan_type, is_active')
+        .eq('is_active', true)
+        .limit(10);
+      
+      if (fallbackError) {
+        console.error('❌ [FALLBACK] Fallback also failed:', fallbackError);
+        throw fallbackError;
+      }
+      
+      console.log('✅ [FALLBACK] Fallback succeeded with basic data');
+      return (fallbackData || []).map(plan => ({
+        ...plan,
+        features: [],
+        countries: [],
+        data_limit: '',
+        call_minutes: '',
+        sms_limit: '',
+        validity_days: 30,
+        is_featured: false,
+        display_order: 0,
+        created_at: '',
+        updated_at: ''
+      })) as Plan[];
+      
+    } catch (fallbackError) {
+      console.error('💥 [FALLBACK] Both queries failed');
+      throw error; // Throw original error
+    }
+  }
 };
 
 export const usePlans = () => {
-  return useQuery({
+  console.log('🏁 [HOOK] usePlans hook called');
+  
+  const result = useQuery({
     queryKey: ['plans'],
-    queryFn: fetchPlans,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    queryFn: async () => {
+      console.log('🏁 [HOOK] Query function executing...');
+      const plans = await fetchPlans();
+      console.log('🏁 [HOOK] Query function completed with:', plans.length, 'plans');
+      return plans;
+    },
+    staleTime: 0, // Always fetch fresh data for debugging
+    gcTime: 1 * 60 * 1000, // 1 minute
+    retry: (failureCount, error) => {
+      console.log(`🔄 [HOOK] Retry ${failureCount} for:`, error?.message);
+      return failureCount < 1; // Only retry once
+    },
+    retryDelay: 2000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+    networkMode: 'always', // Always try to fetch
+    enabled: true, // Always enabled
   });
+  
+  console.log('🏁 [HOOK] Query result:', {
+    isLoading: result.isLoading,
+    isPending: result.isPending,
+    isFetching: result.isFetching,
+    isError: result.isError,
+    error: result.error,
+    dataLength: result.data?.length || 0
+  });
+  
+  return result;
 };
 
 export const useAdminPlans = () => {
