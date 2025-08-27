@@ -107,6 +107,7 @@ const Plans = () => {
   // Show error state
   if (isError || error) {
     console.error('❌ Plans page error:', error);
+    const errorMessage = error?.message || 'Unknown error';
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <NotificationBar />
@@ -117,7 +118,7 @@ const Plans = () => {
               Choose Your Perfect Plan
             </h1>
             <p className="text-base text-destructive mb-4">
-              Error loading plans: {error?.message || 'Unknown error'}
+              Error loading plans: {errorMessage}
             </p>
             
             {/* Debug Section */}
