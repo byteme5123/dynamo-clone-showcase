@@ -44,26 +44,27 @@ import AdminContact from "./pages/AdminContact";
 import AdminPaymentSettings from "./pages/AdminPaymentSettings";
 import PaymentSuccess from "./pages/PaymentSuccess";
 
-// Optimized QueryClient for better performance and caching
+// Optimized QueryClient for reliable data fetching
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
-      gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
+      staleTime: 1 * 60 * 1000, // 1 minute
+      gcTime: 5 * 60 * 1000, // 5 minutes
       retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors or if we've already retried once
+        console.log(`Query retry ${failureCount}:`, error);
+        // Don't retry on 4xx errors
         if (error?.status >= 400 && error?.status < 500) return false;
-        return failureCount < 1;
+        return failureCount < 2;
       },
-      retryDelay: 500, // Very short retry delay
-      refetchOnWindowFocus: false, // Prevent unnecessary refetches
-      refetchOnReconnect: true, // Only refetch on reconnect
-      refetchOnMount: false, // Don't refetch on mount if data exists
-      networkMode: 'online', // Only run queries when online
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      refetchOnMount: true,
+      networkMode: 'online',
     },
     mutations: {
       retry: 1,
-      retryDelay: 500,
+      retryDelay: 1000,
       networkMode: 'online',
     },
   },
