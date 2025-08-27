@@ -107,7 +107,10 @@ const Plans = () => {
   // Show error state
   if (isError || error) {
     console.error('❌ Plans page error:', error);
-    const errorMessage = error?.message || 'Unknown error';
+    const errorMessage = error && typeof error === 'object' && 'message' in error 
+      ? (error as Error).message 
+      : 'Unknown error occurred';
+    
     return (
       <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <NotificationBar />
