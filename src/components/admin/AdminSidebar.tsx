@@ -1,206 +1,124 @@
-
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import {
-  LayoutDashboard,
-  Package,
-  Users,
+import { 
+  LayoutDashboard, 
+  Package, 
+  MessageSquare, 
+  HelpCircle, 
+  Star, 
+  Images, 
+  Settings, 
+  Users, 
   FileText,
-  Settings,
-  HelpCircle,
-  Star,
-  Image,
-  Globe,
+  Languages,
+  Camera,
   Search,
-  Phone,
-  Megaphone,
+  Smartphone,
   Home,
-  CreditCard,
-  ShoppingCart,
-  Mail,
+  Navigation,
+  Palette
 } from 'lucide-react';
 
-const menuItems = [
-  {
-    title: 'Dashboard',
-    href: '/admin/dashboard',
-    icon: LayoutDashboard,
+const navigation = [
+  { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { 
+    name: 'Homepage Management', 
+    icon: Home,
+    children: [
+      { name: 'Notification Bar', href: '/admin/homepage/notification', icon: MessageSquare },
+      { name: 'Navigation & Branding', href: '/admin/homepage/branding', icon: Navigation },
+      { name: 'Hero Slider', href: '/admin/slider', icon: Images },
+      { name: 'Features Section', href: '/admin/homepage/features', icon: Star },
+      { name: 'Coverage Section', href: '/admin/homepage/coverage', icon: Smartphone },
+      { name: 'CTA Section', href: '/admin/homepage/cta', icon: MessageSquare },
+      { name: 'Footer Settings', href: '/admin/homepage/footer', icon: FileText },
+    ]
   },
-  {
-    title: 'Plans',
-    href: '/admin/plans',
-    icon: Package,
+  { name: 'About Us Management', href: '/admin/about', icon: FileText },
+  { name: 'Contact Us Management', href: '/admin/contact', icon: MessageSquare },
+  { 
+    name: 'Content Management', 
+    icon: FileText,
+    children: [
+      { name: 'Plans', href: '/admin/plans', icon: Package },
+      { name: 'Wireless PBX', href: '/admin/wireless-pbx', icon: Smartphone },
+      { name: 'Testimonials', href: '/admin/testimonials', icon: Star },
+      { name: 'FAQs', href: '/admin/faqs', icon: HelpCircle },
+    ]
   },
-  {
-    title: 'Payment Settings',
-    href: '/admin/payment-settings',
-    icon: CreditCard,
+  { 
+    name: 'Customer Requests', 
+    icon: MessageSquare,
+    children: [
+      { name: 'Contact Forms', href: '/admin/contacts', icon: MessageSquare },
+      { name: 'Activate SIM Requests', href: '/admin/activate-sim', icon: Smartphone },
+    ]
   },
-  {
-    title: 'Wireless PBX',
-    href: '/admin/wireless-pbx',
-    icon: Phone,
-  },
-  {
-    title: 'Hero Slides',
-    href: '/admin/hero-slides',
-    icon: Image,
-  },
-  {
-    title: 'Testimonials',
-    href: '/admin/testimonials',
-    icon: Star,
-  },
-  {
-    title: 'FAQs',
-    href: '/admin/faqs',
-    icon: HelpCircle,
-  },
-  {
-    title: 'Contact Forms',
-    href: '/admin/contacts',
-    icon: Mail,
-  },
-  {
-    title: 'Activate SIM',
-    href: '/admin/activate-sim',
-    icon: ShoppingCart,
-  },
-  {
-    title: 'Media',
-    href: '/admin/media',
-    icon: Image,
-  },
-  {
-    title: 'Translations',
-    href: '/admin/translations',
-    icon: Globe,
-  },
-  {
-    title: 'SEO',
-    href: '/admin/seo',
-    icon: Search,
-  },
-  {
-    title: 'Settings',
-    href: '/admin/settings',
-    icon: Settings,
-  },
-  {
-    title: 'Users',
-    href: '/admin/users',
-    icon: Users,
-  },
-];
-
-const homepageItems = [
-  { title: 'Notification', href: '/admin/homepage/notification', icon: Megaphone },
-  { title: 'Branding', href: '/admin/homepage/branding', icon: Home },
-  { title: 'Features', href: '/admin/homepage/features', icon: Star },
-  { title: 'Coverage', href: '/admin/homepage/coverage', icon: Globe },
-  { title: 'CTA', href: '/admin/homepage/cta', icon: FileText },
-  { title: 'Footer', href: '/admin/homepage/footer', icon: Settings },
-];
-
-const pageItems = [
-  { title: 'About', href: '/admin/about', icon: FileText },
-  { title: 'Contact', href: '/admin/contact', icon: Mail },
+  { name: 'Media Library', href: '/admin/media', icon: Camera },
+  { name: 'Translations', href: '/admin/translations', icon: Languages },
+  { name: 'SEO Settings', href: '/admin/seo', icon: Search },
+  { name: 'Site Settings', href: '/admin/settings', icon: Settings },
+  { name: 'Admin Users', href: '/admin/users', icon: Users },
 ];
 
 const AdminSidebar = () => {
   const location = useLocation();
 
+  const isActive = (href: string) => {
+    return location.pathname === href || location.pathname.startsWith(href + '/');
+  };
+
   return (
-    <div className="w-64 bg-card border-r min-h-screen p-4">
-      <div className="space-y-6">
-        {/* Main Menu */}
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Main Menu
-          </h3>
-          <nav className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.href;
-              
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.title}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Homepage Sections */}
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Homepage
-          </h3>
-          <nav className="space-y-1">
-            {homepageItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.href;
-              
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.title}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Page Management */}
-        <div>
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Pages
-          </h3>
-          <nav className="space-y-1">
-            {pageItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.href;
-              
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.title}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+    <div className="w-64 bg-card border-r border-border min-h-screen">
+      <div className="p-6">
+        <h1 className="text-xl font-bold text-foreground">Dynamo Admin</h1>
       </div>
+      
+      <nav className="px-4 space-y-2">
+        {navigation.map((item) => (
+          <div key={item.name}>
+            {item.children ? (
+              <div className="space-y-1">
+                <div className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground">
+                  <item.icon className="mr-3 h-4 w-4" />
+                  {item.name}
+                </div>
+                <div className="ml-6 space-y-1">
+                  {item.children.map((child) => (
+                    <NavLink
+                      key={child.name}
+                      to={child.href}
+                      className={cn(
+                        "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                        isActive(child.href)
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <child.icon className="mr-3 h-4 w-4" />
+                      {child.name}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <NavLink
+                to={item.href}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                  isActive(item.href)
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <item.icon className="mr-3 h-4 w-4" />
+                {item.name}
+              </NavLink>
+            )}
+          </div>
+        ))}
+      </nav>
     </div>
   );
 };

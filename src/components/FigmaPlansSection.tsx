@@ -6,34 +6,27 @@ import { useState } from 'react';
 import PlanCard from '@/components/PlanCard';
 import PlanFilter from '@/components/PlanFilter';
 import { filterPlansByType } from '@/utils/planFilters';
-import { Button } from '@/components/ui/button';
 
 type PlanType = 'domestic' | 'special';
 
 const FigmaPlansSection = () => {
   const { t } = useTranslation();
-  const { data: plans, isLoading, error, refetch, isError, isPending } = usePlans();
+  const { data: plans, isLoading, error } = usePlans();
   const [activeTab, setActiveTab] = useState<PlanType>('domestic');
 
-  console.log('🏠 FigmaPlansSection - Plans status:', {
-    isLoading,
-    isPending,
-    isError,
-    error,
-    plansCount: plans?.length || 0
-  });
+  console.log('FigmaPlansSection: plans data:', plans);
+  console.log('FigmaPlansSection: isLoading:', isLoading);
+  console.log('FigmaPlansSection: error:', error);
 
   // Filter plans based on active tab
   const filteredPlans = filterPlansByType(plans || [], activeTab);
+  
+  console.log('FigmaPlansSection: filteredPlans:', filteredPlans);
+  console.log('FigmaPlansSection: activeTab:', activeTab);
+  console.log('FigmaPlansSection: filteredPlans length:', filteredPlans?.length);
 
-  // Manual refresh function
-  const handleRefresh = () => {
-    console.log('🔄 FigmaPlansSection - Manual refresh triggered');
-    refetch();
-  };
-
-  // Show loading state
-  if (isLoading || isPending) {
+  // Show loading state when data is loading OR when we have no filtered plans yet
+  if (isLoading || (!plans && !error)) {
     return (
       <section className="py-20 md:py-20 lg:py-20" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <div className="container mx-auto px-4">
@@ -63,8 +56,8 @@ const FigmaPlansSection = () => {
     );
   }
 
-  // Show error state
-  if (isError || error) {
+  if (error) {
+    console.error('FigmaPlansSection: Error loading plans:', error);
     return (
       <section className="py-20 md:py-20 lg:py-20" style={{ backgroundColor: 'hsl(var(--plans-background))' }}>
         <div className="container mx-auto px-4">
@@ -72,12 +65,9 @@ const FigmaPlansSection = () => {
             <h2 className="text-[34px] font-bold font-poppins text-foreground mb-4">
               Choose Your Perfect Plan
             </h2>
-            <p className="text-base text-destructive mb-4">
-              Error loading plans: {error?.message || 'Unknown error'}
+            <p className="text-base text-destructive">
+              Error loading plans. Please try again later.
             </p>
-            <Button onClick={handleRefresh} variant="outline">
-              Retry Loading Plans
-            </Button>
           </div>
         </div>
       </section>
@@ -108,20 +98,19 @@ const FigmaPlansSection = () => {
                 key={`${plan.id}-${index}`} 
                 className="flex justify-center items-start mb-6 lg:mb-8"
               >
-                <PlanCard plan={plan} />
+                <PlanCard
+                  plan={plan}
+                />
               </div>
             ))
           ) : (
             <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground text-lg mb-4">
+              <p className="text-muted-foreground text-lg">
                 {activeTab === 'special' 
                   ? 'No special plans available at the moment.' 
                   : 'No plans available at the moment.'
                 }
               </p>
-              <Button onClick={handleRefresh} variant="outline">
-                Load Plans
-              </Button>
             </div>
           )}
         </div>
