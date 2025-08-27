@@ -1,148 +1,198 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, ChevronDown, Globe } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
-import { useHomepageSettings } from '@/hooks/useHomepageSettings';
-import logoImage from '@/assets/dynamo-wireless-logo.png';
+import { Menu, X, User, LogOut } from 'lucide-react';
+import dynamoLogo from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
-  const settings = useHomepageSettings();
+  const { user, signOut } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const navItems = [
-    { name: 'Home', href: '/' },
-    { name: 'About', href: '/about' },
-    { name: 'WirelessPBX', href: '/wireless-pbx' },
-    { name: 'Plans', href: '/plans' },
-    { name: 'Contact', href: '/contact' },
-  ];
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 h-[70px]">
-      <div className="container mx-auto px-4 h-full">
-        <div className="flex items-center justify-between h-full">
+    <nav className="bg-background border-b border-border sticky top-0 z-50">
+      <div className="container mx-auto px-4">
+        <div className="flex justify-between items-center h-16 md:h-20">
           {/* Logo */}
-          <div className="flex items-center">
-            <Link to="/">
-              <img 
-                src={settings?.navbarLogo || logoImage} 
-                alt="Dynamo Wireless" 
-                className="h-10 w-auto object-contain"
-              />
-            </Link>
-          </div>
+          <Link to="/" className="flex items-center">
+            <img 
+              src={dynamoLogo} 
+              alt="Dynamo Wireless" 
+              className="h-8 md:h-10 w-auto"
+            />
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="text-black hover:underline transition-all duration-200 font-bold text-sm px-3 py-2"
-              >
-                {item.name}
-              </Link>
-            ))}
+            <Link 
+              to="/" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
+              {t('nav.home')}
+            </Link>
+            <Link 
+              to="/about" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
+              {t('nav.about')}
+            </Link>
+            <Link 
+              to="/plans" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
+              {t('nav.plans')}
+            </Link>
+            <Link 
+              to="/wireless-pbx" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
+              {t('nav.wirelessPBX')}
+            </Link>
+            <Link 
+              to="/contact" 
+              className="text-foreground hover:text-primary transition-colors font-medium"
+            >
+              {t('nav.contact')}
+            </Link>
           </div>
 
-          {/* Right side actions */}
+          {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Language Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center space-x-1">
-                  <span className="text-sm font-medium">
-                    {language === 'en' ? 'EN' : 'ES'}
-                  </span>
-                  <ChevronDown className="w-4 h-4" />
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={signOut}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border shadow-lg z-50">
-                <DropdownMenuItem 
-                  onClick={() => setLanguage('en')}
-                  className={language === 'en' ? 'bg-gray-100' : ''}
-                >
-                  English
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setLanguage('es')}
-                  className={language === 'es' ? 'bg-gray-100' : ''}
-                >
-                  Español
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button 
-              variant="default" 
-              className="bg-primary text-white font-bold rounded-lg px-6 py-2 hover:bg-primary/90"
-              asChild
-            >
-              <Link to={settings?.navbarActivateButtonUrl || '/activate'}>
-                {settings?.navbarActivateButtonText || 'Activate SIM'}
-              </Link>
-            </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link to="/auth/login">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth/register">
+                  <Button size="sm">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
             <Button
               variant="ghost"
-              size="icon"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              size="sm"
+              onClick={toggleMenu}
+              className="p-2"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="block px-3 py-2 text-black hover:text-primary transition-colors duration-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <div className="pt-4 pb-2 space-y-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center space-x-1 px-3 py-2 text-black hover:text-primary transition-colors">
-                    <Globe className="w-4 h-4" />
-                    <span className="text-sm">{language === 'en' ? 'Language' : 'Idioma'}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-white border shadow-lg">
-                    <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLanguage('es')}>Español</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <div className="px-3">
-                  <Button 
-                    variant="default" 
-                    className="w-full bg-primary text-white font-bold" 
-                    asChild
-                  >
-                    <Link to={settings?.navbarActivateButtonUrl || '/activate'}>
-                      {settings?.navbarActivateButtonText || 'Activate SIM'}
+        {isMenuOpen && (
+          <div className="md:hidden border-t border-border">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              <Link
+                to="/"
+                className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('nav.home')}
+              </Link>
+              <Link
+                to="/about"
+                className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('nav.about')}
+              </Link>
+              <Link
+                to="/plans"
+                className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('nav.plans')}
+              </Link>
+              <Link
+                to="/wireless-pbx"
+                className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('nav.wirelessPBX')}
+              </Link>
+              <Link
+                to="/contact"
+                className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {t('nav.contact')}
+              </Link>
+              
+              {/* Mobile Auth Section */}
+              <div className="border-t border-border pt-3 mt-3">
+                {user ? (
+                  <div className="space-y-1">
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center gap-2 px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4" />
+                      Dashboard
                     </Link>
-                  </Button>
-                </div>
+                    <button
+                      onClick={() => {
+                        signOut();
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Link
+                      to="/auth/login"
+                      className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/auth/register"
+                      className="block px-3 py-2 text-foreground hover:text-primary hover:bg-muted rounded-md font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,275 +1,269 @@
-import { useParams, Navigate, Link } from 'react-router-dom';
-import { useState } from 'react';
+
+import React from 'react';
+import { useParams, Navigate } from 'react-router-dom';
+import { usePlanBySlug } from '@/hooks/usePlans';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, ShoppingCart, ArrowLeft, Star } from 'lucide-react';
-import { usePlanBySlug, usePlans } from '@/hooks/usePlans';
-import PromoBanner from '@/components/PromoBanner';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Check, ArrowLeft, CreditCard, Shield, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import NotificationBar from '@/components/NotificationBar';
 import Navbar from '@/components/Navbar';
-import CTASection from '@/components/CTASection';
-import Footer from '@/components/Footer';
-import MobileBottomBar from '@/components/MobileBottomBar';
+import FigmaFooter from '@/components/FigmaFooter';
+import PayPalButton from '@/components/payment/PayPalButton';
 
 const PlanDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [selectedDuration, setSelectedDuration] = useState<'monthly' | 'quarterly'>('monthly');
-  
-  const { data: plan, isLoading, isError } = usePlanBySlug(slug || '');
-  const { data: allPlans } = usePlans();
-  
-  // Get related plans from the same countries or type
-  const relatedPlans = allPlans?.filter(p => 
-    p.id !== plan?.id && 
-    (p.plan_type === plan?.plan_type || 
-     (plan?.countries && p.countries && p.countries.some(c => plan.countries.includes(c))))
-  ).slice(0, 4) || [];
+  const { t } = useTranslation();
+  const { data: plan, isLoading, error } = usePlanBySlug(slug || '');
 
-  if (isLoading) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
-  }
-
-  if (isError || !plan) {
+  if (error) {
     return <Navigate to="/plans" replace />;
   }
 
-  const currentPrice = plan.price; // Simplified for now - quarterly pricing can be added later
-  const savings = 0; // Simplified for now
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <NotificationBar />
+        <Navbar />
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-4xl mx-auto">
+            <Skeleton className="h-8 w-32 mb-6" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <Skeleton className="h-64 w-full rounded-lg" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+              <div className="space-y-6">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <FigmaFooter />
+      </div>
+    );
+  }
+
+  if (!plan) {
+    return <Navigate to="/plans" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <PromoBanner />
+      <NotificationBar />
       <Navbar />
       
-      {/* Breadcrumb */}
-      <div className="container mx-auto px-4 py-4">
-        <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <Link to="/" className="hover:text-foreground">Home</Link>
-          <span>/</span>
-          <Link to="/plans" className="hover:text-foreground">Plans</Link>
-          <span>/</span>
-          <span className="text-foreground">{plan.name}</span>
-        </nav>
-      </div>
+      <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Link 
+          to="/plans" 
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Plans
+        </Link>
 
-      {/* Product Overview Section */}
-      <section className="py-8 lg:py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            {/* Left Column - Product Image */}
-            <div className="space-y-4">
-              <div className="relative">
-                <img 
-                  src={plan.image_url || '/lovable-uploads/3a841a06-7552-4eaa-98cd-086aa058a533.png'} 
-                  alt={plan.name}
-                  className="w-full max-w-md mx-auto rounded-lg shadow-lg"
-                />
-                <div className="absolute top-4 left-4 space-y-2">
-                  <Badge variant="default" className="bg-green-600 text-white">
-                    4G/5G High Speed
-                  </Badge>
-                  <Badge variant="secondary">
-                    No Annual Contract
-                  </Badge>
-                </div>
-                {plan.plan_type === 'domestic' && (
-                  <div className="absolute bottom-4 right-4">
-                    <div className="flex space-x-1">
-                      <span className="text-xs bg-background px-2 py-1 rounded shadow">🇺🇸</span>
-                      <span className="text-xs bg-background px-2 py-1 rounded shadow">🇲🇽</span>
-                      <span className="text-xs bg-background px-2 py-1 rounded shadow">🇨🇦</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Column - Product Info */}
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Plan Details */}
             <div className="space-y-6">
+              {/* Plan Header */}
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                  {plan.name}
-                </h1>
-                <p className="text-lg text-muted-foreground">
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-3xl font-bold">{plan.name}</h1>
+                  {plan.is_featured && (
+                    <Badge variant="secondary">Featured</Badge>
+                  )}
+                </div>
+                <p className="text-lg text-muted-foreground mb-4">
                   {plan.description}
                 </p>
-              </div>
-
-              {/* Features List */}
-              <div className="space-y-3">
-                {plan.features.map((feature, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <Check className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-foreground">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pricing */}
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <div className="text-3xl font-bold text-foreground">
-                    {plan.currency}{currentPrice}
-                  </div>
-                  <span className="text-muted-foreground">/ month</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-primary">
+                    {plan.currency} {plan.price}
+                  </span>
+                  <span className="text-muted-foreground">/month</span>
                 </div>
-
-                {/* Duration Toggle - Simplified for now */}
               </div>
 
-              {/* Buy Now Button */}
-              <Button size="xl" className="w-full md:w-auto" asChild>
-                {plan.external_link ? (
-                  <a href={plan.external_link} target="_blank" rel="noopener noreferrer">
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Buy Now
-                  </a>
-                ) : (
-                  <Link to="/activate-sim">
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Buy Now
-                  </Link>
-                )}
-              </Button>
+              {/* Plan Image */}
+              {plan.image_url && (
+                <Card>
+                  <CardContent className="p-6">
+                    <img
+                      src={plan.image_url}
+                      alt={plan.name}
+                      className="w-full h-64 object-cover rounded-lg"
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-              {/* Plan Type and Countries */}
-              <div className="text-sm text-muted-foreground space-y-1">
-                <div>Type: {plan.plan_type}</div>
-                {plan.countries && plan.countries.length > 0 && (
-                  <div>Countries: {plan.countries.join(', ')}</div>
-                )}
-              </div>
+              {/* Plan Specifications */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    Plan Specifications
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {plan.data_limit && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Data Allowance:</span>
+                      <span className="font-medium">{plan.data_limit}</span>
+                    </div>
+                  )}
+                  {plan.call_minutes && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Call Minutes:</span>
+                      <span className="font-medium">{plan.call_minutes}</span>
+                    </div>
+                  )}
+                  {plan.sms_limit && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">SMS Messages:</span>
+                      <span className="font-medium">{plan.sms_limit}</span>
+                    </div>
+                  )}
+                  {plan.validity_days && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Validity:</span>
+                      <span className="font-medium">{plan.validity_days} days</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Plan Type:</span>
+                    <Badge variant="outline" className="capitalize">
+                      {plan.plan_type}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
 
-              <p className="text-xs text-muted-foreground">
-                *Fees are not included in the listed price
-              </p>
+              {/* Coverage Areas */}
+              {plan.countries && plan.countries.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Coverage Areas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {plan.countries.map((country, index) => (
+                        <Badge key={index} variant="secondary">
+                          {country}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Purchase Section */}
+            <div className="space-y-6">
+              {/* Features */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    Plan Features
+                  </CardTitle>
+                  <CardDescription>
+                    Everything included with this plan
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {plan.features && plan.features.length > 0 ? (
+                      plan.features.map((feature, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <Check className="w-5 h-5 text-green-600 mt-0.5" />
+                          <span className="text-sm">{feature}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground text-sm">
+                        No specific features listed for this plan.
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Purchase This Plan
+                  </CardTitle>
+                  <CardDescription>
+                    Secure payment powered by PayPal
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Price Summary */}
+                    <div className="bg-muted p-4 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <span>Plan Cost:</span>
+                        <span className="font-medium">
+                          {plan.currency} {plan.price}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-lg font-bold">
+                        <span>Total:</span>
+                        <span className="text-primary">
+                          {plan.currency} {plan.price}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* PayPal Payment */}
+                    <PayPalButton
+                      planId={plan.id}
+                      amount={Number(plan.price)}
+                      currency={plan.currency}
+                      description={`${plan.name} - ${plan.description}`}
+                    />
+
+                    {/* Security Notice */}
+                    <div className="text-xs text-muted-foreground text-center">
+                      <Shield className="w-4 h-4 inline mr-1" />
+                      Your payment is processed securely by PayPal
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Terms and Conditions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Terms & Conditions</CardTitle>
+                </CardHeader>
+                <CardContent className="text-xs text-muted-foreground space-y-2">
+                  <p>
+                    By purchasing this plan, you agree to our terms of service and privacy policy.
+                  </p>
+                  <p>
+                    Plan activations are typically processed within 24 hours of payment confirmation.
+                  </p>
+                  <p>
+                    Service availability may vary by location. Contact support for coverage questions.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Tabbed Description Section */}
-      <section className="py-8 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid w-full md:w-auto grid-cols-3">
-              <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="additional">Additional Information</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="description" className="mt-8">
-              <div className="max-w-4xl">
-                <h3 className="text-2xl font-semibold mb-4">Plan Features</h3>
-                <div className="space-y-3">
-                  {plan.features?.map((feature, index) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <Check className="w-4 h-4 text-green-600 mt-1 flex-shrink-0" />
-                      <p className="text-muted-foreground">{feature}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="additional" className="mt-8">
-              <div className="max-w-4xl">
-                <h3 className="text-2xl font-semibold mb-4">Technical Specifications</h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold mb-2">Network Technology</h4>
-                    <p className="text-muted-foreground mb-4">
-                      {plan.plan_type === 'domestic' ? '5G/4G LTE' : '4G LTE'} network with nationwide coverage
-                    </p>
-                    
-                    <h4 className="font-semibold mb-2">Data Allowance</h4>
-                    <p className="text-muted-foreground mb-4">{plan.data_limit || 'Unlimited'}</p>
-                    
-                    <h4 className="font-semibold mb-2">Contract Terms</h4>
-                    <p className="text-muted-foreground">No annual contract required</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2">Coverage Area</h4>
-                    <p className="text-muted-foreground mb-4">
-                      {plan.plan_type === 'domestic' 
-                        ? 'United States, Mexico, and Canada' 
-                        : `${plan.countries?.join(', ') || 'International'} with calling to US/Canada`
-                      }
-                    </p>
-                    
-                    <h4 className="font-semibold mb-2">Device Compatibility</h4>
-                    <p className="text-muted-foreground mb-4">
-                      Compatible with most unlocked smartphones and devices
-                    </p>
-                    
-                    <h4 className="font-semibold mb-2">Activation</h4>
-                    <p className="text-muted-foreground">
-                      Instant activation with SIM card installation
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="reviews" className="mt-8">
-              <div className="max-w-4xl">
-                <h3 className="text-2xl font-semibold mb-4">Customer Reviews</h3>
-                <div className="text-center py-12">
-                  <Star className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-2">No reviews yet</p>
-                  <p className="text-sm text-muted-foreground">
-                    Be the first to review this plan and help other customers make their decision.
-                  </p>
-                  <Button variant="outline" className="mt-4">
-                    Write a Review
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </section>
-
-      {/* Related Products Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Related Products</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedPlans.map((relatedPlan) => (
-              <Card key={relatedPlan.id} className="group hover:shadow-lg transition-shadow">
-                <CardHeader className="p-4">
-                  <img 
-                    src={relatedPlan.image_url || '/lovable-uploads/3a841a06-7552-4eaa-98cd-086aa058a533.png'} 
-                    alt={relatedPlan.name}
-                    className="w-full h-32 object-cover rounded-lg mb-3"
-                  />
-                  <CardTitle className="text-lg">{relatedPlan.name}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {relatedPlan.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl font-bold">{relatedPlan.currency}{relatedPlan.price}</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                  <Link to={`/plans/${relatedPlan.slug}`}>
-                    <Button variant="outline" className="w-full text-primary border-primary hover:bg-primary hover:text-white">
-                      View Details
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <CTASection />
-      <Footer />
-      <MobileBottomBar />
+      </div>
+      
+      <FigmaFooter />
     </div>
   );
 };

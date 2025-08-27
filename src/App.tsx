@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import WirelessPBX from "./pages/WirelessPBX";
@@ -14,6 +15,8 @@ import PlanDetail from "./pages/PlanDetail";
 import ActivateSIM from "./pages/ActivateSIM";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPlans from "./pages/AdminPlans";
@@ -38,6 +41,8 @@ import AdminHomepageCTA from "./pages/AdminHomepageCTA";
 import AdminHomepageFooter from "./pages/AdminHomepageFooter";
 import AdminAbout from "./pages/AdminAbout";
 import AdminContact from "./pages/AdminContact";
+import AdminPaymentSettings from "./pages/AdminPaymentSettings";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 // Optimized QueryClient for better performance and caching
 const queryClient = new QueryClient({
@@ -67,56 +72,64 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
-      <AdminAuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/wireless-pbx" element={<WirelessPBX />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/plans/:slug" element={<PlanDetail />} />
-              <Route path="/activate" element={<ActivateSIM />} />
-              <Route path="/contact" element={<Contact />} />
-              
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin/*" element={<AdminLayout />}>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="plans" element={<AdminPlans />} />
-                <Route path="plans/new" element={<AdminPlanForm />} />
-                <Route path="plans/edit/:id" element={<AdminPlanForm />} />
-                <Route path="wireless-pbx" element={<AdminWirelessPBX />} />
-                <Route path="hero-slides" element={<AdminHeroSlides />} />
-                <Route path="testimonials" element={<AdminTestimonials />} />
-                <Route path="faqs" element={<AdminFaqs />} />
-                <Route path="contacts" element={<AdminContacts />} />
-                <Route path="activate-sim" element={<AdminActivateSimRequests />} />
-                <Route path="media" element={<AdminMedia />} />
-                <Route path="translations" element={<AdminTranslations />} />
-                <Route path="seo" element={<AdminSeo />} />
-                <Route path="settings" element={<AdminSettings />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="slider" element={<AdminHeroSlides />} />
-                <Route path="homepage/notification" element={<AdminHomepageNotification />} />
-                <Route path="homepage/branding" element={<AdminHomepageBranding />} />
-                <Route path="homepage/features" element={<AdminHomepageFeatures />} />
-                <Route path="homepage/coverage" element={<AdminHomepageCoverage />} />
-                <Route path="homepage/cta" element={<AdminHomepageCTA />} />
-                <Route path="homepage/footer" element={<AdminHomepageFooter />} />
-                <Route path="about" element={<AdminAbout />} />
-                <Route path="contact" element={<AdminContact />} />
-              </Route>
-              
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AdminAuthProvider>
+      <AuthProvider>
+        <AdminAuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/wireless-pbx" element={<WirelessPBX />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/plans/:slug" element={<PlanDetail />} />
+                <Route path="/activate" element={<ActivateSIM />} />
+                <Route path="/contact" element={<Contact />} />
+                
+                {/* Auth Routes */}
+                <Route path="/auth/*" element={<Auth />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/payment/success" element={<PaymentSuccess />} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin/*" element={<AdminLayout />}>
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="plans" element={<AdminPlans />} />
+                  <Route path="plans/new" element={<AdminPlanForm />} />
+                  <Route path="plans/edit/:id" element={<AdminPlanForm />} />
+                  <Route path="wireless-pbx" element={<AdminWirelessPBX />} />
+                  <Route path="hero-slides" element={<AdminHeroSlides />} />
+                  <Route path="testimonials" element={<AdminTestimonials />} />
+                  <Route path="faqs" element={<AdminFaqs />} />
+                  <Route path="contacts" element={<AdminContacts />} />
+                  <Route path="activate-sim" element={<AdminActivateSimRequests />} />
+                  <Route path="media" element={<AdminMedia />} />
+                  <Route path="translations" element={<AdminTranslations />} />
+                  <Route path="seo" element={<AdminSeo />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="slider" element={<AdminHeroSlides />} />
+                  <Route path="homepage/notification" element={<AdminHomepageNotification />} />
+                  <Route path="homepage/branding" element={<AdminHomepageBranding />} />
+                  <Route path="homepage/features" element={<AdminHomepageFeatures />} />
+                  <Route path="homepage/coverage" element={<AdminHomepageCoverage />} />
+                  <Route path="homepage/cta" element={<AdminHomepageCTA />} />
+                  <Route path="homepage/footer" element={<AdminHomepageFooter />} />
+                  <Route path="about" element={<AdminAbout />} />
+                  <Route path="contact" element={<AdminContact />} />
+                  <Route path="payment-settings" element={<AdminPaymentSettings />} />
+                </Route>
+                
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AdminAuthProvider>
+      </AuthProvider>
     </LanguageProvider>
   </QueryClientProvider>
 );
