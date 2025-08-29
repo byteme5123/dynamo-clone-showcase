@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, ArrowLeft, Download } from 'lucide-react';
 import { useCapturePayPalOrder } from '@/hooks/usePayPal';
+import { useUserAuth } from '@/contexts/UserAuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -11,6 +12,7 @@ const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const captureOrderMutation = useCapturePayPalOrder();
+  const { refreshSession } = useUserAuth();
 
   const token = searchParams.get('token'); // PayPal order ID
   const payerID = searchParams.get('PayerID');
@@ -19,6 +21,9 @@ const PaymentSuccess = () => {
     const capturePayment = async () => {
       if (token && payerID) {
         try {
+          // Refresh session to ensure user stays logged in
+          await refreshSession();
+          
           const result = await captureOrderMutation.mutateAsync({ orderId: token });
           setPaymentDetails(result);
         } catch (error) {
@@ -28,7 +33,7 @@ const PaymentSuccess = () => {
     };
 
     capturePayment();
-  }, [token, payerID]);
+  }, [token, payerID, refreshSession]);
 
   return (
     <div className="min-h-screen bg-background">

@@ -112,17 +112,53 @@ serve(async (req) => {
     const orderResult = await createOrderResponse.json();
     console.log('PayPal order created:', orderResult.id);
 
-    // Get user info if authenticated
+    // Get user info using custom session token
     let userId = null;
+    let customerEmail = null;
+    let customerName = null;
+
     const authHeader = req.headers.get('Authorization');
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
-      const { data } = await supabaseClient.auth.getUser(token);
-      userId = data.user?.id || null;
+      
+      // Try custom auth first (session token)
+      const { data: session } = await supabaseClient
+        .from('user_sessions')
+        .select('user_id')
+        .eq('token', token)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (session) {
+        // Get user data
+        const { data: userData } = await supabaseClient
+          .from('users')
+          .select('id, email, first_name, last_name')
+          .eq('id', session.user_id)
+          .single();
+
+        if (userData) {
+          userId = userData.id;
+          customerEmail = userData.email;
+          customerName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+        }
+      } else {
+        // Fallback to Supabase auth
+        const { data } = await supabaseClient.auth.getUser(token);
+        userId = data.user?.id || null;
+        customerEmail = data.user?.email || null;
+      }
     }
 
+    // Use Supabase service role key to bypass RLS for order creation
+    const supabaseService = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
     // Store order in database
-    const { error: insertError } = await supabaseClient
+    const { error: insertError } = await supabaseService
       .from('orders')
       .insert({
         user_id: userId,
@@ -131,6 +167,8 @@ serve(async (req) => {
         amount: parseFloat(amount),
         currency: currency,
         status: 'pending',
+        customer_email: customerEmail,
+        customer_name: customerName,
       });
 
     if (insertError) {

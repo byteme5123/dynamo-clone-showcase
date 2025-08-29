@@ -29,7 +29,7 @@ const Account = () => {
   }
 
   // Fetch user's orders
-  const { data: orders, isLoading: ordersLoading } = useQuery({
+  const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['user-orders', user.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,7 +52,7 @@ const Account = () => {
   });
 
   // Fetch user's transactions
-  const { data: transactions, isLoading: transactionsLoading } = useQuery({
+  const { data: transactions, isLoading: transactionsLoading, refetch: refetchTransactions } = useQuery({
     queryKey: ['user-transactions', user.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -72,6 +72,15 @@ const Account = () => {
       return data;
     },
   });
+
+  const refreshData = () => {
+    refetchOrders();
+    refetchTransactions();
+    toast({
+      title: 'Data Refreshed',
+      description: 'Your account data has been refreshed.',
+    });
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,6 +144,9 @@ const Account = () => {
               </p>
             </div>
             <div className="flex items-center space-x-4">
+              <Button variant="outline" onClick={refreshData}>
+                Refresh Data
+              </Button>
               <Link to="/">
                 <Button variant="outline">← Back to Home</Button>
               </Link>

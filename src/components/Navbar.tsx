@@ -89,7 +89,7 @@ const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center space-x-2">
-                    <span>{user?.first_name || user?.email?.split('@')[0] || 'Account'}</span>
+                    <span>My Account</span>
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>

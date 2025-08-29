@@ -19,6 +19,7 @@ interface UserAuthContextType {
   signOut: () => Promise<void>;
   resendVerification: (email: string) => Promise<{ error: any }>;
   verifyEmail: (token: string) => Promise<{ error: any }>;
+  refreshSession: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -137,10 +138,10 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return { error: { message: 'Invalid email or password' } };
       }
 
-      // Create session
+      // Create session with extended expiration
       const sessionToken = crypto.randomUUID();
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
+      expiresAt.setDate(expiresAt.getDate() + 60); // 60 days for payment flows
 
       await supabase
         .from('user_sessions')
@@ -207,6 +208,24 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const refreshSession = async () => {
+    try {
+      const sessionToken = localStorage.getItem('user_session_token');
+      if (sessionToken) {
+        // Extend session expiration
+        const newExpiresAt = new Date();
+        newExpiresAt.setDate(newExpiresAt.getDate() + 60);
+        
+        await supabase
+          .from('user_sessions')
+          .update({ expires_at: newExpiresAt.toISOString() })
+          .eq('token', sessionToken);
+      }
+    } catch (error) {
+      console.error('Session refresh error:', error);
+    }
+  };
+
   return (
     <UserAuthContext.Provider value={{
       user,
@@ -216,6 +235,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       signOut,
       resendVerification,
       verifyEmail,
+      refreshSession,
       isAuthenticated: !!user,
     }}>
       {children}

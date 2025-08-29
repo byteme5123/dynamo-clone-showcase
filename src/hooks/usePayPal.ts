@@ -19,8 +19,16 @@ export const useCreatePayPalOrder = () => {
 
   return useMutation({
     mutationFn: async (params: CreatePayPalOrderParams) => {
+      const sessionToken = localStorage.getItem('user_session_token');
+      const headers: Record<string, string> = {};
+      
+      if (sessionToken) {
+        headers.Authorization = `Bearer ${sessionToken}`;
+      }
+
       const { data, error } = await supabase.functions.invoke('create-paypal-order', {
         body: params,
+        headers,
       });
 
       if (error) throw error;
