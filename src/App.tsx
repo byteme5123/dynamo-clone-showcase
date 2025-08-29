@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import { UserAuthProvider } from "@/contexts/UserAuthContext";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import WirelessPBX from "./pages/WirelessPBX";
@@ -16,6 +17,8 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
+import Auth from "./pages/Auth";
+import Account from "./pages/Account";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPlans from "./pages/AdminPlans";
@@ -32,6 +35,7 @@ import AdminSeo from "./pages/AdminSeo";
 import AdminSettings from "./pages/AdminSettings";
 import AdminUsers from "./pages/AdminUsers";
 import AdminWirelessPBX from "./pages/AdminWirelessPBX";
+import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminHomepageNotification from "./pages/AdminHomepageNotification";
 import AdminHomepageBranding from "./pages/AdminHomepageBranding";
 import AdminHomepageFeatures from "./pages/AdminHomepageFeatures";
@@ -68,9 +72,10 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <AdminAuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <UserAuthProvider>
+            <AdminAuthProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -81,11 +86,13 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/wireless-pbx" element={<WirelessPBX />} />
               <Route path="/plans" element={<Plans />} />
-              <Route path="/plans/:slug" element={<PlanDetail />} />
-              <Route path="/activate" element={<ActivateSIM />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-cancel" element={<PaymentCancel />} />
+                <Route path="/plans/:slug" element={<PlanDetail />} />
+                <Route path="/activate" element={<ActivateSIM />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/account" element={<Account />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/payment-cancel" element={<PaymentCancel />} />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
@@ -105,6 +112,7 @@ const App = () => (
                 <Route path="seo" element={<AdminSeo />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="user-management" element={<AdminUserManagement />} />
                 <Route path="slider" element={<AdminHeroSlides />} />
                 <Route path="homepage/notification" element={<AdminHomepageNotification />} />
                 <Route path="homepage/branding" element={<AdminHomepageBranding />} />
@@ -122,9 +130,10 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </AdminAuthProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
+            </AdminAuthProvider>
+          </UserAuthProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
 );
 
 export default App;

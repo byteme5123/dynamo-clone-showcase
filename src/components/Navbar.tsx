@@ -11,6 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
+import { useUserAuth } from '@/contexts/UserAuthContext';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
@@ -18,6 +19,7 @@ const Navbar = () => {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const settings = useHomepageSettings();
+  const { isAuthenticated, user } = useUserAuth();
 
   const navItems = [
     { name: 'Home', href: '/' },
@@ -83,15 +85,33 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button 
-              variant="default" 
-              className="bg-primary text-white font-bold rounded-lg px-6 py-2 hover:bg-primary/90"
-              asChild
-            >
-              <Link to={settings?.navbarActivateButtonUrl || '/activate'}>
-                {settings?.navbarActivateButtonText || 'Activate SIM'}
-              </Link>
-            </Button>
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center space-x-2">
+                    <span>{user?.first_name || user?.email?.split('@')[0] || 'Account'}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-white border shadow-lg z-50">
+                  <DropdownMenuItem asChild>
+                    <Link to="/account">My Account</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/plans">My Plans</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" asChild>
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+                <Button variant="default" asChild>
+                  <Link to="/auth">Sign Up</Link>
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -133,15 +153,33 @@ const Navbar = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <div className="px-3">
-                  <Button 
-                    variant="default" 
-                    className="w-full bg-primary text-white font-bold" 
-                    asChild
-                  >
-                    <Link to={settings?.navbarActivateButtonUrl || '/activate'}>
-                      {settings?.navbarActivateButtonText || 'Activate SIM'}
-                    </Link>
-                  </Button>
+                  {isAuthenticated ? (
+                    <div className="space-y-2">
+                      <Link 
+                        to="/account" 
+                        className="block px-3 py-2 text-black hover:text-primary transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        My Account
+                      </Link>
+                      <Link 
+                        to="/plans" 
+                        className="block px-3 py-2 text-black hover:text-primary transition-colors"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        My Plans
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>Sign In</Link>
+                      </Button>
+                      <Button variant="default" className="w-full" asChild>
+                        <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>Sign Up</Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

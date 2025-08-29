@@ -182,6 +182,13 @@ const AdminDashboard = () => {
                 <span className="text-sm">Manage Hero Slides</span>
               </a>
               <a 
+                href="/admin/user-management" 
+                className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
+              >
+                <Users className="h-4 w-4 mr-3" />
+                <span className="text-sm">Manage Users</span>
+              </a>
+              <a 
                 href="/admin/testimonials" 
                 className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
               >
