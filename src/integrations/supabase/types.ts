@@ -254,6 +254,13 @@ export type Database = {
             referencedRelation: "plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payment_settings: {
@@ -637,6 +644,7 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
+          email_verified: boolean | null
           first_name: string | null
           id: string
           is_verified: boolean | null
@@ -646,10 +654,12 @@ export type Database = {
           reset_token_expires: string | null
           updated_at: string | null
           verification_token: string | null
+          verification_token_expires: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
+          email_verified?: boolean | null
           first_name?: string | null
           id?: string
           is_verified?: boolean | null
@@ -659,10 +669,12 @@ export type Database = {
           reset_token_expires?: string | null
           updated_at?: string | null
           verification_token?: string | null
+          verification_token_expires?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
+          email_verified?: boolean | null
           first_name?: string | null
           id?: string
           is_verified?: boolean | null
@@ -672,6 +684,7 @@ export type Database = {
           reset_token_expires?: string | null
           updated_at?: string | null
           verification_token?: string | null
+          verification_token_expires?: string | null
         }
         Relationships: []
       }
@@ -728,6 +741,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_verification_token: {
+        Args: { user_email: string }
+        Returns: string
+      }
       get_admin_user_by_id: {
         Args: { target_user_id: string }
         Returns: {
@@ -762,6 +779,10 @@ export type Database = {
       }
       is_super_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      verify_user_email: {
+        Args: { token: string }
         Returns: boolean
       }
     }
