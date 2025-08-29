@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { useCreatePayPalOrder } from '@/hooks/usePayPal';
+import { useUserAuth } from '@/contexts/UserAuthContext';
 
 interface PayPalButtonProps {
   planId: string;
@@ -13,6 +14,7 @@ interface PayPalButtonProps {
 const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const createOrderMutation = useCreatePayPalOrder();
+  const { user, isAuthenticated } = useUserAuth();
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -28,6 +30,8 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
         currency: 'USD',
         returnUrl,
         cancelUrl,
+        userId: isAuthenticated ? user?.id : undefined,
+        customerEmail: user?.email || undefined,
       });
 
       if (result.approvalUrl) {

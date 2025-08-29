@@ -32,7 +32,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { planId, amount, currency = 'USD', returnUrl, cancelUrl } = await req.json();
+    const { planId, amount, currency = 'USD', returnUrl, cancelUrl, userId, customerEmail } = await req.json();
 
     console.log('Creating PayPal order for plan:', planId, 'amount:', amount);
 
@@ -125,12 +125,13 @@ serve(async (req) => {
     const { error: insertError } = await supabaseClient
       .from('orders')
       .insert({
-        user_id: userId,
+        user_id: userId || null,
         plan_id: planId,
         paypal_order_id: orderResult.id,
         amount: parseFloat(amount),
         currency: currency,
         status: 'pending',
+        customer_email: customerEmail || null,
       });
 
     if (insertError) {

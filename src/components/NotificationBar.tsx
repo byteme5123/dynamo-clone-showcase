@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
+import { useUserAuth } from '@/contexts/UserAuthContext';
 
 const NotificationBar = () => {
   const settings = useHomepageSettings();
+  const { isAuthenticated } = useUserAuth();
 
   // Fallback values if settings aren't loaded yet
   const notificationText = settings?.notificationText || 'Get up to 25% off when you purchase a 3 month plan!';
@@ -18,10 +20,10 @@ const NotificationBar = () => {
       </div>
       <div className="hidden md:flex space-x-4 absolute right-4">
         <Link 
-          to={accountLink}
+          to={isAuthenticated ? '/account' : '/auth'}
           className="text-white hover:underline"
         >
-          {accountText}
+          {isAuthenticated ? 'My Account' : accountText}
         </Link>
         <Link 
           to={activateLink}
