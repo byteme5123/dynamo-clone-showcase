@@ -17,7 +17,8 @@ import {
   Smartphone,
   Home,
   Navigation,
-  Palette
+  Palette,
+  CreditCard
 } from 'lucide-react';
 
 const navigation = [
@@ -58,6 +59,7 @@ const navigation = [
   { name: 'Media Library', href: '/admin/media', icon: Camera },
   { name: 'Translations', href: '/admin/translations', icon: Languages },
   { name: 'SEO Settings', href: '/admin/seo', icon: Search },
+  { name: 'PayPal Settings', href: '/admin/paypal', icon: CreditCard },
   { name: 'Site Settings', href: '/admin/settings', icon: Settings },
   { name: 'Admin Users', href: '/admin/users', icon: Users },
 ];
