@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, ShoppingCart, ArrowLeft, Star } from 'lucide-react';
+import { Check, Star } from 'lucide-react';
 import { usePlanBySlug, usePlans } from '@/hooks/usePlans';
 import PromoBanner from '@/components/PromoBanner';
 import Navbar from '@/components/Navbar';
 import CTASection from '@/components/CTASection';
 import Footer from '@/components/Footer';
 import MobileBottomBar from '@/components/MobileBottomBar';
+import PayPalButton from '@/components/PayPalButton';
 
 const PlanDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -119,19 +120,11 @@ const PlanDetail = () => {
               </div>
 
               {/* Buy Now Button */}
-              <Button size="xl" className="w-full md:w-auto" asChild>
-                {plan.external_link ? (
-                  <a href={plan.external_link} target="_blank" rel="noopener noreferrer">
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Buy Now
-                  </a>
-                ) : (
-                  <Link to="/activate-sim">
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Buy Now
-                  </Link>
-                )}
-              </Button>
+              <PayPalButton 
+                planId={plan.id}
+                amount={plan.price}
+                planName={plan.name}
+              />
 
               {/* Plan Type and Countries */}
               <div className="text-sm text-muted-foreground space-y-1">

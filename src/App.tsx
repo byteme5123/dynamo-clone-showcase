@@ -14,6 +14,8 @@ import PlanDetail from "./pages/PlanDetail";
 import ActivateSIM from "./pages/ActivateSIM";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancel from "./pages/PaymentCancel";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPlans from "./pages/AdminPlans";
@@ -81,6 +83,8 @@ const App = () => (
               <Route path="/plans/:slug" element={<PlanDetail />} />
               <Route path="/activate" element={<ActivateSIM />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-cancel" element={<PaymentCancel />} />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
