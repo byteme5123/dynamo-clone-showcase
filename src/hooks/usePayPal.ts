@@ -8,8 +8,6 @@ interface CreatePayPalOrderParams {
   currency?: string;
   returnUrl: string;
   cancelUrl: string;
-  userId?: string;
-  customerEmail?: string;
 }
 
 interface CapturePayPalOrderParams {

@@ -72,37 +72,17 @@ serve(async (req) => {
     const paymentId = captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id;
     const status = captureResult.status === 'COMPLETED' ? 'completed' : 'failed';
 
-    const { data: orderData, error: updateError } = await supabaseClient
+    const { error: updateError } = await supabaseClient
       .from('orders')
       .update({
         paypal_payment_id: paymentId,
         status: status,
         updated_at: new Date().toISOString(),
       })
-      .eq('paypal_order_id', orderId)
-      .select('*, plans(name)')
-      .single();
+      .eq('paypal_order_id', orderId);
 
     if (updateError) {
       console.error('Error updating order:', updateError);
-    }
-
-    // Send confirmation email if order completed and we have customer email
-    if (status === 'completed' && orderData?.customer_email) {
-      try {
-        await supabaseClient.functions.invoke('send-order-confirmation', {
-          body: {
-            email: orderData.customer_email,
-            orderId: orderData.id,
-            planName: orderData.plans?.name || 'Wireless Plan',
-            amount: orderData.amount,
-            currency: orderData.currency,
-            orderDate: orderData.created_at,
-          }
-        });
-      } catch (emailError) {
-        console.error('Failed to send confirmation email:', emailError);
-      }
     }
 
     return new Response(JSON.stringify({

@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
-import { UserAuthProvider } from "@/contexts/UserAuthContext";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import WirelessPBX from "./pages/WirelessPBX";
@@ -17,9 +16,6 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
-import Auth from "./pages/Auth";
-import Account from "./pages/Account";
-import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPlans from "./pages/AdminPlans";
@@ -74,31 +70,22 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
-      <UserAuthProvider>
-        <AdminAuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/wireless-pbx" element={<WirelessPBX />} />
-                <Route path="/plans" element={<Plans />} />
-                <Route path="/plans/:slug" element={<PlanDetail />} />
-                <Route path="/activate" element={<ActivateSIM />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/payment-success" element={<PaymentSuccess />} />
-                <Route path="/payment-cancel" element={<PaymentCancel />} />
-                <Route path="/auth" element={<Auth />} />
-                
-                {/* Protected Routes */}
-                <Route path="/account" element={
-                  <ProtectedRoute>
-                    <Account />
-                  </ProtectedRoute>
-                } />
+      <AdminAuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/wireless-pbx" element={<WirelessPBX />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/plans/:slug" element={<PlanDetail />} />
+              <Route path="/activate" element={<ActivateSIM />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-cancel" element={<PaymentCancel />} />
               
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
@@ -136,9 +123,8 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </AdminAuthProvider>
-    </UserAuthProvider>
-  </LanguageProvider>
-</QueryClientProvider>
+    </LanguageProvider>
+  </QueryClientProvider>
 );
 
 export default App;
