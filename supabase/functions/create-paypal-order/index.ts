@@ -118,36 +118,51 @@ serve(async (req) => {
     let customerName = null;
 
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
+      console.log('Extracted token length:', token.length);
       
       // Try custom auth first (session token)
-      const { data: session } = await supabaseClient
+      const { data: session, error: sessionError } = await supabaseClient
         .from('user_sessions')
         .select('user_id')
         .eq('token', token)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
+      console.log('Session lookup result:', { session, sessionError });
+
       if (session) {
+        console.log('Session found for user_id:', session.user_id);
+        
         // Get user data
-        const { data: userData } = await supabaseClient
+        const { data: userData, error: userError } = await supabaseClient
           .from('users')
           .select('id, email, first_name, last_name')
           .eq('id', session.user_id)
           .single();
 
+        console.log('User lookup result:', { userData, userError });
+
         if (userData) {
           userId = userData.id;
           customerEmail = userData.email;
           customerName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+          console.log('User authenticated:', { userId, customerEmail, customerName });
         }
       } else {
+        console.log('Session not found, trying Supabase auth fallback');
         // Fallback to Supabase auth
-        const { data } = await supabaseClient.auth.getUser(token);
+        const { data, error: authError } = await supabaseClient.auth.getUser(token);
+        console.log('Supabase auth result:', { user: data.user, authError });
         userId = data.user?.id || null;
         customerEmail = data.user?.email || null;
       }
+    } else {
+      console.warn('No authorization header provided');
+      throw new Error('Authentication required for payment');
     }
 
     // Use Supabase service role key to bypass RLS for order creation
@@ -156,6 +171,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
+
+    // Validate we have user info before creating order
+    if (!userId) {
+      console.error('Cannot create order: user_id is null');
+      throw new Error('User authentication failed. Please log in and try again.');
+    }
+
+    console.log('Creating order with user_id:', userId);
 
     // Store order in database
     const { error: insertError } = await supabaseService
@@ -173,7 +196,10 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('Error storing order:', insertError);
+      throw new Error('Failed to create order record');
     }
+
+    console.log('Order stored successfully for user:', userId);
 
     return new Response(JSON.stringify({
       orderId: orderResult.id,

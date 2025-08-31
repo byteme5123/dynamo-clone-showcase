@@ -24,6 +24,10 @@ export const useCreatePayPalOrder = () => {
       
       if (sessionToken) {
         headers.Authorization = `Bearer ${sessionToken}`;
+        console.log('Create PayPal order with session token present');
+      } else {
+        console.warn('No session token found for PayPal order creation');
+        throw new Error('Please log in to make a purchase');
       }
 
       const { data, error } = await supabase.functions.invoke('create-paypal-order', {
@@ -49,8 +53,19 @@ export const useCapturePayPalOrder = () => {
 
   return useMutation({
     mutationFn: async (params: CapturePayPalOrderParams) => {
+      const sessionToken = localStorage.getItem('user_session_token');
+      const headers: Record<string, string> = {};
+      
+      if (sessionToken) {
+        headers.Authorization = `Bearer ${sessionToken}`;
+        console.log('Capture PayPal order with session token present');
+      } else {
+        console.warn('No session token found for PayPal capture');
+      }
+
       const { data, error } = await supabase.functions.invoke('capture-paypal-order', {
         body: params,
+        headers,
       });
 
       if (error) throw error;

@@ -18,8 +18,31 @@ serve(async (req) => {
     );
 
     const { orderId } = await req.json();
-
     console.log('Capturing PayPal order:', orderId);
+
+    // Get user info from session token if provided
+    let authenticatedUserId = null;
+    const authHeader = req.headers.get('Authorization');
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      console.log('Auth token provided for capture, length:', token.length);
+      
+      // Validate session token
+      const { data: session, error: sessionError } = await supabaseClient
+        .from('user_sessions')
+        .select('user_id')
+        .eq('token', token)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (session) {
+        authenticatedUserId = session.user_id;
+        console.log('Authenticated user for capture:', authenticatedUserId);
+      } else {
+        console.warn('Invalid or expired session token for capture');
+      }
+    }
 
     // Get PayPal settings
     const { data: paypalSettings, error: settingsError } = await supabaseClient
@@ -81,12 +104,38 @@ serve(async (req) => {
     // Get order details first
     const { data: order, error: orderError } = await supabaseService
       .from('orders')
-      .select('user_id, plan_id, amount')
+      .select('user_id, plan_id, amount, customer_email, customer_name')
       .eq('paypal_order_id', orderId)
       .single();
 
     if (orderError) {
       console.error('Error finding order:', orderError);
+      throw new Error('Order not found');
+    }
+
+    console.log('Found order:', { 
+      orderId, 
+      user_id: order?.user_id, 
+      plan_id: order?.plan_id, 
+      amount: order?.amount 
+    });
+
+    // Validate user association
+    if (authenticatedUserId && order?.user_id && authenticatedUserId !== order.user_id) {
+      console.error('User mismatch:', { authenticatedUserId, orderUserId: order.user_id });
+      throw new Error('Unauthorized: Order belongs to different user');
+    }
+
+    // If we have an authenticated user but order has null user_id, update it
+    if (authenticatedUserId && !order?.user_id) {
+      console.log('Updating order with authenticated user_id:', authenticatedUserId);
+      await supabaseService
+        .from('orders')
+        .update({ user_id: authenticatedUserId })
+        .eq('paypal_order_id', orderId);
+      
+      // Update local order object
+      order.user_id = authenticatedUserId;
     }
 
     // Update order status
@@ -105,20 +154,30 @@ serve(async (req) => {
 
     // Create transaction record if payment successful
     if (status === 'paid' && order) {
-      const { error: transactionError } = await supabaseService
-        .from('transactions')
-        .insert({
-          user_id: order.user_id,
-          plan_id: order.plan_id,
-          amount: order.amount,
-          paypal_transaction_id: paymentId,
-          paypal_order_id: orderId,
-          status: 'completed',
-          payment_method: 'PayPal',
-        });
+      const finalUserId = order.user_id || authenticatedUserId;
+      
+      if (!finalUserId) {
+        console.error('Cannot create transaction: no user_id available');
+      } else {
+        console.log('Creating transaction for user:', finalUserId);
+        
+        const { error: transactionError } = await supabaseService
+          .from('transactions')
+          .insert({
+            user_id: finalUserId,
+            plan_id: order.plan_id,
+            amount: order.amount,
+            paypal_transaction_id: paymentId,
+            paypal_order_id: orderId,
+            status: 'completed',
+            payment_method: 'PayPal',
+          });
 
-      if (transactionError) {
-        console.error('Error creating transaction:', transactionError);
+        if (transactionError) {
+          console.error('Error creating transaction:', transactionError);
+        } else {
+          console.log('Transaction created successfully for user:', finalUserId);
+        }
       }
     }
 
