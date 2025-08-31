@@ -47,13 +47,15 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       if (!sessionToken) {
-        // Try to restore from backup user data
+        // Try to restore from backup user data first
         const backupData = sessionStorage.getItem('user_data_backup');
         if (backupData) {
           try {
             const userData = JSON.parse(backupData);
             setUser(userData);
+            // Clear backup after restoration
             sessionStorage.removeItem('user_data_backup');
+            console.log('User restored from backup:', userData.email);
           } catch {
             // Ignore parse errors
           }
@@ -82,6 +84,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setUser(userData);
           // Update backup
           sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
+          console.log('User session restored:', userData.email);
         }
       } else {
         // Clear invalid session

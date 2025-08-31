@@ -20,7 +20,9 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
     setIsProcessing(true);
     
     try {
-      // Refresh session to extend expiration before payment
+      console.log('Starting PayPal payment flow for plan:', planId);
+      
+      // Refresh and extend session before payment
       await refreshSession();
       
       const currentUrl = window.location.origin;
@@ -36,6 +38,7 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
       });
 
       if (result.approvalUrl) {
+        console.log('Redirecting to PayPal:', result.approvalUrl);
         // Redirect to PayPal for payment
         window.location.href = result.approvalUrl;
       }

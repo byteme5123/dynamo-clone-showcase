@@ -25,18 +25,21 @@ const PaymentSuccess = () => {
     const capturePayment = async () => {
       if (token && payerID) {
         try {
+          console.log('Capturing payment for token:', token);
+          
           // Refresh session to ensure user stays logged in
           await refreshSession();
           
           const result = await captureOrderMutation.mutateAsync({ orderId: token });
           setPaymentDetails(result);
           
-          // Show success message and redirect to account after 5 seconds
+          // Show success message and redirect to account after 3 seconds
           if (result.success) {
             setShowRedirectMessage(true);
+            console.log('Payment captured successfully, redirecting to account...');
             setTimeout(() => {
-              navigate('/account');
-            }, 5000);
+              navigate('/account?payment_success=true');
+            }, 3000);
           }
         } catch (error) {
           console.error('Error capturing payment:', error);
