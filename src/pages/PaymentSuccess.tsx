@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, ArrowLeft, Download } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Download, User } from 'lucide-react';
 import { useCapturePayPalOrder } from '@/hooks/usePayPal';
 import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useSessionRecovery } from '@/hooks/useSessionRecovery';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [showRedirectMessage, setShowRedirectMessage] = useState(false);
   const captureOrderMutation = useCapturePayPalOrder();
   const { refreshSession } = useUserAuth();
+  const { user } = useSessionRecovery();
+  const navigate = useNavigate();
 
   const token = searchParams.get('token'); // PayPal order ID
   const payerID = searchParams.get('PayerID');
@@ -26,6 +30,14 @@ const PaymentSuccess = () => {
           
           const result = await captureOrderMutation.mutateAsync({ orderId: token });
           setPaymentDetails(result);
+          
+          // Show success message and redirect to account after 5 seconds
+          if (result.success) {
+            setShowRedirectMessage(true);
+            setTimeout(() => {
+              navigate('/account');
+            }, 5000);
+          }
         } catch (error) {
           console.error('Error capturing payment:', error);
         }
@@ -33,7 +45,7 @@ const PaymentSuccess = () => {
     };
 
     capturePayment();
-  }, [token, payerID, refreshSession]);
+  }, [token, payerID, refreshSession, navigate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,6 +86,13 @@ const PaymentSuccess = () => {
                 <p>You will receive a confirmation email shortly with your order details and activation instructions.</p>
               </div>
               
+              {showRedirectMessage && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+                  <p className="font-medium">Redirecting to your account...</p>
+                  <p className="text-sm">You will be automatically redirected to view your purchase in 5 seconds.</p>
+                </div>
+              )}
+              
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild variant="outline">
                   <Link to="/plans">
@@ -82,6 +101,12 @@ const PaymentSuccess = () => {
                   </Link>
                 </Button>
                 <Button asChild>
+                  <Link to="/account">
+                    <User className="w-4 h-4 mr-2" />
+                    View My Account
+                  </Link>
+                </Button>
+                <Button asChild variant="secondary">
                   <Link to="/activate-sim">
                     <Download className="w-4 h-4 mr-2" />
                     Activate SIM

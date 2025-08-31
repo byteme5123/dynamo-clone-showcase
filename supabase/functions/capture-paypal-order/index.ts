@@ -123,7 +123,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({
-      success: status === 'completed',
+      success: status === 'paid',
       paymentId: paymentId,
       status: status,
       details: captureResult,

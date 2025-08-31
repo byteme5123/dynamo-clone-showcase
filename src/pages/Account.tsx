@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useUserAuth } from '@/contexts/UserAuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User, CreditCard, Package, Settings, LogOut, Loader2 } from 'lucide-react';
+import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +17,7 @@ const Account = () => {
   const { user, isAuthenticated, signOut } = useUserAuth();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [profileData, setProfileData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -73,14 +74,45 @@ const Account = () => {
     },
   });
 
-  const refreshData = () => {
-    refetchOrders();
-    refetchTransactions();
-    toast({
-      title: 'Data Refreshed',
-      description: 'Your account data has been refreshed.',
-    });
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([refetchOrders(), refetchTransactions()]);
+      toast({
+        title: "Data Refreshed",
+        description: "Your account data has been refreshed successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
+
+  // Auto-refresh data on mount and when returning from payment
+  useEffect(() => {
+    const autoRefresh = () => {
+      if (user) {
+        refreshData();
+      }
+    };
+
+    // Check if user just returned from payment
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment_success') === 'true') {
+      // Clear the parameter
+      window.history.replaceState({}, '', '/account');
+      autoRefresh();
+    }
+    
+    // Auto-refresh every 30 seconds to catch new payments
+    const interval = setInterval(autoRefresh, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,8 +176,17 @@ const Account = () => {
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={refreshData}>
-                Refresh Data
+              <Button 
+                variant="outline" 
+                onClick={refreshData}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
               </Button>
               <Link to="/">
                 <Button variant="outline">← Back to Home</Button>
