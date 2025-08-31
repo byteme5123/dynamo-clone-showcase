@@ -32,7 +32,40 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { planId, amount, currency = 'USD', returnUrl, cancelUrl } = await req.json();
+    // Parse request body with proper error handling
+    let requestBody;
+    try {
+      const text = await req.text();
+      console.log('Raw request body:', text);
+      
+      if (!text || text.trim() === '') {
+        throw new Error('Request body is empty');
+      }
+      
+      requestBody = JSON.parse(text);
+      console.log('Parsed request body:', requestBody);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid request body. Please ensure you are sending valid JSON.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    // Validate required parameters
+    const { planId, amount, currency = 'USD', returnUrl, cancelUrl } = requestBody;
+    
+    if (!planId || !amount || !returnUrl || !cancelUrl) {
+      console.error('Missing required parameters:', { planId: !!planId, amount: !!amount, returnUrl: !!returnUrl, cancelUrl: !!cancelUrl });
+      return new Response(JSON.stringify({ 
+        error: 'Missing required parameters: planId, amount, returnUrl, and cancelUrl are required' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
 
     console.log('Creating PayPal order for plan:', planId, 'amount:', amount);
 
