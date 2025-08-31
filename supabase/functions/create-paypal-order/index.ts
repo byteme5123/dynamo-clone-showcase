@@ -120,67 +120,87 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
     
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      console.log('Extracted token length:', token.length);
-      
-      // Try custom auth first (session token)
-      const { data: session, error: sessionError } = await supabaseClient
-        .from('user_sessions')
-        .select('user_id')
-        .eq('token', token)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
-
-      console.log('Session lookup result:', { session, sessionError });
-
-      if (session) {
-        console.log('Session found for user_id:', session.user_id);
-        
-        // Get user data
-        const { data: userData, error: userError } = await supabaseClient
-          .from('users')
-          .select('id, email, first_name, last_name')
-          .eq('id', session.user_id)
-          .single();
-
-        console.log('User lookup result:', { userData, userError });
-
-        if (userData) {
-          userId = userData.id;
-          customerEmail = userData.email;
-          customerName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
-          console.log('User authenticated:', { userId, customerEmail, customerName });
-        }
-      } else {
-        console.log('Session not found, trying Supabase auth fallback');
-        // Fallback to Supabase auth
-        const { data, error: authError } = await supabaseClient.auth.getUser(token);
-        console.log('Supabase auth result:', { user: data.user, authError });
-        userId = data.user?.id || null;
-        customerEmail = data.user?.email || null;
-      }
-    } else {
-      console.warn('No authorization header provided');
-      throw new Error('Authentication required for payment');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(JSON.stringify({ 
+        error: 'Authentication required. Please log in and try again.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
     }
 
-    // Use Supabase service role key to bypass RLS for order creation
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Extracted token length:', token.length);
+    console.log('Token format check:', token.substring(0, 8) + '...');
+    
+    // Use service role key for session lookup to bypass RLS
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
+    // Try custom auth first (session token)
+    const { data: session, error: sessionError } = await supabaseService
+      .from('user_sessions')
+      .select('user_id')
+      .eq('token', token)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    console.log('Session lookup result:', { session, sessionError, currentTime: new Date().toISOString() });
+
+    if (session && session.user_id) {
+      console.log('Session found for user_id:', session.user_id);
+      
+      // Get user data using service role key
+      const { data: userData, error: userError } = await supabaseService
+        .from('users')
+        .select('id, email, first_name, last_name')
+        .eq('id', session.user_id)
+        .single();
+
+      console.log('User lookup result:', { userData, userError });
+
+      if (userData && !userError) {
+        userId = userData.id;
+        customerEmail = userData.email;
+        customerName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+        console.log('User authenticated successfully:', { userId, customerEmail, customerName });
+      } else {
+        console.error('Failed to get user data:', userError);
+        return new Response(JSON.stringify({ 
+          error: 'Failed to retrieve user information. Please try again.' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+    } else {
+      console.error('Session validation failed:', { sessionError, sessionFound: !!session });
+      return new Response(JSON.stringify({ 
+        error: 'Invalid or expired session. Please log in again.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
     // Validate we have user info before creating order
     if (!userId) {
-      console.error('Cannot create order: user_id is null');
-      throw new Error('User authentication failed. Please log in and try again.');
+      console.error('Cannot create order: user_id is null after authentication');
+      return new Response(JSON.stringify({ 
+        error: 'Authentication failed. Please log in and try again.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
     }
 
     console.log('Creating order with user_id:', userId);
 
-    // Store order in database
+    // Store order in database using service role key
     const { error: insertError } = await supabaseService
       .from('orders')
       .insert({
@@ -196,7 +216,12 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('Error storing order:', insertError);
-      throw new Error('Failed to create order record');
+      return new Response(JSON.stringify({ 
+        error: 'Failed to create order record. Please try again.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     console.log('Order stored successfully for user:', userId);
