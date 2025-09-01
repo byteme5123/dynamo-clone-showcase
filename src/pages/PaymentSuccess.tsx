@@ -44,31 +44,45 @@ const PaymentSuccess = () => {
 
   // Then process payment once session is recovered
   useEffect(() => {
-    const capturePayment = async () => {
-      if (!sessionRecovered || !token) {
-        if (!token) {
-          toast({
-            title: 'Payment Error',
-            description: 'No payment token found',
-            variant: 'destructive'
-          });
-          navigate('/plans');
-        }
-        return;
+    // Prevent multiple concurrent capture attempts
+    if (!sessionRecovered || !token || isProcessing || captureOrderMutation.isPending) {
+      if (!token && sessionRecovered) {
+        toast({
+          title: 'Payment Error',
+          description: 'No payment token found',
+          variant: 'destructive'
+        });
+        navigate('/plans');
       }
+      return;
+    }
 
+    let isCancelled = false;
+    
+    const capturePayment = async () => {
+      if (isCancelled) return;
+      
       try {
         console.log('Capturing payment for token:', token);
+        
+        // Get session token from URL params or localStorage
+        const finalSessionToken = sessionToken || localStorage.getItem('user_session_token');
+        console.log('Using session token for capture:', finalSessionToken ? 'present' : 'missing');
+        
         const result = await captureOrderMutation.mutateAsync({ 
           orderId: token,
-          sessionToken: sessionToken || localStorage.getItem('user_session_token')
+          sessionToken: finalSessionToken
         });
+        
+        if (isCancelled) return;
+        
         setPaymentDetails(result);
         
         if (result.success) {
           // Invalidate all related queries to refresh data
           await queryClient.invalidateQueries({ queryKey: ['user-orders'] });
           await queryClient.invalidateQueries({ queryKey: ['user-transactions'] });
+          await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
           
           toast({
             title: 'Payment Successful!',
@@ -77,7 +91,9 @@ const PaymentSuccess = () => {
 
           // Redirect to account after 3 seconds
           setTimeout(() => {
-            navigate('/account?payment_success=true');
+            if (!isCancelled) {
+              navigate('/account?payment_success=true');
+            }
           }, 3000);
         } else {
           toast({
@@ -87,7 +103,20 @@ const PaymentSuccess = () => {
           });
         }
       } catch (error: any) {
+        if (isCancelled) return;
+        
         console.error('Error capturing payment:', error);
+        
+        // Handle specific PayPal errors
+        if (error.message?.includes('already captured') || error.message?.includes('Order already processed')) {
+          toast({
+            title: 'Payment Already Processed',
+            description: 'This payment has already been completed.',
+          });
+          navigate('/account');
+          return;
+        }
+        
         toast({
           title: 'Payment Error',
           description: error.message || 'Failed to process payment',
@@ -99,12 +128,20 @@ const PaymentSuccess = () => {
           navigate(`/auth?returnUrl=/payment-success?token=${token}&PayerID=${payerID}`);
         }
       } finally {
-        setIsProcessing(false);
+        if (!isCancelled) {
+          setIsProcessing(false);
+        }
       }
     };
 
+    setIsProcessing(true);
     capturePayment();
-  }, [sessionRecovered, token, payerID, captureOrderMutation, navigate, toast, queryClient, sessionToken]);
+    
+    // Cleanup function to prevent state updates if component unmounts
+    return () => {
+      isCancelled = true;
+    };
+  }, [sessionRecovered, token, payerID, isProcessing, captureOrderMutation.isPending]);
 
   // Show login prompt only if session recovery failed and we're not processing
   if (!sessionRecovered || (!isAuthenticated && !isProcessing && sessionRecovered)) {

@@ -64,43 +64,30 @@ export const useCapturePayPalOrder = () => {
 
   return useMutation({
     mutationFn: async (params: CapturePayPalOrderParams) => {
-      const sessionToken = localStorage.getItem('user_session_token');
+      // Use the session token from params first, then fallback to localStorage
+      const sessionToken = params.sessionToken || localStorage.getItem('user_session_token');
       
-      // Pass session token in request body instead of Authorization header
+      console.log('Capturing PayPal order:', params.orderId);
+      console.log('Session token available:', sessionToken ? 'yes' : 'no');
+      
       const requestBody = {
-        ...params,
+        orderId: params.orderId,
         sessionToken,
       };
-      
-      console.log('Capture PayPal order with session token:', sessionToken ? 'present' : 'missing');
 
       const { data, error } = await supabase.functions.invoke('capture-paypal-order', {
         body: requestBody,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Capture error response:', error);
+        throw new Error(error.message || 'Failed to capture PayPal order');
+      }
+      
+      console.log('Capture response:', data);
       return data;
     },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: 'Payment Successful',
-          description: 'Your payment has been processed successfully!',
-        });
-      } else {
-        toast({
-          title: 'Payment Failed',
-          description: 'Your payment could not be processed. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Payment Error',
-        description: error.message || 'Failed to capture PayPal order',
-        variant: 'destructive',
-      });
-    },
+    // Remove toast notifications from here to avoid duplicates
+    // The PaymentSuccess component will handle success/error messaging
   });
 };
