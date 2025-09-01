@@ -20,6 +20,7 @@ interface UserAuthContextType {
   resendVerification: (email: string) => Promise<{ error: any }>;
   verifyEmail: (token: string) => Promise<{ error: any }>;
   refreshSession: () => Promise<void>;
+  checkSession: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -242,11 +243,12 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       loading,
       signUp,
       signIn,
-      signOut,
-      resendVerification,
-      verifyEmail,
-      refreshSession,
-      isAuthenticated: !!user,
+        signOut,
+        resendVerification,
+        verifyEmail,
+        refreshSession,
+        checkSession,
+        isAuthenticated: !!user,
     }}>
       {children}
     </UserAuthContext.Provider>

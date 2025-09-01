@@ -108,10 +108,10 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get order details first
-    const { data: order, error: orderError } = await supabaseService
+    // Check if order was already captured to prevent duplicates
+    const { data: existingOrder, error: orderError } = await supabaseService
       .from('orders')
-      .select('user_id, plan_id, amount, customer_email, customer_name')
+      .select('user_id, plan_id, amount, customer_email, customer_name, status, paypal_payment_id')
       .eq('paypal_order_id', orderId)
       .single();
 
@@ -119,6 +119,23 @@ serve(async (req) => {
       console.error('Error finding order:', orderError);
       throw new Error('Order not found');
     }
+
+    // If order is already paid, return success without re-processing
+    if (existingOrder.status === 'paid' && existingOrder.paypal_payment_id) {
+      console.log('Order already captured:', orderId);
+      return new Response(JSON.stringify({
+        success: true,
+        paymentId: existingOrder.paypal_payment_id,
+        status: 'paid',
+        message: 'Order already processed'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    const order = existingOrder;
+
 
     console.log('Found order:', { 
       orderId, 
@@ -168,22 +185,33 @@ serve(async (req) => {
       } else {
         console.log('Creating transaction for user:', finalUserId);
         
-        const { error: transactionError } = await supabaseService
+        // Check if transaction already exists to prevent duplicates
+        const { data: existingTransaction } = await supabaseService
           .from('transactions')
-          .insert({
-            user_id: finalUserId,
-            plan_id: order.plan_id,
-            amount: order.amount,
-            paypal_transaction_id: paymentId,
-            paypal_order_id: orderId,
-            status: 'completed',
-            payment_method: 'PayPal',
-          });
+          .select('id')
+          .eq('paypal_order_id', orderId)
+          .maybeSingle();
 
-        if (transactionError) {
-          console.error('Error creating transaction:', transactionError);
+        if (!existingTransaction) {
+          const { error: transactionError } = await supabaseService
+            .from('transactions')
+            .insert({
+              user_id: finalUserId,
+              plan_id: order.plan_id,
+              amount: order.amount,
+              paypal_transaction_id: paymentId,
+              paypal_order_id: orderId,
+              status: 'completed',
+              payment_method: 'PayPal',
+            });
+
+          if (transactionError) {
+            console.error('Error creating transaction:', transactionError);
+          } else {
+            console.log('Transaction created successfully for user:', finalUserId);
+          }
         } else {
-          console.log('Transaction created successfully for user:', finalUserId);
+          console.log('Transaction already exists for order:', orderId);
         }
       }
     }

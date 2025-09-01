@@ -22,27 +22,23 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
     try {
       console.log('Starting PayPal payment flow for plan:', planId);
       
-      // Check if user is authenticated
+      // Check if user is authenticated and get session token
       const sessionToken = localStorage.getItem('user_session_token');
       if (!sessionToken) {
         throw new Error('Please log in to make a purchase');
       }
       
-      // Refresh and extend session before payment
-      console.log('Refreshing session before payment...');
+      // Refresh session before creating order
       await refreshSession();
-      
-      const currentUrl = window.location.origin;
-      const returnUrl = `${currentUrl}/payment-success`;
-      const cancelUrl = `${currentUrl}/payment-cancel`;
 
-      console.log('Creating PayPal order...');
+      // Create PayPal order with session token in return URL
       const result = await createOrderMutation.mutateAsync({
         planId,
         amount,
         currency: 'USD',
-        returnUrl,
-        cancelUrl,
+        returnUrl: `${window.location.origin}/payment-success?sessionToken=${sessionToken}`,
+        cancelUrl: `${window.location.origin}/payment-cancel?sessionToken=${sessionToken}`,
+        sessionToken,
       });
 
       if (result.approvalUrl) {

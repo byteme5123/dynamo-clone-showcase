@@ -15,38 +15,60 @@ const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(true);
+  const [sessionRecovered, setSessionRecovered] = useState(false);
   const captureOrderMutation = useCapturePayPalOrder();
-  const { user, isAuthenticated } = useUserAuth();
+  const { user, isAuthenticated, checkSession } = useUserAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const token = searchParams.get('token'); // PayPal order ID
   const payerID = searchParams.get('PayerID');
+  const sessionToken = searchParams.get('sessionToken');
 
+  // First try to recover session if we have a session token
+  useEffect(() => {
+    const recoverSession = async () => {
+      if (sessionToken && !isAuthenticated) {
+        console.log('Attempting to recover session from PayPal redirect');
+        localStorage.setItem('user_session_token', sessionToken);
+        await checkSession();
+        setSessionRecovered(true);
+      } else {
+        setSessionRecovered(true);
+      }
+    };
+
+    recoverSession();
+  }, [sessionToken, isAuthenticated, checkSession]);
+
+  // Then process payment once session is recovered
   useEffect(() => {
     const capturePayment = async () => {
-      if (!token) {
-        toast({
-          title: 'Payment Error',
-          description: 'No payment token found',
-          variant: 'destructive'
-        });
-        navigate('/plans');
+      if (!sessionRecovered || !token) {
+        if (!token) {
+          toast({
+            title: 'Payment Error',
+            description: 'No payment token found',
+            variant: 'destructive'
+          });
+          navigate('/plans');
+        }
         return;
       }
 
       try {
         console.log('Capturing payment for token:', token);
-        const result = await captureOrderMutation.mutateAsync({ orderId: token });
+        const result = await captureOrderMutation.mutateAsync({ 
+          orderId: token,
+          sessionToken: sessionToken || localStorage.getItem('user_session_token')
+        });
         setPaymentDetails(result);
         
         if (result.success) {
-          // Invalidate user data queries to refresh account page
-          if (user?.id) {
-            await queryClient.invalidateQueries({ queryKey: ['user-orders', user.id] });
-            await queryClient.invalidateQueries({ queryKey: ['user-transactions', user.id] });
-          }
+          // Invalidate all related queries to refresh data
+          await queryClient.invalidateQueries({ queryKey: ['user-orders'] });
+          await queryClient.invalidateQueries({ queryKey: ['user-transactions'] });
           
           toast({
             title: 'Payment Successful!',
@@ -57,6 +79,12 @@ const PaymentSuccess = () => {
           setTimeout(() => {
             navigate('/account?payment_success=true');
           }, 3000);
+        } else {
+          toast({
+            title: 'Payment Processing Issue',
+            description: 'Payment was processed but there may be a delay in activation.',
+            variant: 'destructive'
+          });
         }
       } catch (error: any) {
         console.error('Error capturing payment:', error);
@@ -65,24 +93,30 @@ const PaymentSuccess = () => {
           description: error.message || 'Failed to process payment',
           variant: 'destructive'
         });
+        
+        // If authentication fails, redirect to login with payment info
+        if (error.message?.includes('authentication') || error.message?.includes('login')) {
+          navigate(`/auth?returnUrl=/payment-success?token=${token}&PayerID=${payerID}`);
+        }
       } finally {
         setIsProcessing(false);
       }
     };
 
     capturePayment();
-  }, [token, payerID, captureOrderMutation, navigate, toast, queryClient, user?.id]);
+  }, [sessionRecovered, token, payerID, captureOrderMutation, navigate, toast, queryClient, sessionToken]);
 
-  if (!isAuthenticated) {
+  // Show login prompt only if session recovery failed and we're not processing
+  if (!sessionRecovered || (!isAuthenticated && !isProcessing && sessionRecovered)) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
           <Card className="max-w-md mx-auto">
             <CardContent className="p-6">
-              <p>Please log in to view your payment status.</p>
-              <Button onClick={() => navigate('/auth')} className="mt-4">
-                Login
+              <p>Please log in to complete your payment verification.</p>
+              <Button onClick={() => navigate(`/auth?returnUrl=/payment-success?token=${token}&PayerID=${payerID}`)} className="mt-4">
+                Login to Continue
               </Button>
             </CardContent>
           </Card>

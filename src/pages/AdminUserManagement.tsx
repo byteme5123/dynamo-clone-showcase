@@ -69,6 +69,8 @@ const AdminUserManagement = () => {
             currency,
             status,
             created_at,
+            paypal_order_id,
+            paypal_payment_id,
             plans (
               name,
               description
@@ -80,7 +82,9 @@ const AdminUserManagement = () => {
             currency,
             status,
             created_at,
-            payment_method
+            payment_method,
+            paypal_transaction_id,
+            paypal_order_id
           )
         `)
         .order('created_at', { ascending: false });
@@ -403,6 +407,11 @@ const AdminUserManagement = () => {
                             <p className="text-sm text-muted-foreground">
                               Order #{order.id.slice(0, 8)}
                             </p>
+                            {order.paypal_order_id && (
+                              <p className="text-xs text-blue-600">
+                                PayPal: {order.paypal_order_id.slice(0, 12)}...
+                              </p>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="font-medium">${order.amount}</p>
@@ -411,6 +420,9 @@ const AdminUserManagement = () => {
                         </div>
                         <div className="mt-2 text-xs text-muted-foreground">
                           {new Date(order.created_at).toLocaleDateString()}
+                          {order.paypal_payment_id && (
+                            <span className="ml-2">• PayPal Payment: {order.paypal_payment_id.slice(0, 8)}...</span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -433,6 +445,11 @@ const AdminUserManagement = () => {
                             <p className="text-sm text-muted-foreground">
                               {transaction.payment_method || 'PayPal'}
                             </p>
+                            {transaction.paypal_transaction_id && (
+                              <p className="text-xs text-blue-600">
+                                PayPal TX: {transaction.paypal_transaction_id}
+                              </p>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="font-medium">${transaction.amount}</p>
@@ -441,6 +458,9 @@ const AdminUserManagement = () => {
                         </div>
                         <div className="mt-2 text-xs text-muted-foreground">
                           {new Date(transaction.created_at).toLocaleDateString()}
+                          {transaction.paypal_order_id && (
+                            <span className="ml-2">• Order: {transaction.paypal_order_id.slice(0, 8)}...</span>
+                          )}
                         </div>
                       </div>
                     ))}
