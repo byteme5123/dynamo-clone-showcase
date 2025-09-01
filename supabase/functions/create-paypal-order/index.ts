@@ -32,17 +32,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Parse request body with proper error handling
+    // Parse request body - handle both direct HTTP calls and supabase.functions.invoke()
     let requestBody;
     try {
-      const text = await req.text();
-      console.log('Raw request body:', text);
-      
-      if (!text || text.trim() === '') {
-        throw new Error('Request body is empty');
-      }
-      
-      requestBody = JSON.parse(text);
+      requestBody = await req.json();
       console.log('Parsed request body:', requestBody);
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
