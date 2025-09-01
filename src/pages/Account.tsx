@@ -9,15 +9,17 @@ import { Separator } from '@/components/ui/separator';
 import { useUserAuth } from '@/contexts/UserAuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw } from 'lucide-react';
+import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { PasswordResetForm } from '@/components/PasswordResetForm';
 
 const Account = () => {
   const { user, isAuthenticated, signOut } = useUserAuth();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [profileData, setProfileData] = useState({
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
@@ -29,7 +31,7 @@ const Account = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Fetch user's orders
+  // Fetch user's orders with proper caching
   const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['user-orders', user.id],
     queryFn: async () => {
@@ -50,9 +52,14 @@ const Account = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 
-  // Fetch user's transactions
+  // Fetch user's transactions with proper caching
   const { data: transactions, isLoading: transactionsLoading, refetch: refetchTransactions } = useQuery({
     queryKey: ['user-transactions', user.id],
     queryFn: async () => {
@@ -72,6 +79,11 @@ const Account = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
 
   const refreshData = async () => {
@@ -93,26 +105,16 @@ const Account = () => {
     }
   };
 
-  // Auto-refresh data on mount and when returning from payment
+  // Handle payment success return - single refresh only
   useEffect(() => {
-    const autoRefresh = () => {
-      if (user) {
-        refreshData();
-      }
-    };
-
-    // Check if user just returned from payment
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('payment_success') === 'true') {
       // Clear the parameter
       window.history.replaceState({}, '', '/account');
-      autoRefresh();
+      // Silent refresh without toast notification
+      Promise.all([refetchOrders(), refetchTransactions()]).catch(console.error);
     }
-    
-    // Auto-refresh every 30 seconds to catch new payments
-    const interval = setInterval(autoRefresh, 30000);
-    return () => clearInterval(interval);
-  }, [user]);
+  }, [refetchOrders, refetchTransactions]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -266,19 +268,43 @@ const Account = () => {
                       Email cannot be changed. Contact support if needed.
                     </p>
                   </div>
-                  <Button type="submit" disabled={isUpdating}>
-                    {isUpdating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      'Update Profile'
-                    )}
-                  </Button>
+                  <div className="flex gap-4">
+                    <Button type="submit" disabled={isUpdating}>
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        'Update Profile'
+                      )}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowPasswordReset(!showPasswordReset)}
+                    >
+                      <Key className="mr-2 h-4 w-4" />
+                      {showPasswordReset ? 'Cancel' : 'Change Password'}
+                    </Button>
+                  </div>
                 </form>
               </CardContent>
             </Card>
+
+            {showPasswordReset && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Change Password</CardTitle>
+                  <CardDescription>
+                    We'll send a password reset link to your email address
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PasswordResetForm />
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
