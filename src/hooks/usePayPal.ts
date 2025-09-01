@@ -8,10 +8,12 @@ interface CreatePayPalOrderParams {
   currency?: string;
   returnUrl: string;
   cancelUrl: string;
+  sessionToken?: string;
 }
 
 interface CapturePayPalOrderParams {
   orderId: string;
+  sessionToken?: string;
 }
 
 export const useCreatePayPalOrder = () => {
@@ -28,14 +30,14 @@ export const useCreatePayPalOrder = () => {
 
       console.log('Creating PayPal order with session token:', sessionToken.substring(0, 8) + '...');
       
-      const headers: Record<string, string> = {
-        'Authorization': `Bearer ${sessionToken}`,
-        'Content-Type': 'application/json',
+      // Pass session token in request body instead of Authorization header
+      const requestBody = {
+        ...params,
+        sessionToken,
       };
 
       const { data, error } = await supabase.functions.invoke('create-paypal-order', {
-        body: params,
-        headers,
+        body: requestBody,
       });
 
       if (error) {
@@ -63,18 +65,17 @@ export const useCapturePayPalOrder = () => {
   return useMutation({
     mutationFn: async (params: CapturePayPalOrderParams) => {
       const sessionToken = localStorage.getItem('user_session_token');
-      const headers: Record<string, string> = {};
       
-      if (sessionToken) {
-        headers.Authorization = `Bearer ${sessionToken}`;
-        console.log('Capture PayPal order with session token present');
-      } else {
-        console.warn('No session token found for PayPal capture');
-      }
+      // Pass session token in request body instead of Authorization header
+      const requestBody = {
+        ...params,
+        sessionToken,
+      };
+      
+      console.log('Capture PayPal order with session token:', sessionToken ? 'present' : 'missing');
 
       const { data, error } = await supabase.functions.invoke('capture-paypal-order', {
-        body: params,
-        headers,
+        body: requestBody,
       });
 
       if (error) throw error;

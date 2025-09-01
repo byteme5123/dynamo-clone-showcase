@@ -48,7 +48,7 @@ serve(async (req) => {
     }
 
     // Validate required parameters
-    const { planId, amount, currency = 'USD', returnUrl, cancelUrl } = requestBody;
+    const { planId, amount, currency = 'USD', returnUrl, cancelUrl, sessionToken } = requestBody;
     
     if (!planId || !amount || !returnUrl || !cancelUrl) {
       console.error('Missing required parameters:', { planId: !!planId, amount: !!amount, returnUrl: !!returnUrl, cancelUrl: !!cancelUrl });
@@ -57,6 +57,16 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
+      });
+    }
+
+    if (!sessionToken) {
+      console.error('No session token provided in request body');
+      return new Response(JSON.stringify({ 
+        error: 'Authentication required. Please log in and try again.' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
       });
     }
 
@@ -138,27 +148,13 @@ serve(async (req) => {
     const orderResult = await createOrderResponse.json();
     console.log('PayPal order created:', orderResult.id);
 
-    // Get user info using custom session token
+    // Get user info using session token from request body
     let userId = null;
     let customerEmail = null;
     let customerName = null;
 
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
-    
-    if (!authHeader) {
-      console.error('No authorization header provided');
-      return new Response(JSON.stringify({ 
-        error: 'Authentication required. Please log in and try again.' 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Extracted token length:', token.length);
-    console.log('Token format check:', token.substring(0, 8) + '...');
+    console.log('Session token received:', sessionToken.substring(0, 8) + '...');
+    console.log('Session token length:', sessionToken.length);
     
     // Use service role key for session lookup to bypass RLS
     const supabaseService = createClient(
@@ -167,11 +163,11 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Try custom auth first (session token)
+    // Validate session token
     const { data: session, error: sessionError } = await supabaseService
       .from('user_sessions')
       .select('user_id')
-      .eq('token', token)
+      .eq('token', sessionToken)
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 

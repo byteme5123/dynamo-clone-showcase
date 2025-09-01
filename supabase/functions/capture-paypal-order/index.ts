@@ -17,22 +17,27 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { orderId } = await req.json();
+    const { orderId, sessionToken } = await req.json();
     console.log('Capturing PayPal order:', orderId);
 
     // Get user info from session token if provided
     let authenticatedUserId = null;
-    const authHeader = req.headers.get('Authorization');
     
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      console.log('Auth token provided for capture, length:', token.length);
+    if (sessionToken) {
+      console.log('Session token provided for capture, length:', sessionToken.length);
+      
+      // Use service role key for session lookup to bypass RLS
+      const supabaseService = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        { auth: { persistSession: false } }
+      );
       
       // Validate session token
-      const { data: session, error: sessionError } = await supabaseClient
+      const { data: session, error: sessionError } = await supabaseService
         .from('user_sessions')
         .select('user_id')
-        .eq('token', token)
+        .eq('token', sessionToken)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
@@ -40,8 +45,10 @@ serve(async (req) => {
         authenticatedUserId = session.user_id;
         console.log('Authenticated user for capture:', authenticatedUserId);
       } else {
-        console.warn('Invalid or expired session token for capture');
+        console.warn('Invalid or expired session token for capture:', sessionError);
       }
+    } else {
+      console.warn('No session token provided for capture');
     }
 
     // Get PayPal settings
