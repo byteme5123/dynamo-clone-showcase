@@ -15,7 +15,6 @@ const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(true);
-  const [sessionRecovered, setSessionRecovered] = useState(false);
   const captureOrderMutation = useCapturePayPalOrder();
   const { user, isAuthenticated, checkSession } = useUserAuth();
   const { toast } = useToast();
@@ -26,48 +25,44 @@ const PaymentSuccess = () => {
   const payerID = searchParams.get('PayerID');
   const sessionToken = searchParams.get('sessionToken');
 
-  // First try to recover session if we have a session token
+  // Process payment immediately - handle session recovery within the capture
   useEffect(() => {
-    const recoverSession = async () => {
-      if (sessionToken && !isAuthenticated) {
-        console.log('Attempting to recover session from PayPal redirect');
-        localStorage.setItem('user_session_token', sessionToken);
-        await checkSession();
-        setSessionRecovered(true);
-      } else {
-        setSessionRecovered(true);
-      }
-    };
-
-    recoverSession();
-  }, [sessionToken, isAuthenticated, checkSession]);
-
-  // Then process payment once session is recovered
-  useEffect(() => {
-    // Prevent multiple concurrent capture attempts
-    if (!sessionRecovered || !token || isProcessing || captureOrderMutation.isPending) {
-      if (!token && sessionRecovered) {
+    let isCancelled = false;
+    
+    const processPayment = async () => {
+      // Validate required parameters
+      if (!token) {
         toast({
           title: 'Payment Error',
           description: 'No payment token found',
           variant: 'destructive'
         });
         navigate('/plans');
+        return;
       }
-      return;
-    }
 
-    let isCancelled = false;
-    
-    const capturePayment = async () => {
-      if (isCancelled) return;
-      
+      // Prevent multiple concurrent capture attempts
+      if (captureOrderMutation.isPending) {
+        return;
+      }
+
       try {
-        console.log('Capturing payment for token:', token);
+        console.log('Processing payment for token:', token);
         
-        // Get session token from URL params or localStorage
+        // Recover session if we have a session token
+        if (sessionToken && !isAuthenticated) {
+          console.log('Recovering session from PayPal redirect');
+          localStorage.setItem('user_session_token', sessionToken);
+          try {
+            await checkSession();
+          } catch (sessionError) {
+            console.warn('Session recovery failed:', sessionError);
+          }
+        }
+        
+        // Get session token for capture
         const finalSessionToken = sessionToken || localStorage.getItem('user_session_token');
-        console.log('Using session token for capture:', finalSessionToken ? 'present' : 'missing');
+        console.log('Capturing payment with session token:', finalSessionToken ? 'present' : 'missing');
         
         const result = await captureOrderMutation.mutateAsync({ 
           orderId: token,
@@ -89,23 +84,20 @@ const PaymentSuccess = () => {
             description: 'Your payment has been processed and your plan is now active.',
           });
 
-          // Redirect to account after 3 seconds
-          setTimeout(() => {
-            if (!isCancelled) {
-              navigate('/account?payment_success=true');
-            }
-          }, 3000);
+          // Redirect to account immediately
+          navigate('/account?payment_success=true');
         } else {
           toast({
             title: 'Payment Processing Issue',
             description: 'Payment was processed but there may be a delay in activation.',
             variant: 'destructive'
           });
+          navigate('/account');
         }
       } catch (error: any) {
         if (isCancelled) return;
         
-        console.error('Error capturing payment:', error);
+        console.error('Error processing payment:', error);
         
         // Handle specific PayPal errors
         if (error.message?.includes('already captured') || error.message?.includes('Order already processed')) {
@@ -126,6 +118,9 @@ const PaymentSuccess = () => {
         // If authentication fails, redirect to login with payment info
         if (error.message?.includes('authentication') || error.message?.includes('login')) {
           navigate(`/auth?returnUrl=/payment-success?token=${token}&PayerID=${payerID}`);
+        } else {
+          // For other errors, try to redirect to account anyway
+          setTimeout(() => navigate('/account'), 2000);
         }
       } finally {
         if (!isCancelled) {
@@ -134,34 +129,15 @@ const PaymentSuccess = () => {
       }
     };
 
-    setIsProcessing(true);
-    capturePayment();
+    processPayment();
     
     // Cleanup function to prevent state updates if component unmounts
     return () => {
       isCancelled = true;
     };
-  }, [sessionRecovered, token, payerID, isProcessing, captureOrderMutation.isPending]);
+  }, [token, payerID, sessionToken]); // Remove complex dependencies that cause infinite loops
 
-  // Show login prompt only if session recovery failed and we're not processing
-  if (!sessionRecovered || (!isAuthenticated && !isProcessing && sessionRecovered)) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container mx-auto px-4 py-16 text-center">
-          <Card className="max-w-md mx-auto">
-            <CardContent className="p-6">
-              <p>Please log in to complete your payment verification.</p>
-              <Button onClick={() => navigate(`/auth?returnUrl=/payment-success?token=${token}&PayerID=${payerID}`)} className="mt-4">
-                Login to Continue
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  // Don't show login prompt - let payment processing handle everything
 
   return (
     <div className="min-h-screen bg-background">
@@ -218,7 +194,7 @@ const PaymentSuccess = () => {
                   
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
                     <p className="font-medium">Redirecting to your account...</p>
-                    <p className="text-sm">You will be automatically redirected to view your purchase in 3 seconds.</p>
+                    <p className="text-sm">You will be redirected to view your purchase shortly.</p>
                   </div>
                 </div>
               )}
