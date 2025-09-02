@@ -46,8 +46,9 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
       });
 
       if (result.approvalUrl) {
-        console.log('Redirecting to PayPal:', result.approvalUrl);
-        // Store backup session data before redirect
+        console.log('Opening PayPal in new tab:', result.approvalUrl);
+        
+        // Store backup session data and payment info before opening new tab
         const userData = localStorage.getItem('user_data');
         if (userData) {
           sessionStorage.setItem('user_data_backup', userData);
@@ -55,12 +56,46 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
           console.log('Session backup stored before PayPal redirect');
         }
         
-        // Redirect to PayPal for payment
-        window.location.href = result.approvalUrl;
+        // Store payment tracking info
+        sessionStorage.setItem('payment_tracking', JSON.stringify({
+          orderId: result.orderId || result.id,
+          planId,
+          amount,
+          timestamp: Date.now()
+        }));
+        
+        // Open PayPal in new tab
+        const paypalWindow = window.open(result.approvalUrl, '_blank', 'width=500,height=600,scrollbars=yes,resizable=yes');
+        
+        // Set up message listener for payment completion
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== currentUrl) return;
+          
+          if (event.data?.type === 'PAYMENT_SUCCESS') {
+            console.log('Payment completed successfully');
+            // Refresh current page data
+            window.location.reload();
+          } else if (event.data?.type === 'PAYMENT_CANCELLED') {
+            console.log('Payment was cancelled');
+            setIsProcessing(false);
+          }
+        };
+        
+        window.addEventListener('message', handleMessage);
+        
+        // Cleanup listener if window is closed manually
+        if (paypalWindow) {
+          const checkClosed = setInterval(() => {
+            if (paypalWindow.closed) {
+              clearInterval(checkClosed);
+              window.removeEventListener('message', handleMessage);
+              setIsProcessing(false);
+            }
+          }, 1000);
+        }
       }
     } catch (error) {
       console.error('Payment error:', error);
-    } finally {
       setIsProcessing(false);
     }
   };

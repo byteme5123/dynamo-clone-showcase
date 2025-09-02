@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { XCircle, ArrowLeft, RotateCcw } from 'lucide-react';
@@ -6,6 +7,24 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
 const PaymentCancel = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if we're in a popup window (PayPal flow)
+    if (window.opener && !window.opener.closed) {
+      // We're in a popup, notify parent and close
+      try {
+        window.opener.postMessage({ type: 'PAYMENT_CANCELLED' }, window.location.origin);
+        setTimeout(() => window.close(), 2000);
+      } catch (error) {
+        console.error('Failed to communicate with parent window:', error);
+        // Fallback: redirect in current window
+        setTimeout(() => {
+          navigate('/plans');
+        }, 3000);
+      }
+    }
+  }, [navigate]);
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -26,6 +45,9 @@ const PaymentCancel = () => {
             <CardContent className="space-y-6">
               <div className="text-sm text-muted-foreground">
                 <p>If you experienced any issues during the payment process, please contact our support team for assistance.</p>
+                {window.opener && !window.opener.closed && (
+                  <p className="mt-2 font-medium text-orange-600">This window will close automatically in 2 seconds...</p>
+                )}
               </div>
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -36,13 +36,40 @@ const PaymentSuccess = () => {
           // Show success message and redirect to account after 3 seconds
           if (result.success) {
             setShowRedirectMessage(true);
-            console.log('Payment captured successfully, redirecting to account...');
-            setTimeout(() => {
-              navigate('/account?payment_success=true');
-            }, 3000);
+            console.log('Payment captured successfully');
+            
+            // Check if we're in a popup window (PayPal flow)
+            if (window.opener && !window.opener.closed) {
+              // We're in a popup, notify parent and close
+              try {
+                window.opener.postMessage({ type: 'PAYMENT_SUCCESS', orderId: token }, window.location.origin);
+                setTimeout(() => window.close(), 2000);
+              } catch (error) {
+                console.error('Failed to communicate with parent window:', error);
+                // Fallback: redirect in current window
+                setTimeout(() => {
+                  navigate('/account?payment_success=true');
+                }, 3000);
+              }
+            } else {
+              // Regular redirect flow
+              setTimeout(() => {
+                navigate('/account?payment_success=true');
+              }, 3000);
+            }
           }
         } catch (error) {
           console.error('Error capturing payment:', error);
+          
+          // If we're in a popup, notify parent of error
+          if (window.opener && !window.opener.closed) {
+            try {
+              window.opener.postMessage({ type: 'PAYMENT_ERROR', error: error.message }, window.location.origin);
+              setTimeout(() => window.close(), 2000);
+            } catch (commError) {
+              console.error('Failed to communicate error to parent:', commError);
+            }
+          }
         }
       }
     };
