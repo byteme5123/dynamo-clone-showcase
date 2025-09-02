@@ -46,8 +46,8 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
       });
 
       if (result.approvalUrl) {
-        console.log('Opening PayPal in new tab:', result.approvalUrl);
-        // Store backup session data before opening PayPal
+        console.log('Redirecting to PayPal:', result.approvalUrl);
+        // Store backup session data before redirect
         const userData = localStorage.getItem('user_data');
         if (userData) {
           sessionStorage.setItem('user_data_backup', userData);
@@ -55,13 +55,8 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
           console.log('Session backup stored before PayPal redirect');
         }
         
-        // Open PayPal in new tab instead of redirect
-        const paypalWindow = window.open(result.approvalUrl, '_blank');
-        if (!paypalWindow) {
-          // Fallback to redirect if popup is blocked
-          console.log('Popup blocked, falling back to redirect');
-          window.location.href = result.approvalUrl;
-        }
+        // Redirect to PayPal for payment
+        window.location.href = result.approvalUrl;
       }
     } catch (error) {
       console.error('Payment error:', error);

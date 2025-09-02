@@ -83,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resetUrl = `${req.headers.get('origin') || 'https://dynamo-wireless.lovable.app'}/auth?reset_token=${resetToken}`;
     
     const emailResponse = await resend.emails.send({
-      from: "Dynamo Wireless <onboarding@resend.dev>",
+      from: "Dynamo Wireless <noreply@resend.dev>",
       to: [email],
       subject: "Password Reset Request",
       html: `

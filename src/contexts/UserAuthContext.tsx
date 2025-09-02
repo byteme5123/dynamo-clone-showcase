@@ -36,9 +36,30 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const checkSession = async () => {
     try {
-      const sessionToken = localStorage.getItem('user_session_token');
+      let sessionToken = localStorage.getItem('user_session_token');
+      
+      // Fallback to sessionStorage if localStorage is empty
+      if (!sessionToken) {
+        sessionToken = sessionStorage.getItem('user_session_backup');
+        if (sessionToken) {
+          localStorage.setItem('user_session_token', sessionToken);
+        }
+      }
       
       if (!sessionToken) {
+        // Try to restore from backup user data first
+        const backupData = sessionStorage.getItem('user_data_backup');
+        if (backupData) {
+          try {
+            const userData = JSON.parse(backupData);
+            setUser(userData);
+            // Clear backup after restoration
+            sessionStorage.removeItem('user_data_backup');
+            console.log('User restored from backup:', userData.email);
+          } catch {
+            // Ignore parse errors
+          }
+        }
         setLoading(false);
         return;
       }
@@ -61,6 +82,8 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (userData) {
           setUser(userData);
+          // Update backup
+          sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
           console.log('User session restored:', userData.email);
         }
       } else {
@@ -72,6 +95,8 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       console.error('Session check error:', error);
       localStorage.removeItem('user_session_token');
+      sessionStorage.removeItem('user_session_backup');
+      sessionStorage.removeItem('user_data_backup');
     } finally {
       setLoading(false);
     }
@@ -176,19 +201,15 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .from('user_sessions')
           .delete()
           .eq('token', sessionToken);
+
+        // Clear local storage
+        localStorage.removeItem('user_session_token');
       }
-      
-      // Clear all storage
-      localStorage.removeItem('user_session_token');
-      sessionStorage.removeItem('user_session_backup');
-      sessionStorage.removeItem('user_data_backup');
       setUser(null);
     } catch (error) {
       console.error('Sign out error:', error);
       // Always clear local state even if database update fails
       localStorage.removeItem('user_session_token');
-      sessionStorage.removeItem('user_session_backup');
-      sessionStorage.removeItem('user_data_backup');
       setUser(null);
     }
   };
