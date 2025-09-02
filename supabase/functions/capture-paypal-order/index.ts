@@ -96,35 +96,7 @@ serve(async (req) => {
     });
 
     const captureResult = await captureResponse.json();
-    
-    // Handle PayPal-specific errors more gracefully
-    if (captureResult.name === 'UNPROCESSABLE_ENTITY') {
-      const issue = captureResult.details?.[0]?.issue;
-      if (issue === 'MAX_NUMBER_OF_PAYMENT_ATTEMPTS_EXCEEDED') {
-        console.log('PayPal order already captured due to max attempts:', orderId);
-        // Check if we have this order as already paid in our system
-        const { data: paidOrder } = await supabaseService
-          .from('orders')
-          .select('paypal_payment_id, status')
-          .eq('paypal_order_id', orderId)
-          .eq('status', 'paid')
-          .single();
-          
-        if (paidOrder) {
-          return new Response(JSON.stringify({
-            success: true,
-            paymentId: paidOrder.paypal_payment_id,
-            status: 'paid',
-            message: 'Order already processed'
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          });
-        }
-      }
-    }
-    
-    console.log('PayPal capture result:', captureResult);
+    console.log('PayPal order captured:', captureResult);
 
     // Update order status in database using service role key
     const paymentId = captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id;
@@ -136,10 +108,10 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Check if order was already captured to prevent duplicates
-    const { data: existingOrder, error: orderError } = await supabaseService
+    // Get order details first
+    const { data: order, error: orderError } = await supabaseService
       .from('orders')
-      .select('user_id, plan_id, amount, customer_email, customer_name, status, paypal_payment_id')
+      .select('user_id, plan_id, amount, customer_email, customer_name')
       .eq('paypal_order_id', orderId)
       .single();
 
@@ -147,23 +119,6 @@ serve(async (req) => {
       console.error('Error finding order:', orderError);
       throw new Error('Order not found');
     }
-
-    // If order is already paid, return success without re-processing
-    if (existingOrder.status === 'paid' && existingOrder.paypal_payment_id) {
-      console.log('Order already captured, returning success:', orderId);
-      return new Response(JSON.stringify({
-        success: true,
-        paymentId: existingOrder.paypal_payment_id,
-        status: 'paid',
-        message: 'Order already processed'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
-    }
-
-    const order = existingOrder;
-
 
     console.log('Found order:', { 
       orderId, 
@@ -213,33 +168,22 @@ serve(async (req) => {
       } else {
         console.log('Creating transaction for user:', finalUserId);
         
-        // Check if transaction already exists to prevent duplicates
-        const { data: existingTransaction } = await supabaseService
+        const { error: transactionError } = await supabaseService
           .from('transactions')
-          .select('id')
-          .eq('paypal_order_id', orderId)
-          .maybeSingle();
+          .insert({
+            user_id: finalUserId,
+            plan_id: order.plan_id,
+            amount: order.amount,
+            paypal_transaction_id: paymentId,
+            paypal_order_id: orderId,
+            status: 'completed',
+            payment_method: 'PayPal',
+          });
 
-        if (!existingTransaction) {
-          const { error: transactionError } = await supabaseService
-            .from('transactions')
-            .insert({
-              user_id: finalUserId,
-              plan_id: order.plan_id,
-              amount: order.amount,
-              paypal_transaction_id: paymentId,
-              paypal_order_id: orderId,
-              status: 'completed',
-              payment_method: 'PayPal',
-            });
-
-          if (transactionError) {
-            console.error('Error creating transaction:', transactionError);
-          } else {
-            console.log('Transaction created successfully for user:', finalUserId);
-          }
+        if (transactionError) {
+          console.error('Error creating transaction:', transactionError);
         } else {
-          console.log('Transaction already exists for order:', orderId);
+          console.log('Transaction created successfully for user:', finalUserId);
         }
       }
     }
