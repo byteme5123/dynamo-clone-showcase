@@ -20,6 +20,7 @@ interface UserAuthContextType {
   resendVerification: (email: string) => Promise<{ error: any }>;
   verifyEmail: (token: string) => Promise<{ error: any }>;
   refreshSession: () => Promise<void>;
+  refreshUserData: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -257,6 +258,33 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const refreshUserData = async () => {
+    try {
+      if (!user?.id) return;
+      
+      // Fetch latest user data
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('User data refresh error:', error);
+        return;
+      }
+
+      if (userData) {
+        setUser(userData);
+        // Update backup data
+        sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
+        console.log('User data refreshed:', userData.email);
+      }
+    } catch (error) {
+      console.error('User data refresh error:', error);
+    }
+  };
+
   return (
     <UserAuthContext.Provider value={{
       user,
@@ -267,6 +295,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       resendVerification,
       verifyEmail,
       refreshSession,
+      refreshUserData,
       isAuthenticated: !!user,
     }}>
       {children}

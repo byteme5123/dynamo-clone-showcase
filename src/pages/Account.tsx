@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useUserAuth } from '@/contexts/UserAuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
@@ -15,8 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { PasswordResetForm } from '@/components/PasswordResetForm';
 
 const Account = () => {
-  const { user, isAuthenticated, signOut } = useUserAuth();
+  const { user, isAuthenticated, signOut, refreshUserData } = useUserAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
@@ -53,10 +54,10 @@ const Account = () => {
       return data;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 1000, // 30 seconds for faster updates
+    gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Enable refetch on focus
   });
 
   // Fetch user's transactions with proper caching
@@ -80,16 +81,22 @@ const Account = () => {
       return data;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 30 * 1000, // 30 seconds for faster updates
+    gcTime: 10 * 60 * 1000, // 10 minutes  
     retry: 2,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Enable refetch on focus
   });
 
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([refetchOrders(), refetchTransactions()]);
+      // Refresh user context data and queries simultaneously
+      await Promise.all([
+        refreshUserData(),
+        refetchOrders(),
+        refetchTransactions(),
+      ]);
+      
       toast({
         title: "Data Refreshed",
         description: "Your account data has been refreshed successfully.",
@@ -105,16 +112,33 @@ const Account = () => {
     }
   };
 
-  // Handle payment success return - single refresh only
+  // Handle payment success return and setup real-time updates
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('payment_success') === 'true') {
       // Clear the parameter
       window.history.replaceState({}, '', '/account');
       // Silent refresh without toast notification
-      Promise.all([refetchOrders(), refetchTransactions()]).catch(console.error);
+      Promise.all([
+        refreshUserData(),
+        queryClient.invalidateQueries({ queryKey: ['user-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-transactions'] })
+      ]).catch(console.error);
     }
-  }, [refetchOrders, refetchTransactions]);
+
+    // Listen for PayPal popup messages
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'PAYPAL_SUCCESS') {
+        // Invalidate and refetch all user data
+        queryClient.invalidateQueries({ queryKey: ['user-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['user-transactions'] });
+        refreshUserData();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [queryClient, refreshUserData]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,6 +155,9 @@ const Account = () => {
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // Refresh user data in context immediately after update
+      await refreshUserData();
 
       toast({
         title: 'Profile Updated',
