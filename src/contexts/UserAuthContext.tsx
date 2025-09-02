@@ -206,12 +206,26 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Clear local storage
         localStorage.removeItem('user_session_token');
       }
+      
+      // Clear all session data
+      sessionStorage.removeItem('user_session_backup');
+      sessionStorage.removeItem('user_data_backup');
+      sessionStorage.removeItem('session_expires_backup');
+      
       setUser(null);
+      
+      // Redirect to homepage after sign out
+      window.location.href = '/';
     } catch (error) {
       console.error('Sign out error:', error);
       // Always clear local state even if database update fails
       localStorage.removeItem('user_session_token');
+      sessionStorage.removeItem('user_session_backup');
+      sessionStorage.removeItem('user_data_backup');
+      sessionStorage.removeItem('session_expires_backup');
       setUser(null);
+      // Redirect even on error
+      window.location.href = '/';
     }
   };
 

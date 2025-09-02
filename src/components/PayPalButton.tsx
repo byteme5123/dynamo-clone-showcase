@@ -46,22 +46,17 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
       });
 
       if (result.approvalUrl) {
-        console.log('Opening PayPal in new tab:', result.approvalUrl);
-        
-        // Ensure session is fully extended before payment
-        const extendedExpiresAt = new Date();
-        extendedExpiresAt.setDate(extendedExpiresAt.getDate() + 60); // 60 days
+        console.log('Redirecting to PayPal in same tab:', result.approvalUrl);
         
         // Store comprehensive backup session data and payment info
         const userData = localStorage.getItem('user_data');
         if (userData) {
           sessionStorage.setItem('user_data_backup', userData);
           sessionStorage.setItem('user_session_backup', sessionToken);
-          sessionStorage.setItem('session_expires_backup', extendedExpiresAt.toISOString());
-          console.log('Enhanced session backup stored before PayPal redirect');
+          console.log('Session backup stored before PayPal redirect');
         }
         
-        // Store payment tracking info with extended data
+        // Store payment tracking info
         sessionStorage.setItem('payment_tracking', JSON.stringify({
           orderId: result.orderId || result.id,
           planId,
@@ -69,49 +64,12 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
           amount,
           currency: 'USD',
           timestamp: Date.now(),
-          sessionToken
+          sessionToken,
+          returnUrl: '/account' // Where to redirect after payment
         }));
         
-        // Open PayPal in new tab (not popup) - removing window features opens in new tab
-        const paypalWindow = window.open(result.approvalUrl, '_blank');
-        
-        // Set up message listener for payment completion
-        const handleMessage = (event: MessageEvent) => {
-          if (event.origin !== currentUrl) return;
-          
-          if (event.data?.type === 'PAYMENT_SUCCESS') {
-            console.log('Payment completed successfully');
-            // Refresh user session and data without full page reload
-            refreshSession();
-            setIsProcessing(false);
-            // Close PayPal tab if still open
-            if (paypalWindow && !paypalWindow.closed) {
-              paypalWindow.close();
-            }
-            // Redirect to account page to see updated data
-            window.location.href = '/account';
-          } else if (event.data?.type === 'PAYMENT_CANCELLED') {
-            console.log('Payment was cancelled');
-            setIsProcessing(false);
-            // Close PayPal tab if still open
-            if (paypalWindow && !paypalWindow.closed) {
-              paypalWindow.close();
-            }
-          }
-        };
-        
-        window.addEventListener('message', handleMessage);
-        
-        // Cleanup listener if window is closed manually
-        if (paypalWindow) {
-          const checkClosed = setInterval(() => {
-            if (paypalWindow.closed) {
-              clearInterval(checkClosed);
-              window.removeEventListener('message', handleMessage);
-              setIsProcessing(false);
-            }
-          }, 1000);
-        }
+        // Redirect to PayPal in same tab
+        window.location.href = result.approvalUrl;
       }
     } catch (error) {
       console.error('Payment error:', error);

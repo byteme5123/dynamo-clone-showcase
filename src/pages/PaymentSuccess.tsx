@@ -27,49 +27,43 @@ const PaymentSuccess = () => {
         try {
           console.log('Capturing payment for token:', token);
           
+          // Restore session from backup first
+          const backupToken = sessionStorage.getItem('user_session_backup');
+          const backupData = sessionStorage.getItem('user_data_backup');
+          
+          if (backupToken && backupData) {
+            localStorage.setItem('user_session_token', backupToken);
+            console.log('Session restored from backup before payment capture');
+          }
+          
           // Refresh session to ensure user stays logged in
           await refreshSession();
           
           const result = await captureOrderMutation.mutateAsync({ orderId: token });
           setPaymentDetails(result);
           
-          // Show success message and redirect to account after 3 seconds
+          // Show success message and redirect to account after payment
           if (result.success) {
             setShowRedirectMessage(true);
             console.log('Payment captured successfully');
             
-            // Check if we're in a popup window (PayPal flow)
-            if (window.opener && !window.opener.closed) {
-              // We're in a popup, notify parent and close
-              try {
-                window.opener.postMessage({ type: 'PAYMENT_SUCCESS', orderId: token }, window.location.origin);
-                setTimeout(() => window.close(), 2000);
-              } catch (error) {
-                console.error('Failed to communicate with parent window:', error);
-                // Fallback: redirect in current window
-                setTimeout(() => {
-                  navigate('/account?payment_success=true');
-                }, 3000);
-              }
-            } else {
-              // Regular redirect flow
-              setTimeout(() => {
-                navigate('/account?payment_success=true');
-              }, 3000);
-            }
+            // Clean up payment tracking data
+            sessionStorage.removeItem('payment_tracking');
+            sessionStorage.removeItem('user_session_backup');
+            sessionStorage.removeItem('user_data_backup');
+            
+            // Always redirect to account page in same tab
+            setTimeout(() => {
+              navigate('/account?payment_success=true');
+            }, 3000);
           }
         } catch (error) {
           console.error('Error capturing payment:', error);
           
-          // If we're in a popup, notify parent of error
-          if (window.opener && !window.opener.closed) {
-            try {
-              window.opener.postMessage({ type: 'PAYMENT_ERROR', error: error.message }, window.location.origin);
-              setTimeout(() => window.close(), 2000);
-            } catch (commError) {
-              console.error('Failed to communicate error to parent:', commError);
-            }
-          }
+          // Redirect to account even on error
+          setTimeout(() => {
+            navigate('/account');
+          }, 3000);
         }
       }
     };

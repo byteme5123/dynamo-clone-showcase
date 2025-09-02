@@ -10,20 +10,26 @@ const PaymentCancel = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we're in a popup window (PayPal flow)
-    if (window.opener && !window.opener.closed) {
-      // We're in a popup, notify parent and close
-      try {
-        window.opener.postMessage({ type: 'PAYMENT_CANCELLED' }, window.location.origin);
-        setTimeout(() => window.close(), 2000);
-      } catch (error) {
-        console.error('Failed to communicate with parent window:', error);
-        // Fallback: redirect in current window
-        setTimeout(() => {
-          navigate('/plans');
-        }, 3000);
-      }
+    // Restore session from backup if available
+    const backupToken = sessionStorage.getItem('user_session_backup');
+    const backupData = sessionStorage.getItem('user_data_backup');
+    
+    if (backupToken && backupData) {
+      localStorage.setItem('user_session_token', backupToken);
+      console.log('Session restored from backup after payment cancellation');
     }
+
+    // Clean up payment tracking data
+    sessionStorage.removeItem('payment_tracking');
+    sessionStorage.removeItem('user_session_backup');
+    sessionStorage.removeItem('user_data_backup');
+
+    // Always redirect to account page in same tab after a short delay
+    const timer = setTimeout(() => {
+      navigate('/account');
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, [navigate]);
   return (
     <div className="min-h-screen bg-background">
@@ -45,9 +51,7 @@ const PaymentCancel = () => {
             <CardContent className="space-y-6">
               <div className="text-sm text-muted-foreground">
                 <p>If you experienced any issues during the payment process, please contact our support team for assistance.</p>
-                {window.opener && !window.opener.closed && (
-                  <p className="mt-2 font-medium text-orange-600">This window will close automatically in 2 seconds...</p>
-                )}
+                <p className="mt-2 font-medium text-orange-600">Redirecting to your account in 3 seconds...</p>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
