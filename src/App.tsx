@@ -46,26 +46,27 @@ import AdminAbout from "./pages/AdminAbout";
 import AdminContact from "./pages/AdminContact";
 import AdminPayPalSettings from "./pages/AdminPayPalSettings";
 
-// Optimized QueryClient for better performance and caching
+// Optimized QueryClient for maximum performance and instant loading
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
-      gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
+      staleTime: 10 * 60 * 1000, // 10 minutes - data stays fresh much longer
+      gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache much longer
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors or if we've already retried once
         if (error?.status >= 400 && error?.status < 500) return false;
         return failureCount < 1;
       },
-      retryDelay: 500, // Very short retry delay
-      refetchOnWindowFocus: false, // Prevent unnecessary refetches
-      refetchOnReconnect: true, // Only refetch on reconnect
-      refetchOnMount: false, // Don't refetch on mount if data exists
+      retryDelay: 300, // Very fast retry
+      refetchOnWindowFocus: false, // Never refetch on focus - causes slowdowns
+      refetchOnReconnect: false, // Don't refetch on reconnect - use cached data
+      refetchOnMount: false, // Never refetch on mount if data exists - instant loading
       networkMode: 'online', // Only run queries when online
+      refetchInterval: false, // No background refetching
     },
     mutations: {
       retry: 1,
-      retryDelay: 500,
+      retryDelay: 300,
       networkMode: 'online',
     },
   },
