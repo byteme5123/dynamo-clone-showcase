@@ -235,6 +235,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Payment receipt email sent:', emailResponse);
 
+    // Log email send to database
+    try {
+      await supabaseClient.from('email_logs').insert({
+        email_type: 'payment_confirmation',
+        recipient_email: email,
+        subject: 'Purchase Confirmation - Your Dynamo Wireless Plan',
+        status: emailResponse.error ? 'failed' : 'sent',
+        error_message: emailResponse.error || null,
+        order_id: orderId,
+        user_id: null // Will be filled in if we can get user_id from order
+      });
+    } catch (logError) {
+      console.error('Failed to log email send:', logError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
