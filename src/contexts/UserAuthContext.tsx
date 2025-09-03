@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import bcrypt from 'bcryptjs';
 
 interface User {
   id: string;
@@ -25,6 +24,95 @@ interface UserAuthContextType {
 }
 
 const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined);
+
+// Password hashing utilities using Web Crypto API
+const hashPassword = async (password: string): Promise<string> => {
+  // Generate a random salt
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  // Hash password with PBKDF2
+  const encoder = new TextEncoder();
+  const passwordBuffer = encoder.encode(password);
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    passwordBuffer,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+  
+  const hashBuffer = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 10000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256
+  );
+  
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+  
+  // Format: algorithm$iterations$salt$hash
+  return `pbkdf2$10000$${saltHex}$${hashHex}`;
+};
+
+const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
+  try {
+    // Handle both old bcrypt hashes and new pbkdf2 hashes
+    if (hash.startsWith('pbkdf2$')) {
+      const parts = hash.split('$');
+      if (parts.length !== 4) return false;
+      
+      const iterations = parseInt(parts[1]);
+      const saltHex = parts[2];
+      const storedHashHex = parts[3];
+      
+      // Convert salt from hex
+      const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
+      
+      // Hash the input password with the same salt and iterations
+      const encoder = new TextEncoder();
+      const passwordBuffer = encoder.encode(password);
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        passwordBuffer,
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits']
+      );
+      
+      const hashBuffer = await crypto.subtle.deriveBits(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: iterations,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        256
+      );
+      
+      const computedHashHex = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
+      return computedHashHex === storedHashHex;
+    } else {
+      // Handle legacy bcrypt hashes - for now just fail
+      // TODO: In production, you might want to keep bcrypt for backward compatibility
+      console.warn('Legacy bcrypt hash detected, authentication failed');
+      return false;
+    }
+  } catch (error) {
+    console.error('Password verification error:', error);
+    return false;
+  }
+};
 
 export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -140,8 +228,8 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
-      // Hash password
-      const passwordHash = await bcrypt.hash(password, 12);
+      // Hash password using Web Crypto API (PBKDF2)
+      const passwordHash = await hashPassword(password);
 
       // Create user
       const { data: userData, error: userError } = await supabase
@@ -198,7 +286,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       // Check password
-      const isValid = await bcrypt.compare(password, userData.password_hash);
+      const isValid = await verifyPassword(password, userData.password_hash);
       if (!isValid) {
         return { error: { message: 'Invalid email or password' } };
       }

@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,11 +178,42 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Valid reset token found for user:', user.email);
 
-    // Hash the new password using bcrypt (matches sign-in process)
+    // Hash the new password using Web Crypto API (PBKDF2)
     console.log('Hashing new password...');
     let hashedPassword;
     try {
-      hashedPassword = await bcrypt.hash(newPassword, 12);
+      // Generate a random salt
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Hash password with PBKDF2
+      const encoder = new TextEncoder();
+      const passwordBuffer = encoder.encode(newPassword);
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        passwordBuffer,
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits']
+      );
+      
+      const hashBuffer = await crypto.subtle.deriveBits(
+        {
+          name: 'PBKDF2',
+          salt: salt,
+          iterations: 10000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        256
+      );
+      
+      const hashHex = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
+      // Format: algorithm$iterations$salt$hash
+      hashedPassword = `pbkdf2$10000$${saltHex}$${hashHex}`;
       console.log('Password hashed successfully');
     } catch (hashError) {
       console.error('Password hashing failed:', hashError);
