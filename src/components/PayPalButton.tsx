@@ -14,7 +14,7 @@ interface PayPalButtonProps {
 const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const createOrderMutation = useCreatePayPalOrder();
-  const { refreshSession } = useUserAuth();
+  const { refreshSession, user, isAuthenticated } = useUserAuth();
 
   const handlePayment = async () => {
     if (isProcessing || createOrderMutation.isPending) {
@@ -26,13 +26,14 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
     try {
       console.log('Starting PayPal payment flow for plan:', planId);
       
-      // Check if user is authenticated
-      const sessionToken = localStorage.getItem('user_session_token');
-      if (!sessionToken) {
+      // Check if user is authenticated using context
+      if (!isAuthenticated || !user) {
         alert('Please log in to make a purchase');
         setIsProcessing(false);
         return;
       }
+      
+      const sessionToken = localStorage.getItem('user_session_token');
       
       // Refresh and extend session before payment
       console.log('Refreshing session before payment...');
