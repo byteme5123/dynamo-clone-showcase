@@ -159,31 +159,60 @@ serve(async (req) => {
       console.error('Error updating order:', updateError);
     }
 
-    // Create transaction record if payment successful
+    // Create transaction record if payment successful (check for duplicates first)
     if (status === 'paid' && order) {
       const finalUserId = order.user_id || authenticatedUserId;
       
       if (!finalUserId) {
         console.error('Cannot create transaction: no user_id available');
       } else {
-        console.log('Creating transaction for user:', finalUserId);
-        
-        const { error: transactionError } = await supabaseService
+        // Check if transaction already exists for this PayPal order
+        const { data: existingTransaction } = await supabaseService
           .from('transactions')
-          .insert({
-            user_id: finalUserId,
-            plan_id: order.plan_id,
-            amount: order.amount,
-            paypal_transaction_id: paymentId,
-            paypal_order_id: orderId,
-            status: 'completed',
-            payment_method: 'PayPal',
-          });
+          .select('id')
+          .eq('paypal_order_id', orderId)
+          .eq('user_id', finalUserId)
+          .maybeSingle();
 
-        if (transactionError) {
-          console.error('Error creating transaction:', transactionError);
+        if (existingTransaction) {
+          console.log('Transaction already exists for PayPal order:', orderId);
         } else {
-          console.log('Transaction created successfully for user:', finalUserId);
+          console.log('Creating transaction for user:', finalUserId);
+          
+          const { error: transactionError } = await supabaseService
+            .from('transactions')
+            .insert({
+              user_id: finalUserId,
+              plan_id: order.plan_id,
+              amount: order.amount,
+              paypal_transaction_id: paymentId,
+              paypal_order_id: orderId,
+              status: 'completed',
+              payment_method: 'PayPal',
+            });
+
+          if (transactionError) {
+            console.error('Error creating transaction:', transactionError);
+          } else {
+            console.log('Transaction created successfully for user:', finalUserId);
+            
+            // Send payment receipt email
+            try {
+              await supabaseService.functions.invoke('send-payment-receipt', {
+                body: {
+                  email: order.customer_email,
+                  customerName: order.customer_name,
+                  orderId: orderId,
+                  amount: order.amount,
+                  planId: order.plan_id,
+                  paymentId: paymentId
+                }
+              });
+              console.log('Payment receipt email sent');
+            } catch (emailError) {
+              console.error('Failed to send payment receipt email:', emailError);
+            }
+          }
         }
       }
     }
