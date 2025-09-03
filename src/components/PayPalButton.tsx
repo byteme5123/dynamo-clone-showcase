@@ -14,26 +14,19 @@ interface PayPalButtonProps {
 const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const createOrderMutation = useCreatePayPalOrder();
-  const { refreshSession, user, isAuthenticated } = useUserAuth();
+  const { refreshSession } = useUserAuth();
 
   const handlePayment = async () => {
-    if (isProcessing || createOrderMutation.isPending) {
-      return; // Prevent multiple clicks
-    }
-    
     setIsProcessing(true);
     
     try {
       console.log('Starting PayPal payment flow for plan:', planId);
       
-      // Check if user is authenticated using context
-      if (!isAuthenticated || !user) {
-        alert('Please log in to make a purchase');
-        setIsProcessing(false);
-        return;
-      }
-      
+      // Check if user is authenticated
       const sessionToken = localStorage.getItem('user_session_token');
+      if (!sessionToken) {
+        throw new Error('Please log in to make a purchase');
+      }
       
       // Refresh and extend session before payment
       console.log('Refreshing session before payment...');
@@ -52,8 +45,8 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
         cancelUrl,
       });
 
-      if (result?.approvalUrl) {
-        console.log('Opening PayPal in new tab:', result.approvalUrl);
+      if (result.approvalUrl) {
+        console.log('Redirecting to PayPal in same tab:', result.approvalUrl);
         
         // Store comprehensive backup session data and payment info
         const userData = localStorage.getItem('user_data');
@@ -75,51 +68,28 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
           returnUrl: '/account' // Where to redirect after payment
         }));
         
-        // Open PayPal in new tab/window with better error handling
+        // Open PayPal in new tab/window
         const paypalWindow = window.open(result.approvalUrl, 'paypal_checkout', 'width=1024,height=768,scrollbars=yes,resizable=yes');
-        
-        if (!paypalWindow) {
-          alert('Please allow popups for PayPal payments');
-          setIsProcessing(false);
-          return;
-        }
         
         // Monitor the PayPal window and session
         const checkPayPalWindow = setInterval(() => {
-          try {
-            if (paypalWindow.closed) {
-              clearInterval(checkPayPalWindow);
-              setIsProcessing(false);
-              console.log('PayPal window closed - user returned to main site');
-              
-              // Refresh session when user returns
-              refreshSession();
-              
-              // Check if payment was completed by looking for URL params
-              setTimeout(() => {
-                window.location.reload();
-              }, 1000);
-            }
-          } catch (error) {
-            console.log('PayPal window monitoring error:', error);
+          if (paypalWindow?.closed) {
             clearInterval(checkPayPalWindow);
             setIsProcessing(false);
+            console.log('PayPal window closed - user returned to main site');
+            
+            // Refresh session when user returns
+            refreshSession();
+            
+            // Check if payment was completed by looking for URL params
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
           }
         }, 1000);
-        
-        // Fallback: reset processing state after 5 minutes
-        setTimeout(() => {
-          if (isProcessing) {
-            setIsProcessing(false);
-            console.log('PayPal process timeout - resetting state');
-          }
-        }, 5 * 60 * 1000);
-      } else {
-        throw new Error('No approval URL received from PayPal');
       }
     } catch (error) {
       console.error('Payment error:', error);
-      alert('Payment setup failed. Please try again.');
       setIsProcessing(false);
     }
   };
