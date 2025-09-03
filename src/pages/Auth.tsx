@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { useUserAuth } from '@/contexts/UserAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,12 +29,22 @@ const Auth = () => {
     firstName: '',
     lastName: '',
   });
+  const [resetPasswordData, setResetPasswordData] = useState({
+    password: '',
+    confirmPassword: '',
+    token: '',
+  });
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
-  // Handle email verification on page load
+  // Handle email verification and password reset on page load
   useEffect(() => {
     const token = searchParams.get('token');
+    const resetToken = searchParams.get('reset_token');
+    
     if (token) {
       handleEmailVerification(token);
+    } else if (resetToken) {
+      handlePasswordResetToken(resetToken);
     }
   }, [searchParams]);
 
@@ -128,6 +139,57 @@ const Auth = () => {
     setIsLoading(false);
   };
 
+  const handlePasswordResetToken = async (resetToken: string) => {
+    setResetPasswordData({ ...resetPasswordData, token: resetToken });
+    setShowPasswordReset(true);
+    setSuccess('Please enter your new password below.');
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    if (resetPasswordData.password !== resetPasswordData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    if (resetPasswordData.password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Verify and use the reset token to update password
+      const { error } = await supabase.functions.invoke('reset-password', {
+        body: {
+          token: resetPasswordData.token,
+          newPassword: resetPasswordData.password
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setSuccess('Password reset successfully! You can now sign in with your new password.');
+      setShowPasswordReset(false);
+      setResetPasswordData({ password: '', confirmPassword: '', token: '' });
+      toast({
+        title: 'Password Reset',
+        description: 'Your password has been updated successfully.',
+      });
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      setError(error.message || 'Failed to reset password. The link may be expired.');
+    }
+
+    setIsLoading(false);
+  };
+
   const handleResendVerification = async () => {
     if (!signInData.email) {
       setError('Please enter your email address');
@@ -181,11 +243,61 @@ const Auth = () => {
         )}
 
         <Card>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
+          {showPasswordReset ? (
+            <div>
+              <CardHeader>
+                <CardTitle>Create New Password</CardTitle>
+                <CardDescription>
+                  Enter your new password below
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordReset} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      placeholder="Enter new password"
+                      value={resetPasswordData.password}
+                      onChange={(e) =>
+                        setResetPasswordData({ ...resetPasswordData, password: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-new-password"
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={resetPasswordData.confirmPassword}
+                      onChange={(e) =>
+                        setResetPasswordData({ ...resetPasswordData, confirmPassword: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating Password...
+                      </>
+                    ) : (
+                      'Update Password'
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </div>
+          ) : (
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
 
             <TabsContent value="signin">
               <CardHeader>
@@ -321,7 +433,8 @@ const Auth = () => {
                 </form>
               </CardContent>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          )}
         </Card>
 
         <div className="text-center mt-6">

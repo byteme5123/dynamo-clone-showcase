@@ -43,11 +43,13 @@ export const PasswordResetForm = () => {
       });
     } catch (error: any) {
       console.error('Password reset error:', error);
-      toast({
-        title: "Reset Failed",
-        description: error.message || "Failed to send reset email. Please try again.",
-        variant: "destructive",
-      });
+        const errorMessage = error.message || "Failed to send reset email. Please try again.";
+        console.error('Password reset error details:', error);
+        toast({
+          title: "Reset Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
     } finally {
       setIsSubmitting(false);
     }
