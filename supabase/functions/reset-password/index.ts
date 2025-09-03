@@ -66,12 +66,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Valid reset token found for user:', user.email);
 
-    // Hash the new password using Web Crypto API (compatible with Deno Deploy)
-    const encoder = new TextEncoder();
-    const data = encoder.encode(newPassword);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Hash the new password using bcrypt (matches sign-in process)
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     // Update user password and clear reset token
     const { error: updateError } = await supabaseClient
