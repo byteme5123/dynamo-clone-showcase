@@ -140,9 +140,36 @@ const Auth = () => {
   };
 
   const handlePasswordResetToken = async (resetToken: string) => {
-    setResetPasswordData({ ...resetPasswordData, token: resetToken });
-    setShowPasswordReset(true);
-    setSuccess('Please enter your new password below.');
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // Validate the reset token by attempting to use it (this will check if it's valid and not expired)
+      const { error: validationError } = await supabase.functions.invoke('reset-password', {
+        body: {
+          token: resetToken,
+          newPassword: 'validation-check-only', // This won't actually update the password due to length validation
+        }
+      });
+
+      // If the error is about password length, the token is valid
+      // If the error is about invalid/expired token, show error
+      if (validationError && !validationError.message?.includes('8 characters')) {
+        setError('Invalid or expired reset link. Please request a new password reset.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Token is valid, show the reset form
+      setResetPasswordData({ ...resetPasswordData, token: resetToken });
+      setShowPasswordReset(true);
+      setSuccess('Please enter your new password below.');
+    } catch (error: any) {
+      console.error('Token validation error:', error);
+      setError('Invalid or expired reset link. Please request a new password reset.');
+    }
+    
+    setIsLoading(false);
   };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -179,9 +206,14 @@ const Auth = () => {
       setShowPasswordReset(false);
       setResetPasswordData({ password: '', confirmPassword: '', token: '' });
       toast({
-        title: 'Password Reset',
-        description: 'Your password has been updated successfully.',
+        title: 'Password Reset Success',
+        description: 'Your password has been updated. Redirecting to sign in...',
       });
+      
+      // Redirect to sign in after 2 seconds
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 2000);
     } catch (error: any) {
       console.error('Password reset error:', error);
       setError(error.message || 'Failed to reset password. The link may be expired.');
@@ -246,50 +278,147 @@ const Auth = () => {
           {showPasswordReset ? (
             <div>
               <CardHeader>
-                <CardTitle>Create New Password</CardTitle>
+                <CardTitle>Reset Your Password</CardTitle>
                 <CardDescription>
-                  Enter your new password below
+                  {resetPasswordData.token ? 
+                    'Enter your new password below' : 
+                    'Enter your email address to receive a password reset link'
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handlePasswordReset} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      placeholder="Enter new password"
-                      value={resetPasswordData.password}
-                      onChange={(e) =>
-                        setResetPasswordData({ ...resetPasswordData, password: e.target.value })
+                {resetPasswordData.token ? (
+                  <form onSubmit={handlePasswordReset} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        placeholder="Enter new password (minimum 8 characters)"
+                        value={resetPasswordData.password}
+                        onChange={(e) =>
+                          setResetPasswordData({ ...resetPasswordData, password: e.target.value })
+                        }
+                        required
+                        minLength={8}
+                      />
+                      {resetPasswordData.password && resetPasswordData.password.length < 8 && (
+                        <p className="text-sm text-destructive">Password must be at least 8 characters long</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                      <Input
+                        id="confirm-new-password"
+                        type="password"
+                        placeholder="Confirm new password"
+                        value={resetPasswordData.confirmPassword}
+                        onChange={(e) =>
+                          setResetPasswordData({ ...resetPasswordData, confirmPassword: e.target.value })
+                        }
+                        required
+                      />
+                      {resetPasswordData.confirmPassword && 
+                       resetPasswordData.password !== resetPasswordData.confirmPassword && (
+                        <p className="text-sm text-destructive">Passwords do not match</p>
+                      )}
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating Password...
+                        </>
+                      ) : (
+                        'Update Password'
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowPasswordReset(false);
+                        setResetPasswordData({ password: '', confirmPassword: '', token: '' });
+                        setError('');
+                        setSuccess('');
+                      }}
+                    >
+                      Back to Sign In
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      setIsLoading(true);
+                      setError('');
+                      
+                      const formData = new FormData(e.currentTarget);
+                      const email = formData.get('reset-email') as string;
+                      
+                      if (!email) {
+                        setError('Please enter your email address');
+                        setIsLoading(false);
+                        return;
                       }
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-                    <Input
-                      id="confirm-new-password"
-                      type="password"
-                      placeholder="Confirm new password"
-                      value={resetPasswordData.confirmPassword}
-                      onChange={(e) =>
-                        setResetPasswordData({ ...resetPasswordData, confirmPassword: e.target.value })
+
+                      try {
+                        const { error } = await supabase.functions.invoke('send-password-reset', {
+                          body: { email }
+                        });
+
+                        if (error) {
+                          throw error;
+                        }
+
+                        setSuccess('If an account with that email exists, we\'ve sent a password reset link.');
+                        toast({
+                          title: "Reset Link Sent",
+                          description: "Check your email for the password reset link.",
+                        });
+                      } catch (error: any) {
+                        console.error('Password reset request error:', error);
+                        setError('Failed to send reset email. Please try again.');
+                      } finally {
+                        setIsLoading(false);
                       }
-                      required
-                    />
+                    }} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email Address</Label>
+                        <Input
+                          id="reset-email"
+                          name="reset-email"
+                          type="email"
+                          placeholder="Enter your email address"
+                          required
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending Reset Link...
+                          </>
+                        ) : (
+                          'Send Reset Link'
+                        )}
+                      </Button>
+                    </form>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowPasswordReset(false);
+                        setError('');
+                        setSuccess('');
+                      }}
+                    >
+                      Back to Sign In
+                    </Button>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Updating Password...
-                      </>
-                    ) : (
-                      'Update Password'
-                    )}
-                  </Button>
-                </form>
+                )}
               </CardContent>
             </div>
           ) : (
@@ -344,6 +473,17 @@ const Auth = () => {
                       'Sign In'
                     )}
                   </Button>
+                  
+                  <div className="text-center mt-4">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm text-muted-foreground hover:text-primary p-0"
+                      onClick={() => setShowPasswordReset(true)}
+                    >
+                      Forgot your password?
+                    </Button>
+                  </div>
                 </form>
               </CardContent>
             </TabsContent>
