@@ -216,13 +216,19 @@ const Auth = () => {
 
       if (error) {
         console.error('Password reset API error:', error);
-        // Show more specific error messages
+        // Show more specific error messages from backend
         if (error.message?.includes('Invalid or expired')) {
           setError('Your reset link has expired. Please request a new password reset.');
         } else if (error.message?.includes('8 characters')) {
           setError('Password must be at least 8 characters long.');
+        } else if (error.message?.includes('Server configuration')) {
+          setError('Server configuration error. Please contact support.');
+        } else if (error.message?.includes('Database connection')) {
+          setError('Database connection issue. Please try again in a moment.');
         } else {
-          setError(error.message || 'Failed to reset password. Please try again.');
+          // Display backend error details if available
+          const errorDetails = error.details ? ` (${error.details})` : '';
+          setError(error.message || `Failed to reset password. Please try again.${errorDetails}`);
         }
         return;
       }
