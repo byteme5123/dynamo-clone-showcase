@@ -46,6 +46,7 @@ import AdminHomepageFooter from "./pages/AdminHomepageFooter";
 import AdminAbout from "./pages/AdminAbout";
 import AdminContact from "./pages/AdminContact";
 import AdminPayPalSettings from "./pages/AdminPayPalSettings";
+import AdminEmailLogs from "./pages/AdminEmailLogs";
 
 // Optimized QueryClient for maximum performance and instant loading
 const queryClient = new QueryClient({
@@ -126,6 +127,7 @@ const App = () => (
                 <Route path="about" element={<AdminAbout />} />
                 <Route path="contact" element={<AdminContact />} />
                 <Route path="paypal" element={<AdminPayPalSettings />} />
+                <Route path="email-logs" element={<AdminEmailLogs />} />
               </Route>
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
