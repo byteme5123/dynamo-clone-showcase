@@ -68,8 +68,25 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
           returnUrl: '/account' // Where to redirect after payment
         }));
         
-        // Redirect to PayPal in same tab
-        window.location.href = result.approvalUrl;
+        // Open PayPal in new tab/window
+        const paypalWindow = window.open(result.approvalUrl, 'paypal_checkout', 'width=1024,height=768,scrollbars=yes,resizable=yes');
+        
+        // Monitor the PayPal window and session
+        const checkPayPalWindow = setInterval(() => {
+          if (paypalWindow?.closed) {
+            clearInterval(checkPayPalWindow);
+            setIsProcessing(false);
+            console.log('PayPal window closed - user returned to main site');
+            
+            // Refresh session when user returns
+            refreshSession();
+            
+            // Check if payment was completed by looking for URL params
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }
+        }, 1000);
       }
     } catch (error) {
       console.error('Payment error:', error);

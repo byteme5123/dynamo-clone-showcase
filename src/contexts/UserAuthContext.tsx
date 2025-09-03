@@ -33,7 +33,42 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     // Check for existing session on mount
     checkSession();
-  }, []);
+    
+    // Set up automatic session refresh every 10 minutes
+    const sessionRefreshInterval = setInterval(() => {
+      if (user) {
+        refreshSession();
+        console.log('Auto-refreshing session');
+      }
+    }, 10 * 60 * 1000); // 10 minutes
+    
+    // Set up activity tracking to extend session
+    const trackActivity = () => {
+      if (user) {
+        const lastActivity = localStorage.getItem('last_activity');
+        const now = Date.now().toString();
+        localStorage.setItem('last_activity', now);
+        
+        // If more than 5 minutes since last activity, refresh session
+        if (lastActivity && (Date.now() - parseInt(lastActivity)) > 5 * 60 * 1000) {
+          refreshSession();
+        }
+      }
+    };
+    
+    // Track user activity
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    activityEvents.forEach(event => {
+      document.addEventListener(event, trackActivity, true);
+    });
+    
+    return () => {
+      clearInterval(sessionRefreshInterval);
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, trackActivity, true);
+      });
+    };
+  }, [user]);
 
   const checkSession = async () => {
     try {
@@ -171,7 +206,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Create session with extended expiration
       const sessionToken = crypto.randomUUID();
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 60); // 60 days for payment flows
+      expiresAt.setTime(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days for payment flows
 
       await supabase
         .from('user_sessions')
@@ -181,10 +216,17 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           expires_at: expiresAt.toISOString(),
         });
 
-      // Store session with backup mechanisms
+      // Store session with multiple backup mechanisms
       localStorage.setItem('user_session_token', sessionToken);
+      localStorage.setItem('session_expires_at', expiresAt.toISOString());
+      localStorage.setItem('user_data', JSON.stringify(userData));
       sessionStorage.setItem('user_session_backup', sessionToken);
       sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
+      sessionStorage.setItem('session_expires_backup', expiresAt.toISOString());
+      
+      // Set activity tracking
+      localStorage.setItem('last_activity', Date.now().toString());
+      
       setUser(userData);
 
       return { error: null };
@@ -257,15 +299,25 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const refreshSession = async () => {
     try {
       const sessionToken = localStorage.getItem('user_session_token');
-      if (sessionToken) {
-        // Extend session expiration
+      if (sessionToken && user) {
+        // Extend session expiration by 30 days
         const newExpiresAt = new Date();
-        newExpiresAt.setDate(newExpiresAt.getDate() + 60);
+        newExpiresAt.setTime(newExpiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
         
         await supabase
           .from('user_sessions')
-          .update({ expires_at: newExpiresAt.toISOString() })
+          .update({ 
+            expires_at: newExpiresAt.toISOString(),
+            last_activity: new Date().toISOString()
+          })
           .eq('token', sessionToken);
+          
+        // Update local storage
+        localStorage.setItem('session_expires_at', newExpiresAt.toISOString());
+        localStorage.setItem('last_activity', Date.now().toString());
+        sessionStorage.setItem('session_expires_backup', newExpiresAt.toISOString());
+        
+        console.log('Session refreshed, new expiry:', newExpiresAt.toISOString());
       }
     } catch (error) {
       console.error('Session refresh error:', error);

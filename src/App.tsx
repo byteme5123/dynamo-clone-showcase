@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { UserAuthProvider } from "@/contexts/UserAuthContext";
+import SessionWarning from "@/components/SessionWarning";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import WirelessPBX from "./pages/WirelessPBX";
@@ -80,6 +81,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <SessionWarning />
           <BrowserRouter>
             <Routes>
               {/* Public Routes */}
