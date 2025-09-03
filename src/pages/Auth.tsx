@@ -202,16 +202,29 @@ const Auth = () => {
     }
 
     try {
+      console.log('Submitting password reset with token:', resetPasswordData.token.substring(0, 8) + '...');
+      
       // Verify and use the reset token to update password
-      const { error } = await supabase.functions.invoke('reset-password', {
+      const { data, error } = await supabase.functions.invoke('reset-password', {
         body: {
           token: resetPasswordData.token,
           newPassword: resetPasswordData.password
         }
       });
 
+      console.log('Password reset response:', { data, error });
+
       if (error) {
-        throw error;
+        console.error('Password reset API error:', error);
+        // Show more specific error messages
+        if (error.message?.includes('Invalid or expired')) {
+          setError('Your reset link has expired. Please request a new password reset.');
+        } else if (error.message?.includes('8 characters')) {
+          setError('Password must be at least 8 characters long.');
+        } else {
+          setError(error.message || 'Failed to reset password. Please try again.');
+        }
+        return;
       }
 
       setSuccess('Password reset successfully! You can now sign in with your new password.');
@@ -228,7 +241,7 @@ const Auth = () => {
       }, 2000);
     } catch (error: any) {
       console.error('Password reset error:', error);
-      setError(error.message || 'Failed to reset password. The link may be expired.');
+      setError('Failed to reset password. Please try again or request a new reset link.');
     }
 
     setIsLoading(false);
