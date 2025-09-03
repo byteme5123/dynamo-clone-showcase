@@ -71,184 +71,116 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send payment receipt email
     const emailResponse = await resend.emails.send({
-      from: "Dynamo Wireless <noreply@dynamowireless.com>",
+      from: "Dynamo Wireless <noreply@resend.dev>",
       to: [email],
-      subject: "Purchase Confirmation - Your Dynamo Wireless Plan",
+      subject: "Payment Receipt - Your Plan Purchase",
       html: `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Confirmation - Dynamo Wireless</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f8f9fa;">
-    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-        
-        <!-- Header with Logo -->
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; color: white;">
-            <div style="font-size: 32px; font-weight: bold; margin-bottom: 10px;">
-                🔥 Dynamo Wireless
-            </div>
-            <div style="font-size: 18px; font-weight: 300; opacity: 0.9;">
-                Purchase Confirmation & Receipt
-            </div>
-        </div>
-
-        <!-- Success Message -->
-        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px 30px; text-align: center;">
-            <h2 style="margin: 0 0 10px 0; font-size: 24px;">
-                ✅ Payment Successfully Processed!
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 20px; margin-bottom: 30px;">
+            <h1 style="color: #007bff; margin: 0;">Dynamo Wireless</h1>
+            <p style="color: #666; margin: 5px 0;">Payment Receipt</p>
+          </div>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h2 style="color: #28a745; margin: 0 0 10px 0; text-align: center;">
+              ✅ Payment Successful!
             </h2>
-            <p style="margin: 0; font-size: 16px;">
-                Thank you for choosing Dynamo Wireless, ${customerName || 'Valued Customer'}!
+            <p style="text-align: center; margin: 0; color: #666;">
+              Thank you for your purchase, ${customerName || 'Valued Customer'}!
             </p>
-        </div>
+          </div>
 
-        <!-- Purchase Details -->
-        <div style="padding: 30px;">
-            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 25px; margin-bottom: 25px;">
-                <h3 style="color: #667eea; margin: 0 0 20px 0; font-size: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px;">
-                    📋 Purchase Details
-                </h3>
-                
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                    <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; font-weight: 600; width: 35%;">
-                            Plan Name:
-                        </td>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; color: #495057;">
-                            ${planName}
-                        </td>
-                    </tr>
-                    ${planDescription ? `
-                    <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; font-weight: 600;">
-                            Plan Details:
-                        </td>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; color: #495057;">
-                            ${planDescription.replace(/\n/g, '<br>')}
-                        </td>
-                    </tr>
-                    ` : ''}
-                    <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; font-weight: 600;">
-                            Duration:
-                        </td>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; color: #495057;">
-                            30 Days
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; font-weight: 600;">
-                            Purchase Date:
-                        </td>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; color: #495057;">
-                            ${purchaseDate}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; font-weight: 600;">
-                            Payment Method:
-                        </td>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e9ecef; color: #495057;">
-                            PayPal
-                        </td>
-                    </tr>
-                    <tr style="background-color: #e7f3ff;">
-                        <td style="padding: 15px 0; font-weight: bold; font-size: 16px; color: #0066cc;">
-                            Total Amount Paid:
-                        </td>
-                        <td style="padding: 15px 0; font-weight: bold; font-size: 20px; color: #0066cc;">
-                            $${parseFloat(amount).toFixed(2)} ${currency.toUpperCase()}
-                        </td>
-                    </tr>
-                </table>
-            </div>
+          <div style="background-color: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+            <h3 style="color: #333; margin: 0 0 20px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+              Purchase Details
+            </h3>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; font-weight: bold; color: #333;">
+                  Plan:
+                </td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; color: #666;">
+                  ${planName}
+                </td>
+              </tr>
+              ${planDescription ? `
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; font-weight: bold; color: #333;">
+                  Description:
+                </td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; color: #666;">
+                  ${planDescription}
+                </td>
+              </tr>
+              ` : ''}
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; font-weight: bold; color: #333;">
+                  Amount:
+                </td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; color: #666; font-size: 18px; font-weight: bold;">
+                  ${currency.toUpperCase()} $${amount}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; font-weight: bold; color: #333;">
+                  Purchase Date:
+                </td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; color: #666;">
+                  ${purchaseDate}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; font-weight: bold; color: #333;">
+                  Order ID:
+                </td>
+                <td style="padding: 10px 0; border-bottom: 1px solid #f1f3f4; color: #666; font-family: monospace;">
+                  ${orderId}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 10px 0; font-weight: bold; color: #333;">
+                  Payment ID:
+                </td>
+                <td style="padding: 10px 0; color: #666; font-family: monospace;">
+                  ${paymentId}
+                </td>
+              </tr>
+            </table>
+          </div>
 
-            <!-- Transaction Details -->
-            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                <h3 style="color: #856404; margin: 0 0 15px 0; font-size: 18px;">
-                    🧾 Transaction Information
-                </h3>
-                <div style="font-size: 13px; color: #856404;">
-                    <p style="margin: 8px 0;"><strong>Order ID:</strong> <span style="font-family: monospace; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">${orderId}</span></p>
-                    <p style="margin: 8px 0;"><strong>Payment ID:</strong> <span style="font-family: monospace; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">${paymentId}</span></p>
-                    <p style="margin: 8px 0; font-size: 12px; font-style: italic;">Please keep this information for your records and future reference.</p>
-                </div>
-            </div>
+          <div style="background-color: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
+            <h3 style="color: #1976d2; margin: 0 0 15px 0;">Next Steps</h3>
+            <ul style="margin: 0; padding-left: 20px; color: #333;">
+              <li style="margin-bottom: 8px;">Your plan is now active and ready to use</li>
+              <li style="margin-bottom: 8px;">You can view your plan details in your account dashboard</li>
+              <li style="margin-bottom: 8px;">If you need to activate a SIM card, visit our activation page</li>
+              <li>For support, contact our customer service team</li>
+            </ul>
+          </div>
 
-            <!-- Next Steps -->
-            <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                <h3 style="color: #0c5460; margin: 0 0 15px 0; font-size: 18px;">
-                    🚀 What's Next?
-                </h3>
-                <ul style="margin: 0; padding-left: 20px; color: #0c5460; font-size: 14px;">
-                    <li style="margin-bottom: 8px;">Your mobile plan is now <strong>active and ready to use</strong></li>
-                    <li style="margin-bottom: 8px;">View your plan details and usage in your <strong>account dashboard</strong></li>
-                    <li style="margin-bottom: 8px;">Need to activate a SIM card? Visit our <strong>SIM activation page</strong></li>
-                    <li style="margin-bottom: 8px;">Your plan will renew automatically in <strong>30 days</strong></li>
-                    <li>Questions? Our bilingual support team is here to help!</li>
-                </ul>
-            </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${req.headers.get('origin') || 'https://dynamo-wireless.lovable.app'}/account" 
+               style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+              View My Account
+            </a>
+          </div>
 
-            <!-- CTA Buttons -->
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="${req.headers.get('origin') || 'https://dynamo-wireless.lovable.app'}/account" 
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; margin: 5px 10px; font-size: 16px;">
-                    📱 View My Account
-                </a>
-                <a href="${req.headers.get('origin') || 'https://dynamo-wireless.lovable.app'}/activate-sim" 
-                   style="background-color: #28a745; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold; margin: 5px 10px; font-size: 16px;">
-                    🔧 Activate SIM
-                </a>
-            </div>
-
-            <!-- Support Information -->
-            <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; text-align: center;">
-                <h4 style="color: #495057; margin: 0 0 15px 0;">Need Help?</h4>
-                <p style="margin: 0 0 10px 0; color: #6c757d; font-size: 14px;">
-                    Our bilingual customer support team is available to assist you.
-                </p>
-                <p style="margin: 0; color: #6c757d; font-size: 14px;">
-                    <strong>Email:</strong> support@dynamowireless.com | 
-                    <strong>Phone:</strong> 1-800-DYNAMO-1
-                </p>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div style="background-color: #2c3e50; color: white; padding: 25px; text-align: center;">
-            <p style="margin: 0 0 10px 0; font-size: 12px; opacity: 0.8;">
-                This is an automated purchase confirmation. Please keep this email for your records.
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+          
+          <div style="text-align: center;">
+            <p style="font-size: 12px; color: #666; margin: 10px 0;">
+              This is an automated receipt for your purchase. Please keep this email for your records.
             </p>
-            <p style="margin: 0; font-size: 12px; opacity: 0.8;">
-                © 2024 Dynamo Wireless. All rights reserved. | 
-                <a href="${req.headers.get('origin') || 'https://dynamo-wireless.lovable.app'}/contact" style="color: #74b9ff; text-decoration: none;">Contact Us</a>
+            <p style="font-size: 12px; color: #666; margin: 0;">
+              © Dynamo Wireless. All rights reserved.
             </p>
+          </div>
         </div>
-    </div>
-</body>
-</html>
       `,
     });
 
     console.log('Payment receipt email sent:', emailResponse);
-
-    // Log email send to database
-    try {
-      await supabaseClient.from('email_logs').insert({
-        email_type: 'payment_confirmation',
-        recipient_email: email,
-        subject: 'Purchase Confirmation - Your Dynamo Wireless Plan',
-        status: emailResponse.error ? 'failed' : 'sent',
-        error_message: emailResponse.error || null,
-        order_id: orderId,
-        user_id: null // Will be filled in if we can get user_id from order
-      });
-    } catch (logError) {
-      console.error('Failed to log email send:', logError);
-    }
 
     return new Response(
       JSON.stringify({ 
