@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { hash } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,13 +68,13 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Valid reset token found for user:', user.email);
 
     // Hash the new password
-    const hashedPassword = await hash(newPassword, 12);
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     // Update user password and clear reset token
     const { error: updateError } = await supabaseClient
       .from('users')
       .update({
-        password: hashedPassword,
+        password_hash: hashedPassword,
         reset_token: null,
         reset_token_expires: null,
         updated_at: new Date().toISOString()

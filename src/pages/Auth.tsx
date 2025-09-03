@@ -143,23 +143,35 @@ const Auth = () => {
     setIsLoading(true);
     setError('');
     
+    console.log('Processing reset token:', resetToken.substring(0, 8) + '...');
+    
     try {
-      // Validate the reset token by attempting to use it (this will check if it's valid and not expired)
-      const { error: validationError } = await supabase.functions.invoke('reset-password', {
-        body: {
-          token: resetToken,
-          newPassword: 'validation-check-only', // This won't actually update the password due to length validation
-        }
-      });
+      // Create a simple token validation endpoint call
+      const { data, error: validationError } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('reset_token', resetToken)
+        .gt('reset_token_expires', new Date().toISOString())
+        .maybeSingle();
 
-      // If the error is about password length, the token is valid
-      // If the error is about invalid/expired token, show error
-      if (validationError && !validationError.message?.includes('8 characters')) {
+      console.log('Token validation result:', { data, validationError });
+
+      if (validationError) {
+        console.error('Token validation database error:', validationError);
+        setError('Failed to validate reset token. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!data) {
+        console.log('Token not found or expired');
         setError('Invalid or expired reset link. Please request a new password reset.');
         setIsLoading(false);
         return;
       }
 
+      console.log('Valid token found for user:', data.email);
+      
       // Token is valid, show the reset form
       setResetPasswordData({ ...resetPasswordData, token: resetToken });
       setShowPasswordReset(true);
