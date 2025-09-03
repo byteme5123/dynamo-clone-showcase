@@ -85,15 +85,19 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (!sessionToken) {
         // Try to restore from backup user data first
         const backupData = sessionStorage.getItem('user_data_backup');
-        if (backupData) {
+        const backupToken = sessionStorage.getItem('user_session_backup');
+        if (backupData && backupToken) {
           try {
             const userData = JSON.parse(backupData);
             setUser(userData);
-            // Clear backup after restoration
-            sessionStorage.removeItem('user_data_backup');
+            // Restore session token but keep backup for future reloads
+            localStorage.setItem('user_session_token', backupToken);
             console.log('User restored from backup:', userData.email);
-          } catch {
-            // Ignore parse errors
+          } catch (error) {
+            console.error('Backup restoration error:', error);
+            // Clear corrupted backup data
+            sessionStorage.removeItem('user_data_backup');
+            sessionStorage.removeItem('user_session_backup');
           }
         }
         setLoading(false);
@@ -118,8 +122,9 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (userData) {
           setUser(userData);
-          // Update backup
+          // Update backup (keep for session persistence across reloads)
           sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
+          localStorage.setItem('user_data', JSON.stringify(userData));
           console.log('User session restored:', userData.email);
         }
       } else {
@@ -203,10 +208,10 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return { error: { message: 'Invalid email or password' } };
       }
 
-      // Create session with extended expiration
+      // Create session with 1 hour expiration
       const sessionToken = crypto.randomUUID();
       const expiresAt = new Date();
-      expiresAt.setTime(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days for payment flows
+      expiresAt.setTime(expiresAt.getTime() + (60 * 60 * 1000)); // 1 hour session
 
       await supabase
         .from('user_sessions')
@@ -300,9 +305,9 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const sessionToken = localStorage.getItem('user_session_token');
       if (sessionToken && user) {
-        // Extend session expiration by 30 days
+        // Extend session expiration by 1 hour from now
         const newExpiresAt = new Date();
-        newExpiresAt.setTime(newExpiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
+        newExpiresAt.setTime(newExpiresAt.getTime() + (60 * 60 * 1000)); // 1 hour
         
         await supabase
           .from('user_sessions')
