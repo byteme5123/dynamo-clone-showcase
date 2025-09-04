@@ -119,108 +119,55 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount
+    // Check for existing session on mount only
     checkSession();
     
-    // Set up automatic session refresh every 10 minutes
+    // Set up automatic session refresh every 24 hours only
     const sessionRefreshInterval = setInterval(() => {
-      if (user) {
+      const sessionToken = localStorage.getItem('user_session_token');
+      if (sessionToken) {
         refreshSession();
-        console.log('Auto-refreshing session');
+        console.log('Daily session refresh');
       }
-    }, 10 * 60 * 1000); // 10 minutes
-    
-    // Set up activity tracking to extend session
-    const trackActivity = () => {
-      if (user) {
-        const lastActivity = localStorage.getItem('last_activity');
-        const now = Date.now().toString();
-        localStorage.setItem('last_activity', now);
-        
-        // If more than 5 minutes since last activity, refresh session
-        if (lastActivity && (Date.now() - parseInt(lastActivity)) > 5 * 60 * 1000) {
-          refreshSession();
-        }
-      }
-    };
-    
-    // Track user activity
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    activityEvents.forEach(event => {
-      document.addEventListener(event, trackActivity, true);
-    });
+    }, 24 * 60 * 60 * 1000); // 24 hours
     
     return () => {
       clearInterval(sessionRefreshInterval);
-      activityEvents.forEach(event => {
-        document.removeEventListener(event, trackActivity, true);
-      });
     };
-  }, [user]);
+  }, []); // Remove user dependency to stop infinite loop
 
   const checkSession = async () => {
     try {
-      let sessionToken = localStorage.getItem('user_session_token');
-      
-      // Fallback to sessionStorage if localStorage is empty
-      if (!sessionToken) {
-        sessionToken = sessionStorage.getItem('user_session_backup');
-        if (sessionToken) {
-          localStorage.setItem('user_session_token', sessionToken);
-        }
-      }
+      const sessionToken = localStorage.getItem('user_session_token');
       
       if (!sessionToken) {
-        // Try to restore from backup user data first
-        const backupData = sessionStorage.getItem('user_data_backup');
-        if (backupData) {
-          try {
-            const userData = JSON.parse(backupData);
-            setUser(userData);
-            // Clear backup after restoration
-            sessionStorage.removeItem('user_data_backup');
-            console.log('User restored from backup:', userData.email);
-          } catch {
-            // Ignore parse errors
-          }
-        }
         setLoading(false);
         return;
       }
 
-      // Verify session is still valid
-      const { data: session } = await supabase
+      // Verify session is still valid with user data in single query
+      const { data: sessionData } = await supabase
         .from('user_sessions')
-        .select('*')
+        .select(`
+          *,
+          users (*)
+        `)
         .eq('token', sessionToken)
         .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
-      if (session) {
-        // Get user data
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user_id)
-          .single();
-
-        if (userData) {
-          setUser(userData);
-          // Update backup
-          sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
-          console.log('User session restored:', userData.email);
-        }
+      if (sessionData && sessionData.users) {
+        setUser(sessionData.users as User);
+        console.log('User session restored:', sessionData.users.email);
       } else {
         // Clear invalid session
         localStorage.removeItem('user_session_token');
-        sessionStorage.removeItem('user_session_backup');
-        sessionStorage.removeItem('user_data_backup');
+        localStorage.removeItem('session_expires_at');
       }
     } catch (error) {
       console.error('Session check error:', error);
       localStorage.removeItem('user_session_token');
-      sessionStorage.removeItem('user_session_backup');
-      sessionStorage.removeItem('user_data_backup');
+      localStorage.removeItem('session_expires_at');
     } finally {
       setLoading(false);
     }
@@ -304,16 +251,9 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           expires_at: expiresAt.toISOString(),
         });
 
-      // Store session with multiple backup mechanisms
+      // Store session in localStorage only
       localStorage.setItem('user_session_token', sessionToken);
       localStorage.setItem('session_expires_at', expiresAt.toISOString());
-      localStorage.setItem('user_data', JSON.stringify(userData));
-      sessionStorage.setItem('user_session_backup', sessionToken);
-      sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
-      sessionStorage.setItem('session_expires_backup', expiresAt.toISOString());
-      
-      // Set activity tracking
-      localStorage.setItem('last_activity', Date.now().toString());
       
       setUser(userData);
 
@@ -337,10 +277,8 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         localStorage.removeItem('user_session_token');
       }
       
-      // Clear all session data
-      sessionStorage.removeItem('user_session_backup');
-      sessionStorage.removeItem('user_data_backup');
-      sessionStorage.removeItem('session_expires_backup');
+      // Clear session data
+      localStorage.removeItem('session_expires_at');
       
       setUser(null);
       
@@ -350,9 +288,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Sign out error:', error);
       // Always clear local state even if database update fails
       localStorage.removeItem('user_session_token');
-      sessionStorage.removeItem('user_session_backup');
-      sessionStorage.removeItem('user_data_backup');
-      sessionStorage.removeItem('session_expires_backup');
+      localStorage.removeItem('session_expires_at');
       setUser(null);
       // Redirect even on error
       window.location.href = '/';
@@ -387,7 +323,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const refreshSession = async () => {
     try {
       const sessionToken = localStorage.getItem('user_session_token');
-      if (sessionToken && user) {
+      if (sessionToken) {
         // Extend session expiration by 30 days
         const newExpiresAt = new Date();
         newExpiresAt.setTime(newExpiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
@@ -402,8 +338,6 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           
         // Update local storage
         localStorage.setItem('session_expires_at', newExpiresAt.toISOString());
-        localStorage.setItem('last_activity', Date.now().toString());
-        sessionStorage.setItem('session_expires_backup', newExpiresAt.toISOString());
         
         console.log('Session refreshed, new expiry:', newExpiresAt.toISOString());
       }
@@ -430,8 +364,6 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (userData) {
         setUser(userData);
-        // Update backup data
-        sessionStorage.setItem('user_data_backup', JSON.stringify(userData));
         console.log('User data refreshed:', userData.email);
       }
     } catch (error) {
