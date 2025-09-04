@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { Resend } from "npm:resend@2.0.0";
+import jsPDF from "https://esm.sh/jspdf@2.5.1";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -48,7 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get plan details
     const { data: plan, error: planError } = await supabaseClient
       .from('plans')
-      .select('name, description, currency')
+      .select('name, description, currency, data_limit, call_minutes, sms_limit, validity_days, features')
       .eq('id', planId)
       .maybeSingle();
 
@@ -69,6 +70,156 @@ const handler = async (req: Request): Promise<Response> => {
       minute: '2-digit'
     });
 
+    // Generate PDF Invoice
+    const generatePDFInvoice = () => {
+      const doc = new jsPDF();
+      
+      // Company Header
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 123, 255);
+      doc.text('DYNAMO WIRELESS', 20, 30);
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text('Premium Mobile Data Plans', 20, 38);
+      doc.text('18000 Studebaker Rd, Suite 700, Cerritos, CA 90703', 20, 46);
+      doc.text('Email: support@dynamowireless.com | Phone: +1 (555) 123-4567', 20, 54);
+      
+      // Invoice Title
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('INVOICE', 160, 30);
+      
+      // Invoice Details Box
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(140, 40, 50, 30);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Invoice No:', 145, 48);
+      doc.text(`DW-${orderId.slice(-8)}`, 145, 54);
+      doc.text('Date:', 145, 60);
+      doc.text(new Date().toLocaleDateString('en-US'), 145, 66);
+      
+      // Customer Information
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Bill To:', 20, 80);
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(customerName || 'Valued Customer', 20, 90);
+      doc.text(email, 20, 98);
+      
+      // Service Details Table Header
+      const tableStartY = 120;
+      
+      // Table Header Background
+      doc.setFillColor(0, 123, 255);
+      doc.rect(20, tableStartY, 170, 8, 'F');
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Service Description', 25, tableStartY + 6);
+      doc.text('Details', 80, tableStartY + 6);
+      doc.text('Amount', 160, tableStartY + 6);
+      
+      // Table Rows
+      let currentY = tableStartY + 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      
+      // Plan Name Row
+      doc.setFillColor(248, 249, 250);
+      doc.rect(20, currentY, 170, 6, 'F');
+      doc.text('Plan Name:', 25, currentY + 4);
+      doc.text(planName, 80, currentY + 4);
+      currentY += 6;
+      
+      // Plan Details Rows
+      if (plan?.data_limit) {
+        doc.text('Data Allowance:', 25, currentY + 4);
+        doc.text(plan.data_limit, 80, currentY + 4);
+        currentY += 6;
+      }
+      
+      if (plan?.call_minutes) {
+        doc.setFillColor(248, 249, 250);
+        doc.rect(20, currentY, 170, 6, 'F');
+        doc.text('Call Minutes:', 25, currentY + 4);
+        doc.text(plan.call_minutes, 80, currentY + 4);
+        currentY += 6;
+      }
+      
+      if (plan?.sms_limit) {
+        doc.text('SMS Limit:', 25, currentY + 4);
+        doc.text(plan.sms_limit, 80, currentY + 4);
+        currentY += 6;
+      }
+      
+      if (plan?.validity_days) {
+        doc.setFillColor(248, 249, 250);
+        doc.rect(20, currentY, 170, 6, 'F');
+        doc.text('Validity Period:', 25, currentY + 4);
+        doc.text(`${plan.validity_days} days`, 80, currentY + 4);
+        currentY += 6;
+      }
+      
+      // Payment Summary
+      currentY += 10;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Payment Summary', 20, currentY);
+      
+      currentY += 8;
+      doc.setFillColor(40, 167, 69);
+      doc.rect(20, currentY, 170, 8, 'F');
+      
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.text('Total Amount Paid:', 25, currentY + 6);
+      doc.text(`${currency.toUpperCase()} $${amount}`, 160, currentY + 6);
+      
+      // Transaction References
+      currentY += 20;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Transaction References', 20, currentY);
+      
+      currentY += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Payment Method:', 25, currentY);
+      doc.text('PayPal', 80, currentY);
+      currentY += 6;
+      
+      doc.text('Order ID:', 25, currentY);
+      doc.text(orderId, 80, currentY);
+      currentY += 6;
+      
+      doc.text('Payment ID:', 25, currentY);
+      doc.text(paymentId, 80, currentY);
+      currentY += 6;
+      
+      doc.text('Transaction Date:', 25, currentY);
+      doc.text(purchaseDate, 80, currentY);
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text('This invoice was generated automatically on ' + new Date().toLocaleDateString('en-US'), 20, 270);
+      doc.text('© ' + new Date().getFullYear() + ' Dynamo Wireless. All rights reserved.', 20, 278);
+      
+      return doc.output('arraybuffer');
+    };
+
+    const pdfBuffer = generatePDFInvoice();
+
     // Log email attempt
     const { error: logError } = await supabaseClient
       .from('email_logs')
@@ -85,11 +236,17 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Error logging email:', logError);
     }
 
-    // Send payment receipt email
+    // Send payment receipt email with PDF attachment
     const emailResponse = await resend.emails.send({
       from: "Dynamo Wireless <noreply@dynamowireless.com>",
       to: [email],
       subject: "Purchase Confirmation - Your Dynamo Wireless Plan",
+      attachments: [
+        {
+          filename: `Dynamo_Wireless_Invoice_${orderId.slice(-8)}.pdf`,
+          content: Array.from(new Uint8Array(pdfBuffer)),
+        }
+      ],
       html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -183,17 +340,18 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
               </div>
 
-              <!-- Next Steps -->
-              <div style="background-color: #e7f3ff; border-radius: 10px; padding: 25px; margin-bottom: 25px; border-left: 4px solid #007bff;">
-                <h3 style="color: #007bff; margin: 0 0 15px 0; font-size: 18px;">🚀 What's Next?</h3>
-                <ul style="margin: 0; padding-left: 20px; color: #333; line-height: 1.6;">
-                  <li style="margin-bottom: 10px;">✅ Your mobile data plan is now active and ready to use</li>
-                  <li style="margin-bottom: 10px;">📱 Access your account dashboard to manage your plan</li>
-                  <li style="margin-bottom: 10px;">📧 Keep this email as your purchase receipt</li>
-                  <li style="margin-bottom: 10px;">🆔 Use your account to activate SIM cards</li>
-                  <li>📞 Contact our support team if you need assistance</li>
-                </ul>
-              </div>
+               <!-- Next Steps -->
+               <div style="background-color: #e7f3ff; border-radius: 10px; padding: 25px; margin-bottom: 25px; border-left: 4px solid #007bff;">
+                 <h3 style="color: #007bff; margin: 0 0 15px 0; font-size: 18px;">🚀 What's Next?</h3>
+                 <ul style="margin: 0; padding-left: 20px; color: #333; line-height: 1.6;">
+                   <li style="margin-bottom: 10px;">✅ Your mobile data plan is now active and ready to use</li>
+                   <li style="margin-bottom: 10px;">📱 Access your account dashboard to manage your plan</li>
+                   <li style="margin-bottom: 10px;">📧 Keep this email as your purchase receipt</li>
+                   <li style="margin-bottom: 10px;">📄 <strong>Download the attached PDF invoice for your records</strong></li>
+                   <li style="margin-bottom: 10px;">🆔 Use your account to activate SIM cards</li>
+                   <li>📞 Contact our support team if you need assistance</li>
+                 </ul>
+               </div>
 
               <!-- Action Buttons -->
               <div style="text-align: center; margin: 30px 0;">
