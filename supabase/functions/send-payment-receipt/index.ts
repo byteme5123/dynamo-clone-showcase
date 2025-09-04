@@ -87,7 +87,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send payment receipt email
     const emailResponse = await resend.emails.send({
-      from: "Dynamo Wireless <dynamowirelessofficial@gmail.com>",
+      from: "Dynamo Wireless <noreply@dynamowireless.com>",
       to: [email],
       subject: "Purchase Confirmation - Your Dynamo Wireless Plan",
       html: `
