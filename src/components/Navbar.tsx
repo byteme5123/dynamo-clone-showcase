@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
+  // Force refresh - unified auth context
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
