@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useSessionMonitor = () => {
-  const { user, refreshSession, signOut } = useUserAuth();
+  const { user, refreshSession, signOut } = useAuth();
   const [sessionWarning, setSessionWarning] = useState(false);
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<number | null>(null);
 

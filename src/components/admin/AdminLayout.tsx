@@ -1,12 +1,12 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 
 const AdminLayout = () => {
-  const { isAdmin, loading } = useAdminAuth();
+  const { isAdmin, loading } = useAuth();
 
   // Add timeout fallback for loading state
   const [forceLoad, setForceLoad] = React.useState(false);

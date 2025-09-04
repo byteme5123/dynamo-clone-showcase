@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle } from 'lucide-react';
-import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signUp, signIn, verifyEmail, resendVerification, isAuthenticated } = useUserAuth();
+  const { signUp, signIn, verifyEmail, resendVerification, isAuthenticated } = useAuth();
 
   // Form state
   const [signInData, setSignInData] = useState({ email: '', password: '' });

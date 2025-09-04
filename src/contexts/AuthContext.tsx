@@ -10,7 +10,17 @@ interface User {
   created_at: string;
 }
 
-interface UserAuthContextType {
+interface AdminUser {
+  id: string;
+  user_id: string;
+  role: 'admin' | 'super_admin';
+  first_name?: string;
+  last_name?: string;
+  is_active: boolean;
+}
+
+interface AuthContextType {
+  // User Authentication
   user: User | null;
   loading: boolean;
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: any; needsVerification?: boolean }>;
@@ -21,17 +31,22 @@ interface UserAuthContextType {
   refreshSession: () => Promise<void>;
   refreshUserData: () => Promise<void>;
   isAuthenticated: boolean;
+  
+  // Admin Authentication
+  adminUser: AdminUser | null;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  adminSignIn: (email: string, password: string) => Promise<{ error: any }>;
+  adminSignOut: () => Promise<void>;
 }
 
-const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Password hashing utilities using Web Crypto API
 const hashPassword = async (password: string): Promise<string> => {
-  // Generate a random salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
   
-  // Hash password with PBKDF2
   const encoder = new TextEncoder();
   const passwordBuffer = encoder.encode(password);
   const keyMaterial = await crypto.subtle.importKey(
@@ -57,13 +72,11 @@ const hashPassword = async (password: string): Promise<string> => {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
   
-  // Format: algorithm$iterations$salt$hash
   return `pbkdf2$10000$${saltHex}$${hashHex}`;
 };
 
 const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
   try {
-    // Handle both old bcrypt hashes and new pbkdf2 hashes
     if (hash.startsWith('pbkdf2$')) {
       const parts = hash.split('$');
       if (parts.length !== 4) return false;
@@ -72,10 +85,8 @@ const verifyPassword = async (password: string, hash: string): Promise<boolean> 
       const saltHex = parts[2];
       const storedHashHex = parts[3];
       
-      // Convert salt from hex
       const salt = new Uint8Array(saltHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)));
       
-      // Hash the input password with the same salt and iterations
       const encoder = new TextEncoder();
       const passwordBuffer = encoder.encode(password);
       const keyMaterial = await crypto.subtle.importKey(
@@ -103,8 +114,6 @@ const verifyPassword = async (password: string, hash: string): Promise<boolean> 
       
       return computedHashHex === storedHashHex;
     } else {
-      // Handle legacy bcrypt hashes - for now just fail
-      // TODO: In production, you might want to keep bcrypt for backward compatibility
       console.warn('Legacy bcrypt hash detected, authentication failed');
       return false;
     }
@@ -114,15 +123,38 @@ const verifyPassword = async (password: string, hash: string): Promise<boolean> 
   }
 };
 
-export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchAdminUser = async (userId: string): Promise<AdminUser | null> => {
+    try {
+      // Use single optimized query
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Admin user fetch error:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('fetchAdminUser error:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     // Check for existing session on mount only
     checkSession();
     
-    // Set up automatic session refresh every 24 hours only
+    // Set up automatic session refresh every 24 hours
     const sessionRefreshInterval = setInterval(() => {
       const sessionToken = localStorage.getItem('user_session_token');
       if (sessionToken) {
@@ -134,7 +166,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => {
       clearInterval(sessionRefreshInterval);
     };
-  }, []); // Remove user dependency to stop infinite loop
+  }, []);
 
   const checkSession = async () => {
     try {
@@ -145,7 +177,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      // Verify session is still valid with user data in single query
+      // Single optimized query for session with user data
       const { data: sessionData } = await supabase
         .from('user_sessions')
         .select(`
@@ -157,8 +189,15 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .maybeSingle();
 
       if (sessionData && sessionData.users) {
-        setUser(sessionData.users as User);
-        console.log('User session restored:', sessionData.users.email);
+        const userData = sessionData.users as User;
+        setUser(userData);
+        
+        // Check if user is also an admin (non-blocking)
+        setTimeout(() => {
+          fetchAdminUser(userData.id).then(setAdminUser);
+        }, 0);
+        
+        console.log('User session restored:', userData.email);
       } else {
         // Clear invalid session
         localStorage.removeItem('user_session_token');
@@ -175,10 +214,8 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
-      // Hash password using Web Crypto API (PBKDF2)
       const passwordHash = await hashPassword(password);
 
-      // Create user
       const { data: userData, error: userError } = await supabase
         .from('users')
         .insert({
@@ -205,7 +242,6 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (emailError) {
         console.error('Email send error:', emailError);
-        // Don't fail signup if email fails
       }
 
       return { error: null, needsVerification: true };
@@ -241,7 +277,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Create session with extended expiration
       const sessionToken = crypto.randomUUID();
       const expiresAt = new Date();
-      expiresAt.setTime(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days for payment flows
+      expiresAt.setTime(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
 
       await supabase
         .from('user_sessions')
@@ -251,11 +287,15 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           expires_at: expiresAt.toISOString(),
         });
 
-      // Store session in localStorage only
       localStorage.setItem('user_session_token', sessionToken);
       localStorage.setItem('session_expires_at', expiresAt.toISOString());
       
       setUser(userData);
+
+      // Check if user is admin (non-blocking)
+      setTimeout(() => {
+        fetchAdminUser(userData.id).then(setAdminUser);
+      }, 0);
 
       return { error: null };
     } catch (error: any) {
@@ -263,36 +303,52 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const adminSignIn = async (email: string, password: string) => {
+    const result = await signIn(email, password);
+    if (result.error) return result;
+
+    // After successful sign in, check admin status
+    if (user?.id) {
+      const adminData = await fetchAdminUser(user.id);
+      if (!adminData) {
+        await signOut();
+        return { error: { message: 'Access denied. Admin privileges required.' } };
+      }
+      setAdminUser(adminData);
+    }
+
+    return { error: null };
+  };
+
   const signOut = async () => {
     try {
       const sessionToken = localStorage.getItem('user_session_token');
       if (sessionToken) {
-        // Delete session from database
         await supabase
           .from('user_sessions')
           .delete()
           .eq('token', sessionToken);
-
-        // Clear local storage
-        localStorage.removeItem('user_session_token');
       }
       
-      // Clear session data
+      localStorage.removeItem('user_session_token');
       localStorage.removeItem('session_expires_at');
       
       setUser(null);
+      setAdminUser(null);
       
-      // Redirect to homepage after sign out
       window.location.href = '/';
     } catch (error) {
       console.error('Sign out error:', error);
-      // Always clear local state even if database update fails
       localStorage.removeItem('user_session_token');
       localStorage.removeItem('session_expires_at');
       setUser(null);
-      // Redirect even on error
+      setAdminUser(null);
       window.location.href = '/';
     }
+  };
+
+  const adminSignOut = async () => {
+    await signOut();
   };
 
   const resendVerification = async (email: string) => {
@@ -324,7 +380,6 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const sessionToken = localStorage.getItem('user_session_token');
       if (sessionToken) {
-        // Extend session expiration by 30 days
         const newExpiresAt = new Date();
         newExpiresAt.setTime(newExpiresAt.getTime() + (30 * 24 * 60 * 60 * 1000));
         
@@ -336,7 +391,6 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           })
           .eq('token', sessionToken);
           
-        // Update local storage
         localStorage.setItem('session_expires_at', newExpiresAt.toISOString());
         
         console.log('Session refreshed, new expiry:', newExpiresAt.toISOString());
@@ -350,7 +404,6 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       if (!user?.id) return;
       
-      // Fetch latest user data
       const { data: userData, error } = await supabase
         .from('users')
         .select('*')
@@ -371,8 +424,12 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const isAdmin = adminUser?.is_active && (adminUser?.role === 'admin' || adminUser?.role === 'super_admin');
+  const isSuperAdmin = adminUser?.is_active && adminUser?.role === 'super_admin';
+
   return (
-    <UserAuthContext.Provider value={{
+    <AuthContext.Provider value={{
+      // User auth
       user,
       loading,
       signUp,
@@ -383,16 +440,54 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       refreshSession,
       refreshUserData,
       isAuthenticated: !!user,
+      
+      // Admin auth
+      adminUser,
+      isAdmin: !!isAdmin,
+      isSuperAdmin: !!isSuperAdmin,
+      adminSignIn,
+      adminSignOut,
     }}>
       {children}
-    </UserAuthContext.Provider>
+    </AuthContext.Provider>
   );
 };
 
-export const useUserAuth = () => {
-  const context = useContext(UserAuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useUserAuth must be used within a UserAuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+// Backward compatibility hooks
+export const useUserAuth = () => {
+  const context = useAuth();
+  return {
+    user: context.user,
+    loading: context.loading,
+    signUp: context.signUp,
+    signIn: context.signIn,
+    signOut: context.signOut,
+    resendVerification: context.resendVerification,
+    verifyEmail: context.verifyEmail,
+    refreshSession: context.refreshSession,
+    refreshUserData: context.refreshUserData,
+    isAuthenticated: context.isAuthenticated,
+  };
+};
+
+export const useAdminAuth = () => {
+  const context = useAuth();
+  return {
+    user: context.user,
+    adminUser: context.adminUser,
+    session: null, // Deprecated - session management is now internal
+    loading: context.loading,
+    signIn: context.adminSignIn,
+    signOut: context.adminSignOut,
+    isAdmin: context.isAdmin,
+    isSuperAdmin: context.isSuperAdmin,
+  };
 };

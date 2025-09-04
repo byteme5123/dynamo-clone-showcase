@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
-import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const NotificationBar = () => {
   const settings = useHomepageSettings();
-  const { isAuthenticated } = useUserAuth();
+  const { isAuthenticated } = useAuth();
 
   // Fallback values if settings aren't loaded yet
   const notificationText = settings?.notificationText || 'Get up to 25% off when you purchase a 3 month plan!';

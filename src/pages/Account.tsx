@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key } from 'lucide-react';
@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PasswordResetForm } from '@/components/PasswordResetForm';
 
 const Account = () => {
-  const { user, isAuthenticated, signOut, refreshUserData } = useUserAuth();
+  const { user, isAuthenticated, signOut, refreshUserData } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);

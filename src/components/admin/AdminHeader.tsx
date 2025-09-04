@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu, 
@@ -14,12 +14,12 @@ import { LogOut, User, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const AdminHeader = () => {
-  const { adminUser, signOut, user } = useAdminAuth();
+  const { adminUser, adminSignOut, user } = useAuth();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await adminSignOut();
       toast({
         title: "Signed out",
         description: "You have been successfully signed out.",

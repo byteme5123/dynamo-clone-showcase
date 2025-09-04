@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, ArrowLeft, Download, User } from 'lucide-react';
 import { useCapturePayPalOrder } from '@/hooks/usePayPal';
-import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSessionRecovery } from '@/hooks/useSessionRecovery';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -14,7 +14,7 @@ const PaymentSuccess = () => {
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const [showRedirectMessage, setShowRedirectMessage] = useState(false);
   const captureOrderMutation = useCapturePayPalOrder();
-  const { refreshSession } = useUserAuth();
+  const { refreshSession } = useAuth();
   const { user } = useSessionRecovery();
   const navigate = useNavigate();
 

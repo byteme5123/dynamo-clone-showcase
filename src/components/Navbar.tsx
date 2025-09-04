@@ -11,7 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
-import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
@@ -19,7 +19,7 @@ const Navbar = () => {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const settings = useHomepageSettings();
-  const { isAuthenticated, user } = useUserAuth();
+  const { isAuthenticated } = useAuth();
 
   const navItems = [
     { name: 'Home', href: '/' },

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { useCreatePayPalOrder } from '@/hooks/usePayPal';
-import { useUserAuth } from '@/contexts/UserAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PayPalButtonProps {
   planId: string;
@@ -14,7 +14,7 @@ interface PayPalButtonProps {
 const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const createOrderMutation = useCreatePayPalOrder();
-  const { refreshSession } = useUserAuth();
+  const { refreshSession } = useAuth();
 
   const handlePayment = async () => {
     setIsProcessing(true);

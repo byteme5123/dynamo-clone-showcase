@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,7 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { signIn, isAdmin, loading: authLoading, adminUser } = useAdminAuth();
+  const { adminSignIn, isAdmin, loading: authLoading, adminUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -39,7 +39,7 @@ const AdminLogin = () => {
     }
 
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await adminSignIn(email, password);
       
       if (error) {
         setError(error.message || 'Failed to sign in');
