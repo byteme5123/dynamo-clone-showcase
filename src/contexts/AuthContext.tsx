@@ -304,20 +304,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const adminSignIn = async (email: string, password: string) => {
-    const result = await signIn(email, password);
-    if (result.error) return result;
+    try {
+      // Get user by email first
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
 
-    // After successful sign in, check admin status
-    if (user?.id) {
-      const adminData = await fetchAdminUser(user.id);
+      if (userError || !userData) {
+        return { error: { message: 'Invalid email or password' } };
+      }
+
+      // Check if email is verified
+      if (!userData.email_verified) {
+        return { error: { message: 'Please verify your email before signing in' } };
+      }
+
+      // Check password
+      const isValid = await verifyPassword(password, userData.password_hash);
+      if (!isValid) {
+        return { error: { message: 'Invalid email or password' } };
+      }
+
+      // Check admin status FIRST
+      const adminData = await fetchAdminUser(userData.id);
       if (!adminData) {
-        await signOut();
         return { error: { message: 'Access denied. Admin privileges required.' } };
       }
-      setAdminUser(adminData);
-    }
 
-    return { error: null };
+      // Now create session since we know user is an admin
+      const sessionToken = crypto.randomUUID();
+      const expiresAt = new Date();
+      expiresAt.setTime(expiresAt.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+
+      await supabase
+        .from('user_sessions')
+        .insert({
+          user_id: userData.id,
+          token: sessionToken,
+          expires_at: expiresAt.toISOString(),
+        });
+
+      localStorage.setItem('user_session_token', sessionToken);
+      localStorage.setItem('session_expires_at', expiresAt.toISOString());
+      
+      // Set both user and admin data
+      setUser(userData);
+      setAdminUser(adminData);
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Admin sign in failed' } };
+    }
   };
 
   const signOut = async () => {
