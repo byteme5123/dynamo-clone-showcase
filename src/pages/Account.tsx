@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PasswordResetForm } from '@/components/PasswordResetForm';
 
 const Account = () => {
-  const { user, isAuthenticated, signOut, refreshUserData } = useAuth();
+  const { user, userProfile, isAuthenticated, signOut, refreshUserData } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -24,19 +24,17 @@ const Account = () => {
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
-    email: '',
   });
 
-  // Update profile data when user changes
+  // Update profile data when userProfile changes
   useEffect(() => {
-    if (user) {
+    if (userProfile) {
       setProfileData({
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
-        email: user.email || '',
+        first_name: userProfile.first_name || '',
+        last_name: userProfile.last_name || '',
       });
     }
-  }, [user]);
+  }, [userProfile]);
 
   // Redirect if not authenticated
   if (!isAuthenticated || !user) {
@@ -49,15 +47,7 @@ const Account = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select(`
-          *,
-          plans (
-            name,
-            description,
-            price,
-            currency
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -65,26 +55,15 @@ const Account = () => {
       return data;
     },
     enabled: !!user?.id,
-    staleTime: 30 * 1000, // 30 seconds for faster updates
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    refetchOnWindowFocus: true, // Enable refetch on focus
   });
 
-  // Fetch user's transactions with proper caching
+  // Fetch user's transactions
   const { data: transactions, isLoading: transactionsLoading, refetch: refetchTransactions } = useQuery({
     queryKey: ['user-transactions', user.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transactions')
-        .select(`
-          *,
-          plans (
-            name,
-            price,
-            currency
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -92,72 +71,77 @@ const Account = () => {
       return data;
     },
     enabled: !!user?.id,
-    staleTime: 30 * 1000, // 30 seconds for faster updates
-    gcTime: 10 * 60 * 1000, // 10 minutes  
-    retry: 2,
-    refetchOnWindowFocus: true, // Enable refetch on focus
   });
 
-  const refreshData = async () => {
-    setIsRefreshing(true);
-    try {
-      // Refresh user context data and queries simultaneously
-      await Promise.all([
-        refreshUserData(),
-        refetchOrders(),
-        refetchTransactions(),
-      ]);
-      
-      toast({
-        title: "Data Refreshed",
-        description: "Your account data has been refreshed successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Refresh Failed",
-        description: "Failed to refresh data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // Handle payment success return and setup real-time updates
+  // Listen for PayPal messages
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment_success') === 'true') {
-      // Clear the parameter
-      window.history.replaceState({}, '', '/account');
-      // Silent refresh without toast notification
-      Promise.all([
-        refreshUserData(),
-        queryClient.invalidateQueries({ queryKey: ['user-orders'] }),
-        queryClient.invalidateQueries({ queryKey: ['user-transactions'] })
-      ]).catch(console.error);
-    }
-
-    // Listen for PayPal popup messages
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'PAYPAL_SUCCESS') {
-        // Invalidate and refetch all user data
-        queryClient.invalidateQueries({ queryKey: ['user-orders'] });
-        queryClient.invalidateQueries({ queryKey: ['user-transactions'] });
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data.type === 'PAYPAL_PAYMENT_SUCCESS') {
+        console.log('Payment success message received:', event.data);
+        // Refresh orders and transactions
+        refetchOrders();
+        refetchTransactions();
         refreshUserData();
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [queryClient, refreshUserData]);
+  }, [refetchOrders, refetchTransactions, refreshUserData]);
+
+  // Handle payment success from URL callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'success') {
+      console.log('Payment success detected from URL');
+      // Small delay to ensure backend has processed
+      setTimeout(() => {
+        refetchOrders();
+        refetchTransactions();
+        refreshUserData();
+      }, 1000);
+      
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [refetchOrders, refetchTransactions, refreshUserData]);
+
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refreshUserData(),
+        refetchOrders(),
+        refetchTransactions(),
+        queryClient.invalidateQueries({ queryKey: ['user-orders'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-transactions'] }),
+      ]);
+      
+      toast({
+        title: 'Data Refreshed',
+        description: 'Your account information has been updated.',
+      });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast({
+        title: 'Refresh Failed',
+        description: 'Failed to refresh account data. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUpdating(true);
 
     try {
-      const { error } = await supabase
-        .from('users')
+      const { error: updateError } = await supabase
+        .from('profiles')
         .update({
           first_name: profileData.first_name,
           last_name: profileData.last_name,
@@ -165,19 +149,21 @@ const Account = () => {
         })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (updateError) {
+        throw updateError;
+      }
 
-      // Refresh user data in context immediately after update
       await refreshUserData();
-
+      
       toast({
         title: 'Profile Updated',
-        description: 'Your profile has been updated successfully.',
+        description: 'Your profile has been successfully updated.',
       });
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: 'Update Failed',
-        description: error.message || 'Failed to update profile.',
+        description: error.message || 'Failed to update profile. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -186,347 +172,323 @@ const Account = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    toast({
-      title: 'Signed Out',
-      description: 'You have been signed out successfully.',
-    });
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      paid: 'default',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
+      completed: 'default',
       pending: 'secondary',
       failed: 'destructive',
-      completed: 'default',
+      paid: 'default',
+      cancelled: 'destructive',
     };
-    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
+    
+    return (
+      <Badge variant={variants[status] || 'secondary'}>
+        {status}
+      </Badge>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
-      <div className="border-b bg-white">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">My Account</h1>
-              <p className="text-muted-foreground">
-                Welcome back, {user.first_name || user.email}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                onClick={refreshData}
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-              </Button>
-              <Link to="/">
-                <Button variant="outline">← Back to Home</Button>
-              </Link>
-              <Button variant="outline" onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">My Account</h1>
+          <p className="text-sm text-muted-foreground">
+            Account since {userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString() : 'Unknown'}
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button 
+            onClick={refreshData} 
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={handleSignOut} variant="outline" size="sm">
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign Out
+          </Button>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile" className="flex items-center space-x-2">
-              <User className="h-4 w-4" />
-              <span>Profile</span>
-            </TabsTrigger>
-            <TabsTrigger value="plans" className="flex items-center space-x-2">
-              <Package className="h-4 w-4" />
-              <span>My Plans</span>
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center space-x-2">
-              <CreditCard className="h-4 w-4" />
-              <span>Order History</span>
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center space-x-2">
-              <Settings className="h-4 w-4" />
-              <span>Payment History</span>
-            </TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="profile" className="flex items-center space-x-2">
+            <User className="h-4 w-4" />
+            <span>Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="plans" className="flex items-center space-x-2">
+            <Package className="h-4 w-4" />
+            <span>My Plans</span>
+          </TabsTrigger>
+          <TabsTrigger value="orders" className="flex items-center space-x-2">
+            <Package className="h-4 w-4" />
+            <span>Order History</span>
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="flex items-center space-x-2">
+            <CreditCard className="h-4 w-4" />
+            <span>Payment History</span>
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="profile" className="space-y-6">
+        {/* Profile Tab */}
+        <TabsContent value="profile">
+          <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span>Profile Information</span>
+                </CardTitle>
                 <CardDescription>
-                  Update your personal information and email preferences
+                  Update your personal information
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleUpdateProfile} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                    <div>
                       <Label htmlFor="first_name">First Name</Label>
                       <Input
                         id="first_name"
                         value={profileData.first_name}
-                        onChange={(e) =>
-                          setProfileData({ ...profileData, first_name: e.target.value })
-                        }
+                        onChange={(e) => setProfileData(prev => ({
+                          ...prev,
+                          first_name: e.target.value
+                        }))}
+                        disabled={isUpdating}
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div>
                       <Label htmlFor="last_name">Last Name</Label>
                       <Input
                         id="last_name"
                         value={profileData.last_name}
-                        onChange={(e) =>
-                          setProfileData({ ...profileData, last_name: e.target.value })
-                        }
+                        onChange={(e) => setProfileData(prev => ({
+                          ...prev,
+                          last_name: e.target.value
+                        }))}
+                        disabled={isUpdating}
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  
+                  <div>
                     <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profileData.email}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Email cannot be changed. Contact support if needed.
-                    </p>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="email"
+                        type="email"
+                        value={user?.email || ''}
+                        disabled
+                      />
+                      <Badge 
+                        variant={user?.email_confirmed_at ? "default" : "secondary"}
+                        className="ml-2"
+                      >
+                        {user?.email_confirmed_at ? "Verified" : "Unverified"}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex gap-4">
-                    <Button type="submit" disabled={isUpdating}>
-                      {isUpdating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating...
-                        </>
-                      ) : (
-                        'Update Profile'
-                      )}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setShowPasswordReset(!showPasswordReset)}
-                    >
-                      <Key className="mr-2 h-4 w-4" />
-                      {showPasswordReset ? 'Cancel' : 'Change Password'}
-                    </Button>
-                  </div>
+
+                  <Button 
+                    type="submit" 
+                    disabled={isUpdating}
+                    className="w-full"
+                  >
+                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Update Profile
+                  </Button>
                 </form>
               </CardContent>
             </Card>
 
-            {showPasswordReset && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Change Password</CardTitle>
-                  <CardDescription>
-                    We'll send a password reset link to your email address
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <PasswordResetForm />
-                </CardContent>
-              </Card>
-            )}
-
+            {/* Password Reset Section */}
             <Card>
               <CardHeader>
-                <CardTitle>Account Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span>Email Verification</span>
-                  {user.email_verified ? (
-                    <Badge variant="default">Verified</Badge>
-                  ) : (
-                    <Badge variant="destructive">Unverified</Badge>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Account Created</span>
-                  <span className="text-muted-foreground">
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="plans" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Current Plans</CardTitle>
+                <CardTitle className="flex items-center space-x-2">
+                  <Key className="h-5 w-5" />
+                  <span>Password</span>
+                </CardTitle>
                 <CardDescription>
-                  View and manage your active mobile plans
+                  Reset your account password
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {ordersLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : orders?.filter(order => order.status === 'paid').length ? (
-                  <div className="space-y-4">
-                    {orders
-                      .filter(order => order.status === 'paid')
-                      .map((order) => (
-                        <div key={order.id} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-semibold">{order.plans?.name}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {order.plans?.description}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-semibold">
-                                {order.plans?.currency?.toUpperCase()} {order.plans?.price}
-                              </p>
-                              {getStatusBadge(order.status)}
-                            </div>
-                          </div>
-                          <div className="mt-2 text-sm text-muted-foreground">
-                            Purchased on {new Date(order.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
+                {!showPasswordReset ? (
+                  <Button
+                    onClick={() => setShowPasswordReset(true)}
+                    variant="outline"
+                  >
+                    Reset Password
+                  </Button>
                 ) : (
-                  <div className="text-center py-8">
-                    <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">No active plans found</p>
-                    <Link to="/plans">
-                      <Button className="mt-4">Browse Plans</Button>
-                    </Link>
+                  <div className="space-y-4">
+                    <PasswordResetForm />
+                    <Button
+                      onClick={() => setShowPasswordReset(false)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="orders" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Order History</CardTitle>
-                <CardDescription>
-                  View all your past orders and their status
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {ordersLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : orders?.length ? (
-                  <div className="space-y-4">
-                    {orders.map((order) => (
-                      <div key={order.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold">
-                              Order #{order.id.slice(0, 8)}
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              {order.plans?.name || 'Plan'}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold">
-                              {order.currency?.toUpperCase()} {order.amount}
-                            </p>
-                            {getStatusBadge(order.status)}
-                          </div>
+        {/* Plans Tab */}
+        <TabsContent value="plans">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Active Plans</CardTitle>
+              <CardDescription>
+                Plans you've purchased and their current status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : orders && orders.length > 0 ? (
+                <div className="space-y-4">
+                  {orders.filter(order => order.status === 'completed').map((order) => (
+                    <div key={order.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            ${order.amount} {order.currency?.toUpperCase() || 'USD'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Purchased on {new Date(order.created_at).toLocaleDateString()}
+                          </p>
                         </div>
-                        <Separator className="my-2" />
-                        <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>Ordered: {new Date(order.created_at).toLocaleDateString()}</span>
-                          {order.paypal_order_id && (
-                            <span>PayPal ID: {order.paypal_order_id.slice(0, 12)}...</span>
+                        {getStatusBadge(order.status)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No active plans found</p>
+                  <Link to="/plans">
+                    <Button className="mt-4">Browse Plans</Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Orders Tab */}
+        <TabsContent value="orders">
+          <Card>
+            <CardHeader>
+              <CardTitle>Order History</CardTitle>
+              <CardDescription>
+                All your past orders and their status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : orders && orders.length > 0 ? (
+                <div className="space-y-4">
+                  {orders.map((order) => (
+                    <div key={order.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            ${order.amount} {order.currency?.toUpperCase() || 'USD'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {getStatusBadge(order.status)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No orders found</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Payment History Tab */}
+        <TabsContent value="payments">
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment History</CardTitle>
+              <CardDescription>
+                All your payment transactions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {transactionsLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : transactions && transactions.length > 0 ? (
+                <div className="space-y-4">
+                  {transactions.map((transaction) => (
+                    <div key={transaction.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">
+                            Transaction #{transaction.id.slice(0, 8)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            ${transaction.amount} {transaction.currency?.toUpperCase() || 'USD'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(transaction.created_at).toLocaleDateString()}
+                          </p>
+                          {transaction.paypal_transaction_id && (
+                            <p className="text-xs text-muted-foreground">
+                              PayPal ID: {transaction.paypal_transaction_id}
+                            </p>
                           )}
                         </div>
+                        {getStatusBadge(transaction.status)}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <CreditCard className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">No orders found</p>
-                    <Link to="/plans">
-                      <Button className="mt-4">Start Shopping</Button>
-                    </Link>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="payments" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment History</CardTitle>
-                <CardDescription>
-                  View all your payment transactions and receipts
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {transactionsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : transactions?.length ? (
-                  <div className="space-y-4">
-                    {transactions.map((transaction) => (
-                      <div key={transaction.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-semibold">
-                              Transaction #{transaction.id.slice(0, 8)}
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              {transaction.plans?.name || 'Payment'}
-                            </p>
-                          </div>  
-                          <div className="text-right">
-                            <p className="font-semibold">
-                              {transaction.currency?.toUpperCase()} {transaction.amount}
-                            </p>
-                            {getStatusBadge(transaction.status)}
-                          </div>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>Date: {new Date(transaction.created_at).toLocaleDateString()}</span>
-                          <span>Method: {transaction.payment_method || 'PayPal'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Settings className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">No payment history found</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No payment history found</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

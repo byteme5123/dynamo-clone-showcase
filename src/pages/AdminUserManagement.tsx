@@ -28,15 +28,13 @@ const AdminUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const { toast } = useToast();
 
-  // Delete user mutation
+  // Note: We can't delete auth.users directly, this is just for reference
+  // In a real scenario, you'd need to use Supabase's admin API or RLS policies
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
-
-      if (error) throw error;
+      // This would need to be handled via a Supabase admin function
+      // For now, we'll just show a message
+      throw new Error('User deletion must be handled through Supabase admin functions');
     },
     onSuccess: () => {
       toast({
@@ -50,417 +48,356 @@ const AdminUserManagement = () => {
       toast({
         title: 'Delete Failed',
         description: error.message || 'Failed to delete user.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     },
   });
 
-  // Fetch all users with their orders and transactions
-  const { data: users, isLoading, refetch } = useQuery({
+  // Fetch all users with their profiles
+  const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
+      // Get profiles only (orders and transactions will be fetched separately)
       let query = supabase
-        .from('users')
-        .select(`
-          *,
-          orders (
-            id,
-            amount,
-            currency,
-            status,
-            created_at,
-            plans (
-              name,
-              description
-            )
-          ),
-          transactions (
-            id,
-            amount,
-            currency,
-            status,
-            created_at,
-            payment_method
-          )
-        `)
-        .order('created_at', { ascending: false });
+        .from('profiles')
+        .select('*');
 
       if (searchTerm) {
-        query = query.or(`email.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
+        query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
+
+      // For each profile, get orders and transactions count
+      const usersWithCounts = await Promise.all(
+        (data || []).map(async (profile) => {
+          const [ordersResult, transactionsResult] = await Promise.all([
+            supabase.from('orders').select('id', { count: 'exact' }).eq('user_id', profile.id),
+            supabase.from('transactions').select('id', { count: 'exact' }).eq('user_id', profile.id)
+          ]);
+
+          return {
+            ...profile,
+            ordersCount: ordersResult.count || 0,
+            transactionsCount: transactionsResult.count || 0
+          };
+        })
+      );
+
+      return usersWithCounts;
     },
   });
 
-  const { data: userStats } = useQuery({
-    queryKey: ['admin-user-stats'],
+  // Get detailed user info with orders and transactions
+  const { data: selectedUserDetails, isLoading: userDetailsLoading } = useQuery({
+    queryKey: ['user-details', selectedUser?.id],
     queryFn: async () => {
-      const [usersResult, ordersResult, transactionsResult] = await Promise.all([
-        supabase.from('users').select('id, email_verified, created_at', { count: 'exact' }),
-        supabase.from('orders').select('id, status, amount', { count: 'exact' }),
-        supabase.from('transactions').select('id, status, amount', { count: 'exact' }),
+      if (!selectedUser?.id) return null;
+
+      // Get profile, orders, and transactions separately
+      const [profileResult, ordersResult, transactionsResult] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', selectedUser.id).single(),
+        supabase.from('orders').select('*').eq('user_id', selectedUser.id).order('created_at', { ascending: false }),
+        supabase.from('transactions').select('*').eq('user_id', selectedUser.id).order('created_at', { ascending: false })
       ]);
 
-      const totalUsers = usersResult.count || 0;
-      const verifiedUsers = usersResult.data?.filter(u => u.email_verified).length || 0;
-      const newUsersThisMonth = usersResult.data?.filter(u => {
-        const userDate = new Date(u.created_at);
-        const now = new Date();
-        return userDate.getMonth() === now.getMonth() && userDate.getFullYear() === now.getFullYear();
-      }).length || 0;
-
-      const totalOrders = ordersResult.count || 0;
-      const totalRevenue = ordersResult.data?.reduce((sum, order) => sum + (order.amount || 0), 0) || 0;
+      if (profileResult.error) throw profileResult.error;
 
       return {
-        totalUsers,
-        verifiedUsers,
-        newUsersThisMonth,
-        totalOrders,
-        totalRevenue,
+        profile: profileResult.data,
+        orders: ordersResult.data || [],
+        transactions: transactionsResult.data || []
       };
     },
+    enabled: !!selectedUser?.id,
   });
 
-  const calculateUserStats = (user: any) => {
-    const orders = user.orders || [];
-    const transactions = user.transactions || [];
+  const filteredUsers = users?.filter(user => 
+    searchTerm === '' || 
+    (user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()))
+  ) || [];
 
-    const totalSpent = orders.reduce((sum: number, order: any) => sum + (order.amount || 0), 0);
-    const completedOrders = orders.filter((order: any) => order.status === 'paid').length;
-    const activeOrders = orders.filter((order: any) => order.status === 'paid');
-
-    return {
-      totalSpent,
-      completedOrders,
-      activeOrders: activeOrders.length,
-    };
+  const handleDeleteUser = (userId: string) => {
+    deleteUserMutation.mutate(userId);
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      paid: 'default',
+    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
+      completed: 'default',
       pending: 'secondary',
       failed: 'destructive',
-      completed: 'default',
+      paid: 'default',
+      cancelled: 'destructive',
+      active: 'default',
+      inactive: 'secondary',
     };
-    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
+    
+    return (
+      <Badge variant={variants[status] || 'secondary'}>
+        {status}
+      </Badge>
+    );
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-        <p className="text-muted-foreground">
-          Manage users, view their plans, and track payment history
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userStats?.totalUsers || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verified Users</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userStats?.verifiedUsers || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userStats?.newUsersThisMonth || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{userStats?.totalOrders || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${(userStats?.totalRevenue || 0).toFixed(2)}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>User Search</CardTitle>
-          <CardDescription>Search users by name or email</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
+          <CardContent className="pt-6">
+            <p className="text-destructive">Error loading users: {error.message}</p>
+            <Button onClick={() => refetch()} className="mt-4">
+              Try Again
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-      {/* Users Table */}
-      <div className="grid gap-6 lg:grid-cols-2">
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">User Management</h1>
+          <p className="text-muted-foreground">
+            Manage user accounts, orders, and transactions
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-64"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Users List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Users ({users?.length || 0})</CardTitle>
-            <CardDescription>Click on a user to view details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {users?.map((user) => {
-                const stats = calculateUserStats(user);
-                return (
-                  <div 
-                    key={user.id} 
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted ${
-                      selectedUser?.id === user.id ? 'bg-muted border-primary' : ''
-                    }`}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="h-5 w-5" />
+                <span>Users ({filteredUsers.length})</span>
+              </CardTitle>
+              <CardDescription>
+                Click on a user to view detailed information
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                {filteredUsers.map((user) => (
+                  <div
+                    key={user.id}
                     onClick={() => setSelectedUser(user)}
+                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                      selectedUser?.id === user.id 
+                        ? 'bg-primary/10 border-primary' 
+                        : 'hover:bg-muted/50'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-semibold">
+                        <p className="font-medium">
                           {user.first_name} {user.last_name}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          ID: {user.id.slice(0, 8)}...
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Joined: {new Date(user.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                      <div className="text-right">
-                        {user.email_verified ? (
-                          <Badge variant="default">Verified</Badge>
-                        ) : (
-                          <Badge variant="destructive">Unverified</Badge>
-                        )}
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">
+                          {user.ordersCount || 0} orders
+                        </Badge>
+                        <Badge variant="secondary">
+                          Active
+                        </Badge>
                       </div>
-                    </div>
-                    <div className="mt-2 flex items-center space-x-4 text-sm text-muted-foreground">
-                      <span>{stats.completedOrders} orders</span>
-                      <span>${stats.totalSpent.toFixed(2)} spent</span>
-                      <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
-                );
-              })}
-              {!users?.length && (
-                <div className="text-center py-8">
-                  <User className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <p className="mt-4 text-muted-foreground">No users found</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+
+                {filteredUsers.length === 0 && (
+                  <div className="text-center py-8">
+                    <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      {searchTerm ? 'No users found matching your search' : 'No users found'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* User Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>User Details</CardTitle>
-            <CardDescription>
-              {selectedUser ? 'View detailed information and activity' : 'Select a user to view details'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {selectedUser ? (
-              <Tabs defaultValue="profile" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="profile">Profile</TabsTrigger>
-                  <TabsTrigger value="orders">Orders</TabsTrigger>
-                  <TabsTrigger value="payments">Payments</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="profile" className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Name</label>
-                      <p className="text-sm">{selectedUser.first_name} {selectedUser.last_name}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <p className="text-sm">{selectedUser.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Status</label>
-                      <div>
-                        {selectedUser.email_verified ? (
-                          <Badge variant="default">Verified</Badge>
-                        ) : (
-                          <Badge variant="destructive">Unverified</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Joined</label>
-                      <p className="text-sm">{new Date(selectedUser.created_at).toLocaleDateString()}</p>
-                    </div>
+        <div>
+          {selectedUser ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <User className="h-5 w-5" />
+                    <span>User Details</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{calculateUserStats(selectedUser).completedOrders}</div>
-                      <div className="text-sm text-muted-foreground">Orders</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">${calculateUserStats(selectedUser).totalSpent.toFixed(2)}</div>
-                      <div className="text-sm text-muted-foreground">Total Spent</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{calculateUserStats(selectedUser).activeOrders}</div>
-                      <div className="text-sm text-muted-foreground">Active Plans</div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 pt-4 border-t">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="w-full">
-                          <Trash2 className="h-4 w-4 mr-2" />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the user account and all associated data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteUser(selectedUser.id)}
+                          className="bg-destructive text-destructive-foreground"
+                        >
                           Delete User
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete {selectedUser.first_name} {selectedUser.last_name} and all their associated data. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => deleteUserMutation.mutate(selectedUser.id)}
-                            disabled={deleteUserMutation.isPending}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            {deleteUserMutation.isPending ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Deleting...
-                              </>
-                            ) : (
-                              'Delete User'
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {userDetailsLoading ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                </TabsContent>
+                ) : selectedUserDetails ? (
+                  <Tabs defaultValue="info" className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="info">Info</TabsTrigger>
+                      <TabsTrigger value="orders">Orders</TabsTrigger>
+                      <TabsTrigger value="payments">Payments</TabsTrigger>
+                    </TabsList>
 
-                <TabsContent value="orders" className="space-y-4">
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {selectedUser.orders?.map((order: any) => (
-                      <div key={order.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h5 className="font-medium">{order.plans?.name || 'Plan'}</h5>
-                            <p className="text-sm text-muted-foreground">
-                              Order #{order.id.slice(0, 8)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">${order.amount}</p>
-                            {getStatusBadge(order.status)}
-                          </div>
+                    <TabsContent value="info" className="space-y-4">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Full Name</p>
+                          <p>{selectedUserDetails.profile.first_name} {selectedUserDetails.profile.last_name}</p>
                         </div>
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString()}
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">User ID</p>
+                          <p className="font-mono text-sm">{selectedUser.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Joined</p>
+                          <p>{new Date(selectedUserDetails.profile.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
+                          <p>{new Date(selectedUserDetails.profile.updated_at).toLocaleDateString()}</p>
                         </div>
                       </div>
-                    ))}
-                    {!selectedUser.orders?.length && (
-                      <div className="text-center py-4">
-                        <Package className="mx-auto h-8 w-8 text-muted-foreground" />
-                        <p className="mt-2 text-sm text-muted-foreground">No orders found</p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
+                    </TabsContent>
 
-                <TabsContent value="payments" className="space-y-4">
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {selectedUser.transactions?.map((transaction: any) => (
-                      <div key={transaction.id} className="border rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h5 className="font-medium">Payment #{transaction.id.slice(0, 8)}</h5>
-                            <p className="text-sm text-muted-foreground">
-                              {transaction.payment_method || 'PayPal'}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">${transaction.amount}</p>
-                            {getStatusBadge(transaction.status)}
-                          </div>
+                    <TabsContent value="orders" className="space-y-4">
+                      {selectedUserDetails.orders?.length > 0 ? (
+                        <div className="space-y-2">
+                          {selectedUserDetails.orders.map((order: any) => (
+                            <div key={order.id} className="border rounded p-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-medium">#{order.id.slice(0, 8)}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    ${order.amount} {order.currency}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(order.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {getStatusBadge(order.status)}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          {new Date(transaction.created_at).toLocaleDateString()}
+                      ) : (
+                        <div className="text-center py-4">
+                          <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No orders found</p>
                         </div>
-                      </div>
-                    ))}
-                    {!selectedUser.transactions?.length && (
-                      <div className="text-center py-4">
-                        <CreditCard className="mx-auto h-8 w-8 text-muted-foreground" />
-                        <p className="mt-2 text-sm text-muted-foreground">No transactions found</p>
-                      </div>
-                    )}
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="payments" className="space-y-4">
+                      {selectedUserDetails.transactions?.length > 0 ? (
+                        <div className="space-y-2">
+                          {selectedUserDetails.transactions.map((transaction: any) => (
+                            <div key={transaction.id} className="border rounded p-3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-medium">#{transaction.id.slice(0, 8)}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    ${transaction.amount} {transaction.currency}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(transaction.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {getStatusBadge(transaction.status)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <CreditCard className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">No transactions found</p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Failed to load user details</p>
                   </div>
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="text-center py-8">
-                <Eye className="mx-auto h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 text-muted-foreground">Select a user to view details</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Select a user to view detailed information
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

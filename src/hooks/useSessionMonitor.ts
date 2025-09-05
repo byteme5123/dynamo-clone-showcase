@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useSessionMonitor = () => {
-  const { user, refreshSession, signOut } = useAuth();
+  const { session, refreshSession, signOut } = useAuth();
   const [sessionWarning, setSessionWarning] = useState(false);
   const [timeUntilExpiry, setTimeUntilExpiry] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!session) return;
 
     const checkSessionExpiry = () => {
-      const expiryTime = localStorage.getItem('session_expires_at');
-      if (!expiryTime) return;
+      if (!session.expires_at) return;
 
-      const expiryDate = new Date(expiryTime);
+      const expiryDate = new Date(session.expires_at * 1000); // Convert Unix timestamp to milliseconds
       const now = new Date();
       const timeLeft = expiryDate.getTime() - now.getTime();
 
@@ -40,7 +39,7 @@ export const useSessionMonitor = () => {
     checkSessionExpiry();
 
     return () => clearInterval(interval);
-  }, [user, signOut]);
+  }, [session, signOut]);
 
   const extendSession = async () => {
     await refreshSession();
