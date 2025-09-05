@@ -170,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkSession = async () => {
     try {
+      setLoading(true);
       const sessionToken = localStorage.getItem('user_session_token');
       
       if (!sessionToken) {
@@ -192,21 +193,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = sessionData.users as User;
         setUser(userData);
         
-        // Check if user is also an admin (non-blocking)
-        setTimeout(() => {
-          fetchAdminUser(userData.id).then(setAdminUser);
-        }, 0);
+        // Check if user is also an admin (non-blocking but wait for it)
+        const adminData = await fetchAdminUser(userData.id);
+        if (adminData) {
+          setAdminUser(adminData);
+        }
         
         console.log('User session restored:', userData.email);
       } else {
         // Clear invalid session
         localStorage.removeItem('user_session_token');
         localStorage.removeItem('session_expires_at');
+        setUser(null);
+        setAdminUser(null);
       }
     } catch (error) {
       console.error('Session check error:', error);
       localStorage.removeItem('user_session_token');
       localStorage.removeItem('session_expires_at');
+      setUser(null);
+      setAdminUser(null);
     } finally {
       setLoading(false);
     }

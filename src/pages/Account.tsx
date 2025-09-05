@@ -22,10 +22,21 @@ const Account = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [profileData, setProfileData] = useState({
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
-    email: user?.email || '',
+    first_name: '',
+    last_name: '',
+    email: '',
   });
+
+  // Update profile data when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+      });
+    }
+  }, [user]);
 
   // Redirect if not authenticated
   if (!isAuthenticated || !user) {
