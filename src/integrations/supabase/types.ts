@@ -710,10 +710,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_verification_token: {
-        Args: { user_email: string }
-        Returns: string
-      }
       get_admin_user_by_id: {
         Args: { target_user_id: string }
         Returns: {
@@ -748,10 +744,6 @@ export type Database = {
       }
       is_super_admin: {
         Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      verify_user_email: {
-        Args: { token: string }
         Returns: boolean
       }
     }

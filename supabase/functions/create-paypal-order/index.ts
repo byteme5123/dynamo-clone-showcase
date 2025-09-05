@@ -48,7 +48,7 @@ serve(async (req) => {
     }
 
     // Validate required parameters
-    const { planId, amount, currency = 'USD', returnUrl, cancelUrl, sessionToken } = requestBody;
+    const { planId, amount, currency = 'USD', returnUrl, cancelUrl } = requestBody;
     
     if (!planId || !amount || !returnUrl || !cancelUrl) {
       console.error('Missing required parameters:', { planId: !!planId, amount: !!amount, returnUrl: !!returnUrl, cancelUrl: !!cancelUrl });
@@ -60,8 +60,10 @@ serve(async (req) => {
       });
     }
 
-    if (!sessionToken) {
-      console.error('No session token provided in request body');
+    // Get user from JWT token in Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('No authorization header provided');
       return new Response(JSON.stringify({ 
         error: 'Authentication required. Please log in and try again.' 
       }), {
@@ -148,67 +150,43 @@ serve(async (req) => {
     const orderResult = await createOrderResponse.json();
     console.log('PayPal order created:', orderResult.id);
 
-    // Get user info using session token from request body
-    let userId = null;
-    let customerEmail = null;
-    let customerName = null;
-
-    console.log('Session token received:', sessionToken.substring(0, 8) + '...');
-    console.log('Session token length:', sessionToken.length);
+    // Get authenticated user using Supabase JWT
+    console.log('Getting authenticated user from JWT...');
     
-    // Use service role key for session lookup to bypass RLS
+    // Use service role client to get user from JWT
     const supabaseService = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
-    // Validate session token
-    const { data: session, error: sessionError } = await supabaseService
-      .from('user_sessions')
-      .select('user_id')
-      .eq('token', sessionToken)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
-
-    console.log('Session lookup result:', { session, sessionError, currentTime: new Date().toISOString() });
-
-    if (session && session.user_id) {
-      console.log('Session found for user_id:', session.user_id);
-      
-      // Get user data from auth.users and profiles
-      const { data: { user }, error: authError } = await supabaseService.auth.admin.getUserById(session.user_id);
-      
-      if (authError || !user) {
-        console.error('Failed to get auth user:', authError);
-        return new Response(JSON.stringify({ 
-          error: 'Failed to retrieve user information. Please try again.' 
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-
-      // Get profile data for name info
-      const { data: profile, error: profileError } = await supabaseService
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', session.user_id)
-        .maybeSingle();
-
-      userId = user.id;
-      customerEmail = user.email;
-      customerName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '';
-      console.log('User authenticated successfully:', { userId, customerEmail, customerName });
-    } else {
-      console.error('Session validation failed:', { sessionError, sessionFound: !!session });
+    // Get user from JWT token
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+    
+    if (userError || !user) {
+      console.error('Failed to authenticate user:', userError);
       return new Response(JSON.stringify({ 
-        error: 'Invalid or expired session. Please log in again.' 
+        error: 'Invalid authentication token. Please log in again.' 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
+
+    console.log('User authenticated successfully:', user.id);
+
+    // Get profile data for name info
+    const { data: profile, error: profileError } = await supabaseService
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const userId = user.id;
+    const customerEmail = user.email;
+    const customerName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '';
+    
+    console.log('User info retrieved:', { userId, customerEmail, customerName });
 
     // Validate we have user info before creating order
     if (!userId) {

@@ -8,12 +8,10 @@ interface CreatePayPalOrderParams {
   currency?: string;
   returnUrl: string;
   cancelUrl: string;
-  sessionToken?: string;
 }
 
 interface CapturePayPalOrderParams {
   orderId: string;
-  sessionToken?: string;
 }
 
 export const useCreatePayPalOrder = () => {
@@ -21,23 +19,21 @@ export const useCreatePayPalOrder = () => {
 
   return useMutation({
     mutationFn: async (params: CreatePayPalOrderParams) => {
-      const sessionToken = localStorage.getItem('user_session_token');
+      // Get JWT token from Supabase auth
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!sessionToken) {
-        console.error('No session token found for PayPal order creation');
+      if (!session?.access_token) {
+        console.error('No auth session found for PayPal order creation');
         throw new Error('Please log in to make a purchase');
       }
 
-      console.log('Creating PayPal order with session token:', sessionToken.substring(0, 8) + '...');
+      console.log('Creating PayPal order with JWT token');
       
-      // Pass session token in request body instead of Authorization header
-      const requestBody = {
-        ...params,
-        sessionToken,
-      };
-
       const { data, error } = await supabase.functions.invoke('create-paypal-order', {
-        body: requestBody,
+        body: params,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) {
@@ -64,18 +60,16 @@ export const useCapturePayPalOrder = () => {
 
   return useMutation({
     mutationFn: async (params: CapturePayPalOrderParams) => {
-      const sessionToken = localStorage.getItem('user_session_token');
+      // Get JWT token from Supabase auth
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Pass session token in request body instead of Authorization header
-      const requestBody = {
-        ...params,
-        sessionToken,
-      };
-      
-      console.log('Capture PayPal order with session token:', sessionToken ? 'present' : 'missing');
+      console.log('Capture PayPal order with JWT token:', session?.access_token ? 'present' : 'missing');
 
       const { data, error } = await supabase.functions.invoke('capture-paypal-order', {
-        body: requestBody,
+        body: { orderId: params.orderId },
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`,
+        } : {},
       });
 
       if (error) throw error;
