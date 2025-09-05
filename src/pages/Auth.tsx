@@ -18,7 +18,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signUp, signIn, verifyEmail, resendVerification, isAuthenticated } = useAuth();
+  const { signUp, signIn, isAuthenticated } = useAuth();
 
   // Form state
   const [signInData, setSignInData] = useState({ email: '', password: '' });
@@ -29,52 +29,58 @@ const Auth = () => {
     firstName: '',
     lastName: '',
   });
+  const [resetEmail, setResetEmail] = useState('');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [resetPasswordData, setResetPasswordData] = useState({
     password: '',
     confirmPassword: '',
-    token: '',
   });
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
-  // Handle email verification and password reset on page load
+  // Handle Supabase auth callbacks on page load
   useEffect(() => {
-    const token = searchParams.get('token');
-    const resetToken = searchParams.get('reset_token');
-    
-    if (token) {
-      handleEmailVerification(token);
-    } else if (resetToken) {
-      handlePasswordResetToken(resetToken);
-    }
-  }, [searchParams]);
+    const handleAuthCallback = async () => {
+      // Check if this is a password reset callback
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+      const type = searchParams.get('type');
 
-  // Redirect if already authenticated
+      if (accessToken && refreshToken && type === 'recovery') {
+        console.log('Password recovery callback detected');
+        setShowPasswordReset(true);
+        setSuccess('Please enter your new password below.');
+        
+        // Set the session with the tokens from URL
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+
+        if (error) {
+          console.error('Session error:', error);
+          setError('Failed to verify reset link. Please try again.');
+        }
+      } else if (type === 'signup') {
+        // Handle email confirmation
+        const { error } = await supabase.auth.getSession();
+        if (!error) {
+          setSuccess('Email confirmed successfully! You can now sign in.');
+          toast({
+            title: 'Email Confirmed',
+            description: 'Your email has been verified. You can now sign in.',
+          });
+        }
+      }
+    };
+
+    handleAuthCallback();
+  }, [searchParams, toast]);
+
+  // Redirect if authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/account');
     }
   }, [isAuthenticated, navigate]);
-
-  const handleEmailVerification = async (token: string) => {
-    try {
-      setIsLoading(true);
-      const { error } = await verifyEmail(token);
-      
-      if (error) {
-        setError(error.message);
-      } else {
-        setSuccess('Email verified successfully! You can now sign in.');
-        toast({
-          title: 'Email Verified',
-          description: 'Your email has been verified successfully!',
-        });
-      }
-    } catch (error) {
-      setError('Verification failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,16 +90,18 @@ const Auth = () => {
     const { error } = await signIn(signInData.email, signInData.password);
 
     if (error) {
-      setError(error.message);
-      if (error.message.includes('verify your email')) {
-        // Show resend verification option
+      if (error.message?.includes('Email not confirmed')) {
+        setError('Please check your email and click the confirmation link before signing in.');
+      } else if (error.message?.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else {
+        setError(error.message || 'Sign in failed. Please try again.');
       }
     } else {
       toast({
         title: 'Welcome back!',
-        description: 'You have been signed in successfully.',
+        description: 'You have successfully signed in.',
       });
-      navigate('/account');
     }
 
     setIsLoading(false);
@@ -104,20 +112,21 @@ const Auth = () => {
     setIsLoading(true);
     setError('');
 
-    // Validation
+    // Validate passwords match
     if (signUpData.password !== signUpData.confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
     }
 
+    // Validate password strength
     if (signUpData.password.length < 8) {
       setError('Password must be at least 8 characters long');
       setIsLoading(false);
       return;
     }
 
-    const { error, needsVerification } = await signUp(
+    const { error } = await signUp(
       signUpData.email,
       signUpData.password,
       signUpData.firstName,
@@ -125,66 +134,55 @@ const Auth = () => {
     );
 
     if (error) {
-      setError(error.message);
-    } else if (needsVerification) {
-      setSuccess(
-        'Account created successfully! Please check your email for a verification link.'
-      );
+      if (error.message?.includes('already registered')) {
+        setError('An account with this email already exists. Please sign in instead.');
+      } else {
+        setError(error.message || 'Sign up failed. Please try again.');
+      }
+    } else {
+      setSuccess('Account created! Please check your email for a confirmation link.');
       toast({
         title: 'Account Created',
-        description: 'Please check your email to verify your account.',
+        description: 'Please check your email for a confirmation link.',
       });
     }
 
     setIsLoading(false);
   };
 
-  const handlePasswordResetToken = async (resetToken: string) => {
+  const handlePasswordResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setError('');
-    
-    console.log('Processing reset token:', resetToken.substring(0, 8) + '...');
-    
-    try {
-      // Create a simple token validation endpoint call
-      const { data, error: validationError } = await supabase
-        .from('users')
-        .select('id, email')
-        .eq('reset_token', resetToken)
-        .gt('reset_token_expires', new Date().toISOString())
-        .maybeSingle();
 
-      console.log('Token validation result:', { data, validationError });
-
-      if (validationError) {
-        console.error('Token validation database error:', validationError);
-        setError('Failed to validate reset token. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!data) {
-        console.log('Token not found or expired');
-        setError('Invalid or expired reset link. Please request a new password reset.');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('Valid token found for user:', data.email);
-      
-      // Token is valid, show the reset form
-      setResetPasswordData({ ...resetPasswordData, token: resetToken });
-      setShowPasswordReset(true);
-      setSuccess('Please enter your new password below.');
-    } catch (error: any) {
-      console.error('Token validation error:', error);
-      setError('Invalid or expired reset link. Please request a new password reset.');
+    if (!resetEmail) {
+      setError('Please enter your email address');
+      setIsLoading(false);
+      return;
     }
-    
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) {
+        setError(error.message || 'Failed to send reset email');
+      } else {
+        setSuccess('Password reset email sent! Please check your inbox.');
+        toast({
+          title: 'Reset Email Sent',
+          description: 'Please check your email for password reset instructions.',
+        });
+      }
+    } catch (error: any) {
+      setError('Failed to send password reset email. Please try again.');
+    }
+
     setIsLoading(false);
   };
 
-  const handlePasswordReset = async (e: React.FormEvent) => {
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -202,74 +200,126 @@ const Auth = () => {
     }
 
     try {
-      console.log('Submitting password reset with token:', resetPasswordData.token.substring(0, 8) + '...');
-      
-      // Verify and use the reset token to update password
-      const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: {
-          token: resetPasswordData.token,
-          newPassword: resetPasswordData.password
-        }
+      const { error } = await supabase.auth.updateUser({
+        password: resetPasswordData.password
       });
-
-      console.log('Password reset response:', { data, error });
 
       if (error) {
-        console.error('Password reset API error:', error);
-        // Show more specific error messages from backend
-        if (error.message?.includes('Invalid or expired')) {
-          setError('Your reset link has expired. Please request a new password reset.');
-        } else if (error.message?.includes('8 characters')) {
-          setError('Password must be at least 8 characters long.');
-        } else if (error.message?.includes('Server configuration')) {
-          setError('Server configuration error. Please contact support.');
-        } else if (error.message?.includes('Database connection')) {
-          setError('Database connection issue. Please try again in a moment.');
-        } else {
-          // Display backend error details if available
-          const errorDetails = error.details ? ` (${error.details})` : '';
-          setError(error.message || `Failed to reset password. Please try again.${errorDetails}`);
-        }
-        return;
+        setError(error.message || 'Failed to update password');
+      } else {
+        setSuccess('Password updated successfully! You can now sign in.');
+        setShowPasswordReset(false);
+        setResetPasswordData({ password: '', confirmPassword: '' });
+        toast({
+          title: 'Password Updated',
+          description: 'Your password has been successfully updated.',
+        });
+        
+        // Clear URL parameters and redirect to sign in
+        window.history.replaceState({}, document.title, '/auth');
       }
-
-      setSuccess('Password reset successfully! You can now sign in with your new password.');
-      setShowPasswordReset(false);
-      setResetPasswordData({ password: '', confirmPassword: '', token: '' });
-      toast({
-        title: 'Password Reset Success',
-        description: 'Your password has been updated. Redirecting to sign in...',
-      });
-      
-      // Redirect to sign in after 2 seconds
-      setTimeout(() => {
-        window.location.href = '/auth';
-      }, 2000);
     } catch (error: any) {
-      console.error('Password reset error:', error);
-      setError('Failed to reset password. Please try again or request a new reset link.');
+      setError('Failed to update password. Please try again.');
     }
 
     setIsLoading(false);
   };
 
-  const handleResendVerification = async () => {
+  const handleResendConfirmation = async () => {
     if (!signInData.email) {
       setError('Please enter your email address');
       return;
     }
 
     setIsLoading(true);
-    const { error } = await resendVerification(signInData.email);
-    
-    if (error) {
-      setError('Failed to send verification email');
-    } else {
-      setSuccess('Verification email sent! Please check your inbox.');
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: signInData.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
+      });
+
+      if (error) {
+        setError(error.message || 'Failed to send confirmation email');
+      } else {
+        setSuccess('Confirmation email sent! Please check your inbox.');
+      }
+    } catch (error) {
+      setError('Failed to send confirmation email. Please try again.');
     }
-    
+
     setIsLoading(false);
   };
+
+  // Show password reset form if we're in recovery mode
+  if (showPasswordReset) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl text-center">Update Password</CardTitle>
+              <CardDescription className="text-center">
+                Enter your new password below
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {success && (
+                <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
+              
+              <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                <div>
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    placeholder="Enter new password"
+                    value={resetPasswordData.password}
+                    onChange={(e) => setResetPasswordData(prev => ({
+                      ...prev,
+                      password: e.target.value
+                    }))}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={resetPasswordData.confirmPassword}
+                    onChange={(e) => setResetPasswordData(prev => ({
+                      ...prev,
+                      confirmPassword: e.target.value
+                    }))}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Update Password
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
@@ -279,340 +329,205 @@ const Auth = () => {
           <p className="text-muted-foreground mt-2">Sign in to your account or create a new one</p>
         </div>
 
-        {/* Show verification success */}
-        {success && (
-          <Alert className="mb-6 border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">{success}</AlertDescription>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        {/* Show errors */}
-        {error && (
-          <Alert className="mb-6 border-destructive/50 bg-destructive/10">
-            <AlertDescription className="text-destructive">{error}</AlertDescription>
-            {error.includes('verify your email') && (
-              <Button
-                variant="link"
-                size="sm"
-                onClick={handleResendVerification}
-                disabled={isLoading}
-                className="mt-2 h-auto p-0 text-primary"
-              >
-                Resend verification email
-              </Button>
-            )}
+        {success && (
+          <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
 
         <Card>
-          {showPasswordReset ? (
-            <div>
-              <CardHeader>
-                <CardTitle>Reset Your Password</CardTitle>
-                <CardDescription>
-                  {resetPasswordData.token ? 
-                    'Enter your new password below' : 
-                    'Enter your email address to receive a password reset link'
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {resetPasswordData.token ? (
-                  <form onSubmit={handlePasswordReset} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        placeholder="Enter new password (minimum 8 characters)"
-                        value={resetPasswordData.password}
-                        onChange={(e) =>
-                          setResetPasswordData({ ...resetPasswordData, password: e.target.value })
-                        }
-                        required
-                        minLength={8}
-                      />
-                      {resetPasswordData.password && resetPasswordData.password.length < 8 && (
-                        <p className="text-sm text-destructive">Password must be at least 8 characters long</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-new-password">Confirm New Password</Label>
-                      <Input
-                        id="confirm-new-password"
-                        type="password"
-                        placeholder="Confirm new password"
-                        value={resetPasswordData.confirmPassword}
-                        onChange={(e) =>
-                          setResetPasswordData({ ...resetPasswordData, confirmPassword: e.target.value })
-                        }
-                        required
-                      />
-                      {resetPasswordData.confirmPassword && 
-                       resetPasswordData.password !== resetPasswordData.confirmPassword && (
-                        <p className="text-sm text-destructive">Passwords do not match</p>
-                      )}
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Updating Password...
-                        </>
-                      ) : (
-                        'Update Password'
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setShowPasswordReset(false);
-                        setResetPasswordData({ password: '', confirmPassword: '', token: '' });
-                        setError('');
-                        setSuccess('');
-                      }}
-                    >
-                      Back to Sign In
-                    </Button>
-                  </form>
-                ) : (
-                  <div className="space-y-4">
-                    <form onSubmit={async (e) => {
-                      e.preventDefault();
-                      setIsLoading(true);
-                      setError('');
-                      
-                      const formData = new FormData(e.currentTarget);
-                      const email = formData.get('reset-email') as string;
-                      
-                      if (!email) {
-                        setError('Please enter your email address');
-                        setIsLoading(false);
-                        return;
-                      }
-
-                      try {
-                        const { error } = await supabase.functions.invoke('send-password-reset', {
-                          body: { email }
-                        });
-
-                        if (error) {
-                          throw error;
-                        }
-
-                        setSuccess('If an account with that email exists, we\'ve sent a password reset link.');
-                        toast({
-                          title: "Reset Link Sent",
-                          description: "Check your email for the password reset link.",
-                        });
-                      } catch (error: any) {
-                        console.error('Password reset request error:', error);
-                        setError('Failed to send reset email. Please try again.');
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="reset-email">Email Address</Label>
-                        <Input
-                          id="reset-email"
-                          name="reset-email"
-                          type="email"
-                          placeholder="Enter your email address"
-                          required
-                        />
-                      </div>
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Sending Reset Link...
-                          </>
-                        ) : (
-                          'Send Reset Link'
-                        )}
-                      </Button>
-                    </form>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setShowPasswordReset(false);
-                        setError('');
-                        setSuccess('');
-                      }}
-                    >
-                      Back to Sign In
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </div>
-          ) : (
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">Authentication</CardTitle>
+            <CardDescription className="text-center">
+              Choose your preferred authentication method
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="signin" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="reset">Reset Password</TabsTrigger>
               </TabsList>
 
-            <TabsContent value="signin">
-              <CardHeader>
-                <CardTitle>Sign In</CardTitle>
-                <CardDescription>
-                  Enter your email and password to access your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+              {/* Sign In Tab */}
+              <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="signin-email">Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="your@email.com"
                       value={signInData.email}
-                      onChange={(e) =>
-                        setSignInData({ ...signInData, email: e.target.value })
-                      }
+                      onChange={(e) => setSignInData(prev => ({
+                        ...prev,
+                        email: e.target.value
+                      }))}
+                      disabled={isLoading}
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="signin-password">Password</Label>
                     <Input
                       id="signin-password"
                       type="password"
-                      placeholder="Enter your password"
+                      placeholder="Your password"
                       value={signInData.password}
-                      onChange={(e) =>
-                        setSignInData({ ...signInData, password: e.target.value })
-                      }
+                      onChange={(e) => setSignInData(prev => ({
+                        ...prev,
+                        password: e.target.value
+                      }))}
+                      disabled={isLoading}
                       required
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing In...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Sign In
                   </Button>
                   
-                  <div className="text-center mt-4">
+                  <div className="text-center">
                     <Button
                       type="button"
                       variant="link"
-                      className="text-sm text-muted-foreground hover:text-primary p-0"
-                      onClick={() => setShowPasswordReset(true)}
+                      onClick={handleResendConfirmation}
+                      disabled={isLoading}
+                      className="text-sm"
                     >
-                      Forgot your password?
+                      Resend confirmation email
                     </Button>
                   </div>
                 </form>
-              </CardContent>
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="signup">
-              <CardHeader>
-                <CardTitle>Create Account</CardTitle>
-                <CardDescription>
-                  Create a new account to get started with our services
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+              {/* Sign Up Tab */}
+              <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
                       <Label htmlFor="signup-firstname">First Name</Label>
                       <Input
                         id="signup-firstname"
-                        placeholder="First name"
+                        placeholder="John"
                         value={signUpData.firstName}
-                        onChange={(e) =>
-                          setSignUpData({ ...signUpData, firstName: e.target.value })
-                        }
+                        onChange={(e) => setSignUpData(prev => ({
+                          ...prev,
+                          firstName: e.target.value
+                        }))}
+                        disabled={isLoading}
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div>
                       <Label htmlFor="signup-lastname">Last Name</Label>
                       <Input
                         id="signup-lastname"
-                        placeholder="Last name"
+                        placeholder="Doe"
                         value={signUpData.lastName}
-                        onChange={(e) =>
-                          setSignUpData({ ...signUpData, lastName: e.target.value })
-                        }
+                        onChange={(e) => setSignUpData(prev => ({
+                          ...prev,
+                          lastName: e.target.value
+                        }))}
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="signup-email">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder="your@email.com"
                       value={signUpData.email}
-                      onChange={(e) =>
-                        setSignUpData({ ...signUpData, email: e.target.value })
-                      }
+                      onChange={(e) => setSignUpData(prev => ({
+                        ...prev,
+                        email: e.target.value
+                      }))}
+                      disabled={isLoading}
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="signup-password">Password</Label>
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="Create a password"
+                      placeholder="Create password (8+ characters)"
                       value={signUpData.password}
-                      onChange={(e) =>
-                        setSignUpData({ ...signUpData, password: e.target.value })
-                      }
+                      onChange={(e) => setSignUpData(prev => ({
+                        ...prev,
+                        password: e.target.value
+                      }))}
+                      disabled={isLoading}
                       required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="signup-confirm">Confirm Password</Label>
                     <Input
                       id="signup-confirm"
                       type="password"
-                      placeholder="Confirm your password"
+                      placeholder="Confirm password"
                       value={signUpData.confirmPassword}
-                      onChange={(e) =>
-                        setSignUpData({ ...signUpData, confirmPassword: e.target.value })
-                      }
+                      onChange={(e) => setSignUpData(prev => ({
+                        ...prev,
+                        confirmPassword: e.target.value
+                      }))}
+                      disabled={isLoading}
                       required
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      'Create Account'
-                    )}
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Account
                   </Button>
                 </form>
-              </CardContent>
-            </TabsContent>
-            </Tabs>
-          )}
-        </Card>
+              </TabsContent>
 
-        <div className="text-center mt-6">
-          <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
-            ← Back to Home
-          </Link>
-        </div>
+              {/* Password Reset Tab */}
+              <TabsContent value="reset">
+                <form onSubmit={handlePasswordResetRequest} className="space-y-4">
+                  <div>
+                    <Label htmlFor="reset-email">Email Address</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Send Reset Link
+                  </Button>
+                  <p className="text-sm text-muted-foreground text-center">
+                    We'll send you a link to reset your password
+                  </p>
+                </form>
+              </TabsContent>
+            </Tabs>
+
+            <div className="mt-6 text-center">
+              <Link 
+                to="/" 
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Back to Homepage
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
