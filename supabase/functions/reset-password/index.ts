@@ -14,8 +14,6 @@ interface ResetPasswordRequest {
 const handler = async (req: Request): Promise<Response> => {
   console.log('=== PASSWORD RESET FUNCTION STARTED ===');
   console.log('Request method:', req.method);
-  console.log('Request URL:', req.url);
-  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
   if (req.method === "OPTIONS") {
     console.log('Handling CORS preflight request');
@@ -26,9 +24,6 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Creating Supabase client...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    console.log('Environment check - SUPABASE_URL exists:', !!supabaseUrl);
-    console.log('Environment check - SERVICE_ROLE_KEY exists:', !!serviceRoleKey);
     
     if (!supabaseUrl || !serviceRoleKey) {
       console.error('Missing environment variables');
@@ -45,211 +40,46 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Supabase client created successfully');
 
     console.log('Parsing request body...');
-    let requestBody;
-    try {
-      const bodyText = await req.text();
-      console.log('Raw request body:', bodyText);
-      requestBody = JSON.parse(bodyText);
-      console.log('Parsed request body:', requestBody);
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid request format',
-          details: parseError.message
-        }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    const { token, newPassword }: ResetPasswordRequest = requestBody;
-    console.log('Extracted token:', token ? token.substring(0, 8) + '...' : 'undefined');
-    console.log('Extracted password length:', newPassword ? newPassword.length : 'undefined');
+    const { token, newPassword }: ResetPasswordRequest = await req.json();
+    console.log('Token received:', token ? 'present' : 'missing');
+    console.log('Password received:', newPassword ? 'present' : 'missing');
 
     if (!token || !newPassword) {
-      console.log('Validation failed: Missing token or password');
       return new Response(
         JSON.stringify({ 
-          error: 'Token and new password are required',
-          details: `Token: ${!!token}, Password: ${!!newPassword}`
+          error: 'Token and new password are required'
         }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     if (newPassword.length < 8) {
-      console.log('Validation failed: Password too short');
       return new Response(
         JSON.stringify({ 
-          error: 'Password must be at least 8 characters long',
-          details: `Current length: ${newPassword.length}`
+          error: 'Password must be at least 8 characters long'
         }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log('Processing password reset for token:', token.substring(0, 8) + '...');
+    // Use Supabase's built-in password update with token
+    console.log('Updating password using Supabase auth...');
+    const { data, error } = await supabaseClient.auth.updateUser({
+      password: newPassword
+    });
 
-    // Test database connection first
-    console.log('Testing database connection...');
-    try {
-      const { data: testData, error: testError } = await supabaseClient
-        .from('users')
-        .select('count')
-        .limit(1);
-      
-      if (testError) {
-        console.error('Database connection test failed:', testError);
-        return new Response(
-          JSON.stringify({ 
-            error: 'Database connection failed',
-            details: testError.message
-          }),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-      console.log('Database connection test successful');
-    } catch (dbTestError) {
-      console.error('Database connection test exception:', dbTestError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Database connection exception',
-          details: dbTestError.message
-        }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Find user with valid reset token
-    console.log('Looking up user with reset token...');
-    const { data: user, error: userError } = await supabaseClient
-      .from('users')
-      .select('id, email, first_name, reset_token, reset_token_expires')
-      .eq('reset_token', token)
-      .maybeSingle();
-
-    console.log('User lookup result:', { user: user ? { id: user.id, email: user.email } : null, error: userError });
-
-    if (userError) {
-      console.error('User lookup error:', userError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to process request',
-          details: userError.message
-        }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    if (!user) {
-      console.log('No user found with token, checking for any users with this token...');
-      const { data: anyUsers, error: anyError } = await supabaseClient
-        .from('users')
-        .select('id, email, reset_token, reset_token_expires')
-        .eq('reset_token', token);
-      
-      console.log('Any users with token:', anyUsers);
-      console.log('Current time:', new Date().toISOString());
-      
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid or expired reset token',
-          details: 'No user found with this token or token has expired'
-        }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Check token expiry manually
-    const now = new Date();
-    const expires = new Date(user.reset_token_expires);
-    console.log('Token expiry check - Now:', now.toISOString(), 'Expires:', expires.toISOString(), 'Valid:', expires > now);
-
-    if (expires <= now) {
-      console.log('Token has expired');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Reset token has expired',
-          details: `Token expired at ${expires.toISOString()}, current time is ${now.toISOString()}`
-        }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    console.log('Valid reset token found for user:', user.email);
-
-    // Hash the new password using Web Crypto API (PBKDF2)
-    console.log('Hashing new password...');
-    let hashedPassword;
-    try {
-      // Generate a random salt
-      const salt = crypto.getRandomValues(new Uint8Array(16));
-      const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      // Hash password with PBKDF2
-      const encoder = new TextEncoder();
-      const passwordBuffer = encoder.encode(newPassword);
-      const keyMaterial = await crypto.subtle.importKey(
-        'raw',
-        passwordBuffer,
-        { name: 'PBKDF2' },
-        false,
-        ['deriveBits']
-      );
-      
-      const hashBuffer = await crypto.subtle.deriveBits(
-        {
-          name: 'PBKDF2',
-          salt: salt,
-          iterations: 10000,
-          hash: 'SHA-256'
-        },
-        keyMaterial,
-        256
-      );
-      
-      const hashHex = Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
-      // Format: algorithm$iterations$salt$hash
-      hashedPassword = `pbkdf2$10000$${saltHex}$${hashHex}`;
-      console.log('Password hashed successfully');
-    } catch (hashError) {
-      console.error('Password hashing failed:', hashError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to process password',
-          details: hashError.message
-        }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Update user password and clear reset token
-    console.log('Updating user password in database...');
-    const { error: updateError } = await supabaseClient
-      .from('users')
-      .update({
-        password_hash: hashedPassword,
-        reset_token: null,
-        reset_token_expires: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('Password update error:', updateError);
+    if (error) {
+      console.error('Password update error:', error);
       return new Response(
         JSON.stringify({ 
           error: 'Failed to update password',
-          details: updateError.message
+          details: error.message
         }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log('Password updated successfully for user:', user.email);
+    console.log('Password updated successfully');
 
     return new Response(
       JSON.stringify({ 
@@ -261,12 +91,10 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error('Password reset error:', error);
-    console.error('Error stack:', error.stack);
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
-        details: error.message,
-        stack: error.stack
+        details: error.message
       }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );

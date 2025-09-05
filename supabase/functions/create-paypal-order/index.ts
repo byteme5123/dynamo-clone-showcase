@@ -176,22 +176,11 @@ serve(async (req) => {
     if (session && session.user_id) {
       console.log('Session found for user_id:', session.user_id);
       
-      // Get user data using service role key
-      const { data: userData, error: userError } = await supabaseService
-        .from('users')
-        .select('id, email, first_name, last_name')
-        .eq('id', session.user_id)
-        .single();
-
-      console.log('User lookup result:', { userData, userError });
-
-      if (userData && !userError) {
-        userId = userData.id;
-        customerEmail = userData.email;
-        customerName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
-        console.log('User authenticated successfully:', { userId, customerEmail, customerName });
-      } else {
-        console.error('Failed to get user data:', userError);
+      // Get user data from auth.users and profiles
+      const { data: { user }, error: authError } = await supabaseService.auth.admin.getUserById(session.user_id);
+      
+      if (authError || !user) {
+        console.error('Failed to get auth user:', authError);
         return new Response(JSON.stringify({ 
           error: 'Failed to retrieve user information. Please try again.' 
         }), {
@@ -199,6 +188,18 @@ serve(async (req) => {
           status: 400,
         });
       }
+
+      // Get profile data for name info
+      const { data: profile, error: profileError } = await supabaseService
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', session.user_id)
+        .maybeSingle();
+
+      userId = user.id;
+      customerEmail = user.email;
+      customerName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : '';
+      console.log('User authenticated successfully:', { userId, customerEmail, customerName });
     } else {
       console.error('Session validation failed:', { sessionError, sessionFound: !!session });
       return new Response(JSON.stringify({ 
