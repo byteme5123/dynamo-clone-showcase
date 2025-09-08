@@ -97,39 +97,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Set up auth state listener
   useEffect(() => {
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
+        
+        if (!mounted) return;
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Fetch user profile and admin data in parallel
-          const [profileData, adminData] = await Promise.all([
-            fetchUserProfile(session.user.id),
-            fetchAdminUser(session.user.id)
-          ]);
-          
-          setUserProfile(profileData);
-          setAdminUser(adminData);
+          try {
+            const [profileData, adminData] = await Promise.all([
+              fetchUserProfile(session.user.id),
+              fetchAdminUser(session.user.id)
+            ]);
+            
+            if (mounted) {
+              setUserProfile(profileData);
+              setAdminUser(adminData);
+            }
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+            if (mounted) {
+              setUserProfile(null);
+              setAdminUser(null);
+            }
+          }
         } else {
           setUserProfile(null);
           setAdminUser(null);
         }
         
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setLoading(false);
-      }
-    });
+    // Get initial session immediately
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting initial session:', error);
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        // If we have a session, the onAuthStateChange will handle the rest
+        // If no session, set loading to false immediately
+        if (!session && mounted) {
+          setSession(null);
+          setUser(null);
+          setUserProfile(null);
+          setAdminUser(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
@@ -223,7 +267,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clear all local state first
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      setAdminUser(null);
+      
+      // Clear any session storage
+      sessionStorage.clear();
+      
+      // Sign out from Supabase (this will also trigger onAuthStateChange)
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error);
+      } else {
+        console.log('Successfully signed out');
+      }
     } catch (error) {
       console.error('Sign out error:', error);
     }

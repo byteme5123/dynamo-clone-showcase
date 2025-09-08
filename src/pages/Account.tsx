@@ -10,9 +10,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key } from 'lucide-react';
-import { Navigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordResetForm } from '@/components/PasswordResetForm';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const Account = () => {
   const { user, userProfile, isAuthenticated, signOut, refreshUserData } = useAuth();
@@ -36,15 +37,12 @@ const Account = () => {
     }
   }, [userProfile]);
 
-  // Redirect if not authenticated
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/auth" replace />;
-  }
-
   // Fetch user's orders with proper caching
   const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
-    queryKey: ['user-orders', user.id],
+    queryKey: ['user-orders', user?.id],
     queryFn: async () => {
+      if (!user?.id) return [];
+      
       const { data, error } = await supabase
         .from('orders')
         .select('*')
@@ -493,4 +491,10 @@ const Account = () => {
   );
 };
 
-export default Account;
+const ProtectedAccount = () => (
+  <ProtectedRoute>
+    <Account />
+  </ProtectedRoute>
+);
+
+export default ProtectedAccount;
