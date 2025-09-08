@@ -19,6 +19,7 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancel from "./pages/PaymentCancel";
+import PaymentRecovery from "./pages/PaymentRecovery";
 import Auth from "./pages/Auth";
 import Account from "./pages/Account";
 import AdminLogin from "./pages/AdminLogin";
@@ -95,8 +96,9 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/account" element={<Account />} />
-                  <Route path="/payment-success" element={<PaymentSuccess />} />
-                  <Route path="/payment-cancel" element={<PaymentCancel />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancel" element={<PaymentCancel />} />
+          <Route path="/payment-recovery" element={<PaymentRecovery />} />
                   
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />

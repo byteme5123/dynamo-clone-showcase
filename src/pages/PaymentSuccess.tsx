@@ -25,6 +25,17 @@ const PaymentSuccess = () => {
   const payerID = searchParams.get('PayerID');
   const sessionToken = searchParams.get('session_token');
 
+  // Debug logging for URL parameters
+  useEffect(() => {
+    console.log('PaymentSuccess: URL parameters:', {
+      token,
+      payerID,
+      sessionToken,
+      fullURL: window.location.href,
+      searchString: window.location.search
+    });
+  }, [token, payerID, sessionToken]);
+
   // Handle session restoration after PayPal redirect
   useEffect(() => {
     const restoreSession = async () => {
@@ -62,22 +73,41 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     const capturePayment = async () => {
+      console.log('PaymentSuccess: capturePayment called', {
+        authChecking,
+        loading,
+        authError,
+        token,
+        payerID,
+        hasSession: !!session,
+        hasUser: !!user
+      });
+
       // Wait for auth check to complete
-      if (authChecking || loading) return;
+      if (authChecking || loading) {
+        console.log('PaymentSuccess: Waiting for auth check...', { authChecking, loading });
+        return;
+      }
       
       // If there's an auth error, don't attempt payment capture
-      if (authError) return;
+      if (authError) {
+        console.log('PaymentSuccess: Auth error present, skipping capture:', authError);
+        return;
+      }
       
-      if (token && payerID && session && user) {
+      if (token && payerID) {
+        console.log('PaymentSuccess: Starting payment capture process...', { token, payerID });
+        
         try {
-          console.log('Capturing payment for token:', token);
+          console.log('PaymentSuccess: Calling capture mutation for token:', token);
           
           const result = await captureOrderMutation.mutateAsync({ orderId: token });
+          console.log('PaymentSuccess: Capture result received:', result);
           setPaymentDetails(result);
           
           if (result.success) {
             setShowRedirectMessage(true);
-            console.log('Payment captured successfully');
+            console.log('PaymentSuccess: Payment captured successfully');
             
             toast({
               title: 'Payment Successful',
@@ -91,9 +121,16 @@ const PaymentSuccess = () => {
             setTimeout(() => {
               navigate('/account?payment_success=true');
             }, 3000);
+          } else {
+            console.error('PaymentSuccess: Capture failed, result:', result);
+            toast({
+              title: 'Payment Processing Error',
+              description: 'Payment capture failed. Please contact support.',
+              variant: 'destructive',
+            });
           }
         } catch (error: any) {
-          console.error('Error capturing payment:', error);
+          console.error('PaymentSuccess: Error capturing payment:', error);
           
           toast({
             title: 'Payment Processing Error',
@@ -105,11 +142,27 @@ const PaymentSuccess = () => {
             navigate('/account');
           }, 3000);
         }
+      } else {
+        console.log('PaymentSuccess: Missing required parameters', { token, payerID });
+        if (!token) console.log('PaymentSuccess: Missing token parameter');
+        if (!payerID) console.log('PaymentSuccess: Missing PayerID parameter');
+        
+        toast({
+          title: 'Payment Error',
+          description: 'Missing payment information. Please contact support with your transaction details.',
+          variant: 'destructive',
+        });
+        
+        setTimeout(() => {
+          navigate('/plans');
+        }, 5000);
       }
     };
 
-    capturePayment();
-  }, [token, payerID, session, user, authChecking, authError, loading, navigate, toast]);
+    // Add a small delay to ensure all state is initialized
+    const timer = setTimeout(capturePayment, 100);
+    return () => clearTimeout(timer);
+  }, [token, payerID, session, user, authChecking, authError, loading, navigate, toast, captureOrderMutation]);
 
   // Show loading state while checking authentication
   if (authChecking || loading) {
