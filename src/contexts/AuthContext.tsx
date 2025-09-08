@@ -31,7 +31,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: any; needsVerification?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  refreshSession: () => Promise<void>;
+  refreshSession: () => Promise<{ data: any; error: any } | void>;
   refreshUserData: () => Promise<void>;
   verifyEmail: (token: string) => Promise<{ error: any }>;
   resendVerification: (email: string) => Promise<{ error: any }>;
@@ -295,14 +295,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshSession = async () => {
     try {
-      const { error } = await supabase.auth.refreshSession();
+      const { data, error } = await supabase.auth.refreshSession();
       if (error) {
         console.error('Session refresh error:', error);
+        // Try to recover from stored session backup
+        const sessionBackup = sessionStorage.getItem('session_backup');
+        if (sessionBackup) {
+          try {
+            const backup = JSON.parse(sessionBackup);
+            console.log('Attempting session recovery for user:', backup.user_id);
+            // Force session refresh
+            await supabase.auth.getSession();
+          } catch (parseError) {
+            console.error('Session backup parse error:', parseError);
+          }
+        }
       } else {
         console.log('Session refreshed successfully');
       }
+      return { data, error };
     } catch (error) {
       console.error('Session refresh error:', error);
+      return { data: null, error };
     }
   };
 

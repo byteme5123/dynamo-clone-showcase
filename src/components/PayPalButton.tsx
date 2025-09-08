@@ -36,8 +36,9 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
       }
       
       const currentUrl = window.location.origin;
-      const returnUrl = `${currentUrl}/payment-success`;
-      const cancelUrl = `${currentUrl}/payment-cancel`;
+      const sessionToken = session.access_token;
+      const returnUrl = `${currentUrl}/payment-success?session_token=${sessionToken}`;
+      const cancelUrl = `${currentUrl}/payment-cancel?session_token=${sessionToken}`;
 
       console.log('Creating PayPal order...');
       const result = await createOrderMutation.mutateAsync({
