@@ -11,13 +11,19 @@ export const useSessionPersistence = () => {
       const userStatus = user ? 'authenticated' : 'not authenticated';
       
       console.log(`Session persistence check - Session: ${sessionStatus}, User: ${userStatus}`);
+      console.log(`Session details:`, session ? {
+        user_id: session.user?.id,
+        expires_at: session.expires_at,
+        access_token: session.access_token ? 'present' : 'missing'
+      } : 'no session');
       
       // Store session backup in sessionStorage for recovery scenarios
       if (user && session) {
         sessionStorage.setItem('session_backup', JSON.stringify({
           user_id: user.id,
           email: user.email,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          expires_at: session.expires_at
         }));
       } else {
         sessionStorage.removeItem('session_backup');

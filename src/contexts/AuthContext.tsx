@@ -295,27 +295,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshSession = async () => {
     try {
-      const { data, error } = await supabase.auth.refreshSession();
-      if (error) {
-        console.error('Session refresh error:', error);
+      console.log('AuthContext: Refreshing session...');
+      
+      // First try to get the current session
+      const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('AuthContext: Error getting current session:', sessionError);
+        
         // Try to recover from stored session backup
         const sessionBackup = sessionStorage.getItem('session_backup');
         if (sessionBackup) {
           try {
             const backup = JSON.parse(sessionBackup);
             console.log('Attempting session recovery for user:', backup.user_id);
-            // Force session refresh
-            await supabase.auth.getSession();
+            
+            // Check if backup is not expired
+            if (backup.expires_at && backup.expires_at > Date.now() / 1000) {
+              console.log('Session backup is still valid, attempting recovery...');
+              // Force a new session check
+              await supabase.auth.getSession();
+            } else {
+              console.log('Session backup has expired');
+              sessionStorage.removeItem('session_backup');
+            }
           } catch (parseError) {
             console.error('Session backup parse error:', parseError);
           }
         }
-      } else {
-        console.log('Session refreshed successfully');
+        return { data: null, error: sessionError };
       }
-      return { data, error };
+      
+      if (currentSession?.session) {
+        console.log('AuthContext: Current session found, updating state');
+        setSession(currentSession.session);
+        setUser(currentSession.session.user);
+        
+        // Fetch updated user profile
+        if (currentSession.session.user) {
+          await fetchUserProfile(currentSession.session.user.id);
+        }
+        
+        return { data: currentSession, error: null };
+      } else {
+        // Try to refresh the session
+        console.log('AuthContext: No current session, attempting refresh...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          console.error('AuthContext: Error refreshing session:', refreshError);
+          return { data: null, error: refreshError };
+        }
+        
+        if (refreshData?.session) {
+          console.log('AuthContext: Session refreshed successfully');
+          setSession(refreshData.session);
+          setUser(refreshData.session.user);
+          
+          // Fetch updated user profile
+          if (refreshData.session.user) {
+            await fetchUserProfile(refreshData.session.user.id);
+          }
+        }
+        
+        return { data: refreshData, error: refreshError };
+      }
     } catch (error) {
-      console.error('Session refresh error:', error);
+      console.error('AuthContext: Session refresh error:', error);
       return { data: null, error };
     }
   };

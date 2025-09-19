@@ -92,19 +92,26 @@ const Account = () => {
   // Handle payment success from URL callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment') === 'success') {
+    if (urlParams.get('payment_success') === 'true') {
       console.log('Payment success detected from URL');
-      // Small delay to ensure backend has processed
+      
+      // Show success toast
+      toast({
+        title: 'Welcome back!',
+        description: 'Your payment has been processed successfully. Your new plan is now active.',
+      });
+      
+      // Refresh data to show the new purchase
       setTimeout(() => {
         refetchOrders();
         refetchTransactions();
         refreshUserData();
-      }, 1000);
+      }, 500);
       
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [refetchOrders, refetchTransactions, refreshUserData]);
+  }, [refetchOrders, refetchTransactions, refreshUserData, toast]);
 
   const refreshData = async () => {
     setIsRefreshing(true);
@@ -364,7 +371,7 @@ const Account = () => {
                 </div>
               ) : orders && orders.length > 0 ? (
                 <div className="space-y-4">
-                  {orders.filter(order => order.status === 'completed').map((order) => (
+                  {orders.filter(order => order.status === 'paid' || order.status === 'completed').map((order) => (
                     <div key={order.id} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start">
                         <div>
@@ -375,6 +382,11 @@ const Account = () => {
                           <p className="text-sm text-muted-foreground">
                             Purchased on {new Date(order.created_at).toLocaleDateString()}
                           </p>
+                          {order.paypal_order_id && (
+                            <p className="text-xs text-muted-foreground">
+                              PayPal Order: {order.paypal_order_id}
+                            </p>
+                          )}
                         </div>
                         {getStatusBadge(order.status)}
                       </div>
