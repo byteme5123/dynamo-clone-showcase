@@ -120,6 +120,26 @@ serve(async (req) => {
 
     console.log('PayPal access token obtained for capture');
 
+    // Check if order was already processed
+    const { data: existingOrder } = await supabaseService
+      .from('orders')
+      .select('status, paypal_capture_id')
+      .eq('paypal_order_id', orderId)
+      .single();
+
+    if (existingOrder && existingOrder.status === 'completed') {
+      console.log('Order already completed:', orderId);
+      return new Response(JSON.stringify({
+        success: true,
+        orderId: existingOrder.paypal_capture_id || orderId,
+        status: 'COMPLETED',
+        message: 'Payment already processed successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     // Capture the PayPal order
     const captureResponse = await fetch(`${baseUrl}/v2/checkout/orders/${orderId}/capture`, {
       method: 'POST',
@@ -132,6 +152,65 @@ serve(async (req) => {
     if (!captureResponse.ok) {
       const errorText = await captureResponse.text();
       console.error('PayPal capture failed:', errorText);
+      
+      // Handle specific PayPal errors
+      let errorResponse;
+      try {
+        errorResponse = JSON.parse(errorText);
+      } catch {
+        errorResponse = { message: errorText };
+      }
+      
+      // Handle max attempts exceeded - check if payment was actually processed
+      if (errorResponse.details?.some((detail: any) => detail.issue === 'MAX_NUMBER_OF_PAYMENT_ATTEMPTS_EXCEEDED')) {
+        console.log('Max attempts exceeded, checking if order was completed elsewhere');
+        
+        // Try to get order details from PayPal to check actual status
+        const orderDetailsResponse = await fetch(`${baseUrl}/v2/checkout/orders/${orderId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+        
+        if (orderDetailsResponse.ok) {
+          const orderDetails = await orderDetailsResponse.json();
+          console.log('PayPal order details:', orderDetails);
+          
+          if (orderDetails.status === 'COMPLETED') {
+            // Order was completed, update our database
+            const updateData: any = {
+              status: 'completed',
+              paypal_capture_id: orderDetails.id,
+              captured_at: new Date().toISOString(),
+            };
+            
+            await supabaseService.from('orders').update(updateData).eq('paypal_order_id', orderId);
+            
+            return new Response(JSON.stringify({
+              success: true,
+              orderId: orderDetails.id,
+              status: 'COMPLETED',
+              message: 'Payment was already processed successfully'
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+          }
+        }
+        
+        // If we can't verify the status, return a specific error for max attempts
+        return new Response(JSON.stringify({ 
+          error: 'Payment verification failed due to multiple attempts. Please check your account or contact support.',
+          success: false,
+          errorCode: 'MAX_ATTEMPTS_EXCEEDED'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      
       return new Response(JSON.stringify({ 
         error: 'Payment capture failed',
         success: false 

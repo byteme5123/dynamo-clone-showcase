@@ -34,7 +34,19 @@ const PaymentSuccess = () => {
         return;
       }
 
+      // Prevent duplicate capture attempts for the same order
+      const captureKey = `payment_capture_${token}`;
+      if (sessionStorage.getItem(captureKey)) {
+        console.log('PaymentSuccess: Capture already attempted for this order');
+        setError('Payment is being processed. Please check your account or contact support if this persists.');
+        setProcessing(false);
+        return;
+      }
+
       try {
+        // Mark this order as being captured
+        sessionStorage.setItem(captureKey, 'true');
+        
         // Ensure session is restored before payment capture
         if (!session && !loading) {
           console.log('PaymentSuccess: Restoring session before capture');
@@ -58,6 +70,7 @@ const PaymentSuccess = () => {
           });
           
           sessionStorage.removeItem('payment_tracking');
+          sessionStorage.removeItem(captureKey);
           
           setTimeout(() => {
             navigate('/account?payment_success=true', { replace: true });
@@ -65,22 +78,38 @@ const PaymentSuccess = () => {
           
         } else {
           console.error('PaymentSuccess: Payment capture failed', result);
-          setError('Payment verification failed. Please contact support with your order details.');
+          
+          // Handle specific error cases
+          if (result.errorCode === 'MAX_ATTEMPTS_EXCEEDED') {
+            setError('This payment has been attempted multiple times. Please check your account or contact support to verify if your payment was processed.');
+          } else {
+            setError('Payment verification failed. Please contact support with your order details.');
+          }
           
           toast({
             title: 'Payment Processing Issue',
-            description: 'Your payment may have been processed, but verification failed. Please check your account or contact support.',
+            description: result.errorCode === 'MAX_ATTEMPTS_EXCEEDED' 
+              ? 'Payment verification failed due to multiple attempts. Please check your account.'
+              : 'Your payment may have been processed, but verification failed. Please check your account or contact support.',
             variant: 'destructive',
           });
         }
         
       } catch (error: any) {
         console.error('PaymentSuccess: Error during capture', error);
-        setError('An error occurred while processing your payment. Please contact support.');
+        
+        // Handle specific error messages
+        if (error.message?.includes('MAX_ATTEMPTS_EXCEEDED') || error.message?.includes('multiple attempts')) {
+          setError('This payment has been attempted multiple times. Please check your account or contact support to verify if your payment was processed.');
+        } else {
+          setError('An error occurred while processing your payment. Please contact support.');
+        }
         
         toast({
           title: 'Payment Processing Error',
-          description: 'There was an issue verifying your payment. Please contact support.',
+          description: error.message?.includes('multiple attempts') 
+            ? 'Payment verification failed due to multiple attempts. Please check your account.'
+            : 'There was an issue verifying your payment. Please contact support.',
           variant: 'destructive',
         });
       } finally {
@@ -88,8 +117,11 @@ const PaymentSuccess = () => {
       }
     };
 
-    capturePayment();
-  }, [token, payerID, sessionToken, session, loading, refreshSession, captureOrderMutation, navigate, toast]);
+    // Only run once when component mounts and required params are available
+    if (token && payerID && !processing) {
+      capturePayment();
+    }
+  }, []);
 
   // Show processing state
   if (processing) {

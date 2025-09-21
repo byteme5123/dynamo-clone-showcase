@@ -72,29 +72,14 @@ export const useCapturePayPalOrder = () => {
         } : {},
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('PayPal capture error:', error);
+        throw new Error(error.message || 'Failed to capture PayPal order');
+      }
+      
       return data;
     },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: 'Payment Successful',
-          description: 'Your payment has been processed successfully!',
-        });
-      } else {
-        toast({
-          title: 'Payment Failed',
-          description: 'Your payment could not be processed. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Payment Error',
-        description: error.message || 'Failed to capture PayPal order',
-        variant: 'destructive',
-      });
-    },
+    // Remove onSuccess and onError to let PaymentSuccess handle the UI feedback
+    retry: false, // Don't retry automatically to prevent duplicate attempts
   });
 };
