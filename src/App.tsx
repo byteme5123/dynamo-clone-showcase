@@ -6,8 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { useSessionPersistence } from "@/hooks/useSessionPersistence";
-import SessionWarning from "@/components/SessionWarning";
+import SessionManager from "@/components/SessionManager";
 import SessionTracker from "@/components/SessionTracker";
 import Index from "./pages/Index";
 import About from "./pages/About";
@@ -80,10 +79,10 @@ const App = () => (
         <LanguageProvider>
           <AuthProvider>
             <TooltipProvider>
+              <SessionManager />
+              <SessionTracker />
               <Toaster />
               <Sonner />
-              <SessionWarning />
-              <SessionTracker />
               <BrowserRouter>
                 <Routes>
                   {/* Public Routes */}

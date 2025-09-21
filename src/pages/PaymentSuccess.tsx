@@ -23,12 +23,10 @@ const PaymentSuccess = () => {
   const payerID = searchParams.get('PayerID');
   const sessionToken = searchParams.get('session_token');
 
-  // Simplified payment capture with better error handling
   useEffect(() => {
     const capturePayment = async () => {
       console.log('PaymentSuccess: Starting capture process', { token, payerID, sessionToken });
       
-      // Check if we have the required PayPal parameters
       if (!token || !payerID) {
         console.error('PaymentSuccess: Missing required PayPal parameters', { token, payerID });
         setError('Invalid payment information. Please contact support.');
@@ -37,17 +35,15 @@ const PaymentSuccess = () => {
       }
 
       try {
-        // If we have a session token but no current session, try to restore it
-        if (sessionToken && !session && !loading) {
-          console.log('PaymentSuccess: Attempting session restoration');
+        // Ensure session is restored before payment capture
+        if (!session && !loading) {
+          console.log('PaymentSuccess: Restoring session before capture');
           await refreshSession();
-          // Give some time for session to be restored
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         console.log('PaymentSuccess: Capturing PayPal order', token);
         
-        // Capture the payment
         const result = await captureOrderMutation.mutateAsync({ orderId: token });
         console.log('PaymentSuccess: Capture result', result);
         
@@ -61,10 +57,8 @@ const PaymentSuccess = () => {
             description: 'Your plan has been activated and a confirmation email has been sent.',
           });
           
-          // Clean up payment tracking data
           sessionStorage.removeItem('payment_tracking');
           
-          // Redirect to account page after a short delay
           setTimeout(() => {
             navigate('/account?payment_success=true', { replace: true });
           }, 2000);
@@ -94,7 +88,6 @@ const PaymentSuccess = () => {
       }
     };
 
-    // Start capture process immediately
     capturePayment();
   }, [token, payerID, sessionToken, session, loading, refreshSession, captureOrderMutation, navigate, toast]);
 

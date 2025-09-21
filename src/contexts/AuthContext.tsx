@@ -100,33 +100,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state change:', event, session?.user?.email);
         
         if (!mounted) return;
+        
+        // Clear any stale session data on sign out
+        if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('sb-tvglfslhgmoimrbutnof-auth-token');
+          sessionStorage.clear();
+        }
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile and admin data in parallel
-          try {
-            const [profileData, adminData] = await Promise.all([
-              fetchUserProfile(session.user.id),
-              fetchAdminUser(session.user.id)
-            ]);
-            
+          // Defer profile fetching to avoid blocking auth state
+          setTimeout(() => {
             if (mounted) {
-              setUserProfile(profileData);
-              setAdminUser(adminData);
+              Promise.all([
+                fetchUserProfile(session.user.id),
+                fetchAdminUser(session.user.id)
+              ]).then(([profileData, adminData]) => {
+                if (mounted) {
+                  setUserProfile(profileData);
+                  setAdminUser(adminData);
+                }
+              }).catch(error => {
+                console.error('Error fetching user data:', error);
+                if (mounted) {
+                  setUserProfile(null);
+                  setAdminUser(null);
+                }
+              });
             }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-            if (mounted) {
-              setUserProfile(null);
-              setAdminUser(null);
-            }
-          }
+          }, 0);
         } else {
           setUserProfile(null);
           setAdminUser(null);
@@ -273,16 +281,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserProfile(null);
       setAdminUser(null);
       
-      // Clear any session storage
+      // Clear all storage
       sessionStorage.clear();
+      localStorage.removeItem('sb-tvglfslhgmoimrbutnof-auth-token');
       
-      // Sign out from Supabase (this will also trigger onAuthStateChange)
-      const { error } = await supabase.auth.signOut();
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       
       if (error) {
         console.error('Sign out error:', error);
       } else {
         console.log('Successfully signed out');
+        // Force page reload to clear any cached state
+        window.location.reload();
       }
     } catch (error) {
       console.error('Sign out error:', error);

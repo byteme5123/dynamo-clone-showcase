@@ -5,28 +5,23 @@ export const useSessionPersistence = () => {
   const { user, session, loading } = useAuth();
 
   useEffect(() => {
-    // Log session persistence status for debugging
+    // Simple session logging without excessive storage operations
     if (!loading) {
       const sessionStatus = session ? 'active' : 'none';
       const userStatus = user ? 'authenticated' : 'not authenticated';
       
-      console.log(`Session persistence check - Session: ${sessionStatus}, User: ${userStatus}`);
-      console.log(`Session details:`, session ? {
-        user_id: session.user?.id,
-        expires_at: session.expires_at,
-        access_token: session.access_token ? 'present' : 'missing'
-      } : 'no session');
+      console.log(`Session: ${sessionStatus}, User: ${userStatus}`);
       
-      // Store session backup in sessionStorage for recovery scenarios
-      if (user && session) {
-        sessionStorage.setItem('session_backup', JSON.stringify({
-          user_id: user.id,
-          email: user.email,
-          timestamp: Date.now(),
-          expires_at: session.expires_at
-        }));
+      // Only store essential session info, avoid conflicts with Supabase's storage
+      if (user && session && session.expires_at) {
+        const expiryTime = session.expires_at * 1000;
+        if (expiryTime > Date.now()) {
+          sessionStorage.setItem('user_session_valid', 'true');
+        } else {
+          sessionStorage.removeItem('user_session_valid');
+        }
       } else {
-        sessionStorage.removeItem('session_backup');
+        sessionStorage.removeItem('user_session_valid');
       }
     }
   }, [user, session, loading]);
