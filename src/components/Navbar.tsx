@@ -20,7 +20,15 @@ const Navbar = () => {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const settings = useHomepageSettings();
-  const { isAuthenticated } = useAuth();
+  
+  // Safe auth hook usage with fallback
+  let isAuthenticated = false;
+  try {
+    const auth = useAuth();
+    isAuthenticated = auth.isAuthenticated;
+  } catch (error) {
+    console.warn('Navbar: AuthProvider not available, using fallback');
+  }
 
   const navItems = [
     { name: 'Home', href: '/' },

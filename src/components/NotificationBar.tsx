@@ -4,7 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const NotificationBar = () => {
   const settings = useHomepageSettings();
-  const { isAuthenticated } = useAuth();
+  
+  // Safe auth hook usage with fallback
+  let isAuthenticated = false;
+  try {
+    const auth = useAuth();
+    isAuthenticated = auth.isAuthenticated;
+  } catch (error) {
+    console.warn('NotificationBar: AuthProvider not available, using fallback');
+  }
 
   // Fallback values if settings aren't loaded yet
   const notificationText = settings?.notificationText || 'Get up to 25% off when you purchase a 3 month plan!';
