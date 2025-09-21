@@ -430,6 +430,36 @@ export const useAuth = () => {
   return context;
 };
 
+// Safe version that doesn't throw errors
+export const useSafeAuth = () => {
+  const context = useContext(AuthContext);
+  
+  if (!context) {
+    // Return safe fallback values when AuthProvider is not available
+    return {
+      user: null,
+      session: null,
+      userProfile: null,
+      loading: false,
+      signUp: async () => ({ error: { message: 'Auth not available' } }),
+      signIn: async () => ({ error: { message: 'Auth not available' } }),
+      signOut: async () => {},
+      refreshSession: async () => ({ data: null, error: { message: 'Auth not available' } }),
+      refreshUserData: async () => {},
+      verifyEmail: async () => ({ error: { message: 'Auth not available' } }),
+      resendVerification: async () => ({ error: { message: 'Auth not available' } }),
+      isAuthenticated: false,
+      adminUser: null,
+      isAdmin: false,
+      isSuperAdmin: false,
+      adminSignIn: async () => ({ error: { message: 'Auth not available' } }),
+      adminSignOut: async () => {},
+    } as AuthContextType;
+  }
+  
+  return context;
+};
+
 // Backward compatibility hooks
 export const useUserAuth = () => {
   const { user, loading, signUp, signIn, signOut, isAuthenticated, refreshUserData } = useAuth();

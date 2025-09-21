@@ -11,7 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSafeAuth } from '@/contexts/AuthContext';
 import logoImage from '@/assets/dynamo-wireless-logo.png';
 
 const Navbar = () => {
@@ -20,15 +20,7 @@ const Navbar = () => {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const settings = useHomepageSettings();
-  
-  // Safe auth hook usage with fallback
-  let isAuthenticated = false;
-  try {
-    const auth = useAuth();
-    isAuthenticated = auth.isAuthenticated;
-  } catch (error) {
-    console.warn('Navbar: AuthProvider not available, using fallback');
-  }
+  const { isAuthenticated } = useSafeAuth();
 
   const navItems = [
     { name: 'Home', href: '/' },

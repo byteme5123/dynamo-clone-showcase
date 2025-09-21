@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSafeAuth } from '@/contexts/AuthContext';
 
 export const useSessionPersistence = () => {
-  const { user, session, loading } = useAuth();
+  const { user, session, loading } = useSafeAuth();
 
   useEffect(() => {
     // Simple session logging without excessive storage operations

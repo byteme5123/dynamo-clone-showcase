@@ -1,18 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSafeAuth } from '@/contexts/AuthContext';
 
 const NotificationBar = () => {
   const settings = useHomepageSettings();
-  
-  // Safe auth hook usage with fallback
-  let isAuthenticated = false;
-  try {
-    const auth = useAuth();
-    isAuthenticated = auth.isAuthenticated;
-  } catch (error) {
-    console.warn('NotificationBar: AuthProvider not available, using fallback');
-  }
+  const { isAuthenticated } = useSafeAuth();
 
   // Fallback values if settings aren't loaded yet
   const notificationText = settings?.notificationText || 'Get up to 25% off when you purchase a 3 month plan!';
