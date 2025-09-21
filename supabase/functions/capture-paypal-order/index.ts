@@ -17,38 +17,71 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { orderId } = await req.json();
+    const supabaseService = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Capture PayPal order request:', requestBody);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid request body' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    const { orderId } = requestBody;
+    
+    if (!orderId) {
+      return new Response(JSON.stringify({ 
+        error: 'Missing orderId parameter' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
     console.log('Capturing PayPal order:', orderId);
 
-    // Get user info from JWT token if provided
-    let authenticatedUserId = null;
-    
+    // Get user from JWT token if provided
     const authHeader = req.headers.get('Authorization');
+    let userId = null;
+    
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      console.log('JWT token provided for capture');
-      
-      // Get user from JWT token
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
-      
-      if (user && !userError) {
-        authenticatedUserId = user.id;
-        console.log('Authenticated user for capture:', authenticatedUserId);
-      } else {
-        console.warn('Invalid JWT token for capture:', userError);
+      try {
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+        if (!userError && user) {
+          userId = user.id;
+          console.log('User authenticated for capture:', userId);
+        }
+      } catch (error) {
+        console.warn('Could not authenticate user for capture:', error);
       }
-    } else {
-      console.warn('No JWT token provided for capture');
     }
 
     // Get PayPal settings
-    const { data: paypalSettings, error: settingsError } = await supabaseClient
+    const { data: paypalSettings, error: settingsError } = await supabaseService
       .from('paypal_settings')
       .select('*')
       .eq('is_active', true)
       .single();
 
     if (settingsError || !paypalSettings) {
-      throw new Error('PayPal settings not found');
+      console.error('PayPal settings not found:', settingsError);
+      return new Response(JSON.stringify({ 
+        error: 'PayPal configuration not found' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     const clientId = paypalSettings.environment === 'sandbox' 
@@ -62,7 +95,7 @@ serve(async (req) => {
       ? 'https://api-m.sandbox.paypal.com' 
       : 'https://api-m.paypal.com';
 
-    // Get access token
+    // Get PayPal access token
     const authResponse = await fetch(`${baseUrl}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
@@ -72,10 +105,22 @@ serve(async (req) => {
       body: 'grant_type=client_credentials',
     });
 
+    if (!authResponse.ok) {
+      console.error('PayPal auth failed:', await authResponse.text());
+      return new Response(JSON.stringify({ 
+        error: 'PayPal authentication failed' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
     const authData = await authResponse.json();
     const accessToken = authData.access_token;
 
-    // Capture the order
+    console.log('PayPal access token obtained for capture');
+
+    // Capture the PayPal order
     const captureResponse = await fetch(`${baseUrl}/v2/checkout/orders/${orderId}/capture`, {
       method: 'POST',
       headers: {
@@ -84,133 +129,98 @@ serve(async (req) => {
       },
     });
 
+    if (!captureResponse.ok) {
+      const errorText = await captureResponse.text();
+      console.error('PayPal capture failed:', errorText);
+      return new Response(JSON.stringify({ 
+        error: 'Payment capture failed',
+        success: false 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
     const captureResult = await captureResponse.json();
-    console.log('PayPal order captured:', captureResult);
+    console.log('PayPal order captured successfully:', captureResult.id);
 
-    // Update order status in database using service role key
-    const paymentId = captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id;
-    const status = captureResult.status === 'COMPLETED' ? 'paid' : 'failed';
+    // Update order status in database
+    const updateData: any = {
+      status: captureResult.status === 'COMPLETED' ? 'completed' : 'failed',
+      paypal_capture_id: captureResult.id,
+      captured_at: new Date().toISOString(),
+    };
 
-    const supabaseService = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
-    );
-
-    // Get order details first
-    const { data: order, error: orderError } = await supabaseService
-      .from('orders')
-      .select('user_id, plan_id, amount, customer_email, customer_name')
+    // If we have user context, update with user validation
+    let updateQuery = supabaseService.from('orders').update(updateData);
+    
+    if (userId) {
+      updateQuery = updateQuery.eq('user_id', userId);
+    }
+    
+    const { error: updateError, data: updatedOrder } = await updateQuery
       .eq('paypal_order_id', orderId)
+      .select()
       .single();
 
-    if (orderError) {
-      console.error('Error finding order:', orderError);
-      throw new Error('Order not found');
-    }
-
-    console.log('Found order:', { 
-      orderId, 
-      user_id: order?.user_id, 
-      plan_id: order?.plan_id, 
-      amount: order?.amount 
-    });
-
-    // Validate user association
-    if (authenticatedUserId && order?.user_id && authenticatedUserId !== order.user_id) {
-      console.error('User mismatch:', { authenticatedUserId, orderUserId: order.user_id });
-      throw new Error('Unauthorized: Order belongs to different user');
-    }
-
-    // If we have an authenticated user but order has null user_id, update it
-    if (authenticatedUserId && !order?.user_id) {
-      console.log('Updating order with authenticated user_id:', authenticatedUserId);
-      await supabaseService
-        .from('orders')
-        .update({ user_id: authenticatedUserId })
-        .eq('paypal_order_id', orderId);
-      
-      // Update local order object
-      order.user_id = authenticatedUserId;
-    }
-
-    // Update order status
-    const { error: updateError } = await supabaseService
-      .from('orders')
-      .update({
-        paypal_payment_id: paymentId,
-        status: status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('paypal_order_id', orderId);
-
     if (updateError) {
-      console.error('Error updating order:', updateError);
+      console.error('Error updating order status:', updateError);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to update order status',
+        success: false 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
-    // Create transaction record if payment successful (check for duplicates first)
-    if (status === 'paid' && order) {
-      const finalUserId = order.user_id || authenticatedUserId;
-      
-      if (!finalUserId) {
-        console.error('Cannot create transaction: no user_id available');
+    console.log('Order status updated successfully');
+
+    // Create transaction record if payment was successful
+    if (captureResult.status === 'COMPLETED' && updatedOrder) {
+      const { error: transactionError } = await supabaseService
+        .from('transactions')
+        .insert({
+          user_id: updatedOrder.user_id,
+          order_id: updatedOrder.id,
+          paypal_transaction_id: captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id,
+          amount: updatedOrder.amount,
+          currency: updatedOrder.currency,
+          status: 'completed',
+          transaction_type: 'payment',
+        });
+
+      if (transactionError) {
+        console.error('Error creating transaction record:', transactionError);
       } else {
-        // Check if transaction already exists for this PayPal order
-        const { data: existingTransaction } = await supabaseService
-          .from('transactions')
-          .select('id')
-          .eq('paypal_order_id', orderId)
-          .eq('user_id', finalUserId)
-          .maybeSingle();
+        console.log('Transaction record created successfully');
+      }
 
-        if (existingTransaction) {
-          console.log('Transaction already exists for PayPal order:', orderId);
-        } else {
-          console.log('Creating transaction for user:', finalUserId);
-          
-          const { error: transactionError } = await supabaseService
-            .from('transactions')
-            .insert({
-              user_id: finalUserId,
-              plan_id: order.plan_id,
-              amount: order.amount,
-              paypal_transaction_id: paymentId,
-              paypal_order_id: orderId,
-              status: 'completed',
-              payment_method: 'PayPal',
-            });
-
-          if (transactionError) {
-            console.error('Error creating transaction:', transactionError);
-          } else {
-            console.log('Transaction created successfully for user:', finalUserId);
-            
-            // Send payment receipt email
-            try {
-              await supabaseService.functions.invoke('send-payment-receipt', {
-                body: {
-                  email: order.customer_email,
-                  customerName: order.customer_name,
-                  orderId: orderId,
-                  amount: order.amount,
-                  planId: order.plan_id,
-                  paymentId: paymentId
-                }
-              });
-              console.log('Payment receipt email sent');
-            } catch (emailError) {
-              console.error('Failed to send payment receipt email:', emailError);
-            }
-          }
-        }
+      // Send payment receipt email
+      try {
+        await supabaseService.functions.invoke('send-payment-receipt', {
+          body: {
+            orderId: updatedOrder.id,
+            customerEmail: updatedOrder.customer_email,
+            customerName: updatedOrder.customer_name,
+            planName: captureResult.purchase_units?.[0]?.description || 'Mobile Plan',
+            amount: updatedOrder.amount,
+            currency: updatedOrder.currency,
+          },
+        });
+      } catch (emailError) {
+        console.error('Error sending receipt email:', emailError);
+        // Don't fail the whole operation if email fails
       }
     }
 
+    const success = captureResult.status === 'COMPLETED';
+    
     return new Response(JSON.stringify({
-      success: status === 'paid',
-      paymentId: paymentId,
-      status: status,
-      details: captureResult,
+      success,
+      orderId: captureResult.id,
+      status: captureResult.status,
+      message: success ? 'Payment completed successfully' : 'Payment processing failed'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
@@ -219,7 +229,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error capturing PayPal order:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to capture PayPal order' 
+      error: error.message || 'Failed to capture PayPal order',
+      success: false 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
