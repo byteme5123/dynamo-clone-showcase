@@ -279,12 +279,12 @@ serve(async (req) => {
       try {
         await supabaseService.functions.invoke('send-payment-receipt', {
           body: {
-            orderId: updatedOrder.id,
-            customerEmail: updatedOrder.customer_email,
+            email: updatedOrder.customer_email,
             customerName: updatedOrder.customer_name,
-            planName: captureResult.purchase_units?.[0]?.description || 'Mobile Plan',
+            orderId: updatedOrder.id,
             amount: updatedOrder.amount,
-            currency: updatedOrder.currency,
+            planId: updatedOrder.plan_id,
+            paymentId: captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id || captureResult.id,
           },
         });
       } catch (emailError) {

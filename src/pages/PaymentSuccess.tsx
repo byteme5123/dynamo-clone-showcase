@@ -72,9 +72,25 @@ const PaymentSuccess = () => {
           sessionStorage.removeItem('payment_tracking');
           sessionStorage.removeItem(captureKey);
           
-          setTimeout(() => {
-            navigate('/account?payment_success=true', { replace: true });
-          }, 2000);
+          // Send message to parent window (original tab) if opened in popup
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({
+              type: 'PAYPAL_PAYMENT_SUCCESS',
+              orderId: token,
+              paymentDetails: result
+            }, window.location.origin);
+            
+            // Close this popup and redirect parent
+            setTimeout(() => {
+              window.opener.location.href = '/account?payment_success=true';
+              window.close();
+            }, 1500);
+          } else {
+            // Regular redirect if not in popup
+            setTimeout(() => {
+              navigate('/account?payment_success=true', { replace: true });
+            }, 2000);
+          }
           
         } else {
           console.error('PaymentSuccess: Payment capture failed', result);
@@ -132,6 +148,15 @@ const PaymentSuccess = () => {
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
             <p className="text-muted-foreground mb-2">Processing your payment...</p>
             <p className="text-sm text-muted-foreground">Please don't close this window</p>
+            
+            {/* Check if opened in popup and show appropriate message */}
+            {window.opener && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  This window will close automatically once payment is processed.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

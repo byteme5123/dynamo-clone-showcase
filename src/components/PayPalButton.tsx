@@ -63,8 +63,56 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
           userId: user.id
         }));
         
-        // Redirect to PayPal in same window for better mobile experience
-        window.location.href = result.approvalUrl;
+        // Open PayPal in new tab as requested
+        const paypalWindow = window.open(result.approvalUrl, '_blank', 'width=500,height=700,scrollbars=yes,resizable=yes');
+        
+        // Focus the new window
+        if (paypalWindow) {
+          paypalWindow.focus();
+          
+          // Listen for payment success messages from popup
+          const handleMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+            
+            if (event.data.type === 'PAYPAL_PAYMENT_SUCCESS') {
+              console.log('Payment success received in main window:', event.data);
+              toast({
+                title: 'Payment Successful!',
+                description: 'Your payment has been processed. Redirecting to your account...',
+              });
+              
+              // Clean up
+              window.removeEventListener('message', handleMessage);
+              
+              // Redirect after a short delay
+              setTimeout(() => {
+                window.location.href = '/account?payment_success=true';
+              }, 1500);
+            }
+          };
+          
+          window.addEventListener('message', handleMessage);
+          
+          // Clean up if popup is closed without completing payment
+          const checkClosed = setInterval(() => {
+            if (paypalWindow.closed) {
+              clearInterval(checkClosed);
+              window.removeEventListener('message', handleMessage);
+              setIsProcessing(false);
+            }
+          }, 1000);
+          
+        } else {
+          // Fallback if popup was blocked
+          toast({
+            title: 'Popup Blocked',
+            description: 'Please allow popups and try again, or manually open the PayPal link.',
+            variant: 'destructive',
+          });
+        }
+        
+        // Reset processing state since popup is now handling the flow
+        setIsProcessing(false);
       }
     } catch (error: any) {
       console.error('Payment error:', error);
