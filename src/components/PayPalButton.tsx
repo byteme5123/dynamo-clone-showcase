@@ -18,20 +18,30 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
   const { session, user } = useAuth();
   const { toast } = useToast();
 
-  const handlePayment = async () => {
+const handlePayment = async () => {
+    if (isProcessing || createOrderMutation.isPending) return; // Prevent double-click
+    
     setIsProcessing(true);
     
     try {
       console.log('Starting PayPal payment flow for plan:', planId);
       
-      // Check if user is authenticated using Supabase session
+      // Check if user is authenticated
       if (!session || !user) {
+        console.log('User not authenticated, redirecting to login');
         toast({
-          title: 'Authentication Required',
-          description: 'Please log in to make a purchase',
+          title: 'Login Required',
+          description: 'Please log in to purchase a plan',
           variant: 'destructive',
         });
-        setIsProcessing(false);
+        
+        // Store plan info and redirect to login
+        sessionStorage.setItem('redirect_after_login', window.location.pathname);
+        sessionStorage.setItem('pending_purchase', JSON.stringify({ planId, planName, amount }));
+        
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 1500);
         return;
       }
       
@@ -40,7 +50,8 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
       const returnUrl = `${currentUrl}/payment-success?session_token=${sessionToken}`;
       const cancelUrl = `${currentUrl}/payment-cancel?session_token=${sessionToken}`;
 
-      console.log('Creating PayPal order...');
+      console.log('Creating PayPal order with amount:', amount);
+      
       const result = await createOrderMutation.mutateAsync({
         planId,
         amount,
@@ -50,9 +61,9 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
       });
 
       if (result.approvalUrl) {
-        console.log('Redirecting to PayPal:', result.approvalUrl);
+        console.log('PayPal order created successfully, opening payment window');
         
-        // Store payment tracking info (Supabase handles session persistence automatically)
+        // Store payment tracking info
         sessionStorage.setItem('payment_tracking', JSON.stringify({
           orderId: result.orderId || result.id,
           planId,
@@ -63,62 +74,88 @@ const PayPalButton = ({ planId, amount, planName, className }: PayPalButtonProps
           userId: user.id
         }));
         
-        // Open PayPal in new tab as requested
-        const paypalWindow = window.open(result.approvalUrl, '_blank', 'width=500,height=700,scrollbars=yes,resizable=yes');
+        // Open PayPal in a new window/tab
+        const paypalWindow = window.open(
+          result.approvalUrl, 
+          'PayPal Payment',
+          'width=600,height=700,scrollbars=yes,resizable=yes'
+        );
         
-        // Focus the new window
         if (paypalWindow) {
           paypalWindow.focus();
           
-          // Listen for payment success messages from popup
+          toast({
+            title: 'Opening PayPal',
+            description: 'Complete your payment in the PayPal window',
+          });
+          
+          // Listen for payment completion from popup
           const handleMessage = (event: MessageEvent) => {
             if (event.origin !== window.location.origin) return;
             
             if (event.data.type === 'PAYPAL_PAYMENT_SUCCESS') {
-              console.log('Payment success received in main window:', event.data);
-              toast({
-                title: 'Payment Successful!',
-                description: 'Your payment has been processed. Redirecting to your account...',
-              });
-              
-              // Clean up
+              console.log('Payment completed successfully');
               window.removeEventListener('message', handleMessage);
               
-              // Redirect after a short delay
+              toast({
+                title: 'Payment Successful! 🎉',
+                description: 'Redirecting to your account...',
+              });
+              
               setTimeout(() => {
                 window.location.href = '/account?payment_success=true';
               }, 1500);
+            } else if (event.data.type === 'PAYPAL_PAYMENT_ERROR') {
+              console.error('Payment error:', event.data.error);
+              window.removeEventListener('message', handleMessage);
+              setIsProcessing(false);
             }
           };
           
           window.addEventListener('message', handleMessage);
           
-          // Clean up if popup is closed without completing payment
+          // Monitor popup closure
           const checkClosed = setInterval(() => {
             if (paypalWindow.closed) {
               clearInterval(checkClosed);
               window.removeEventListener('message', handleMessage);
               setIsProcessing(false);
+              
+              // Check if payment was completed
+              const tracking = sessionStorage.getItem('payment_tracking');
+              if (tracking) {
+                console.log('Popup closed, checking payment status...');
+                toast({
+                  title: 'Payment Window Closed',
+                  description: 'If you completed the payment, please check your account.',
+                });
+              }
             }
-          }, 1000);
+          }, 500);
+          
+          // Reset processing state since popup handles the rest
+          setIsProcessing(false);
           
         } else {
-          // Fallback if popup was blocked
+          // Popup blocked - fallback to same tab
+          console.warn('Popup blocked, redirecting in same tab');
           toast({
-            title: 'Popup Blocked',
-            description: 'Please allow popups and try again, or manually open the PayPal link.',
-            variant: 'destructive',
+            title: 'Opening PayPal',
+            description: 'Redirecting to PayPal for payment...',
           });
+          
+          setTimeout(() => {
+            window.location.href = result.approvalUrl;
+          }, 1000);
         }
-        
-        // Reset processing state since popup is now handling the flow
-        setIsProcessing(false);
+      } else {
+        throw new Error('Failed to create PayPal order');
       }
     } catch (error: any) {
-      console.error('Payment error:', error);
+      console.error('Payment initiation error:', error);
       toast({
         title: 'Payment Error',
-        description: error.message || 'Failed to start payment process',
+        description: error.message || 'Failed to start payment. Please try again.',
         variant: 'destructive',
       });
       setIsProcessing(false);
