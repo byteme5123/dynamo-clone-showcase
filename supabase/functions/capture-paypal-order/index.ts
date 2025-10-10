@@ -257,38 +257,68 @@ serve(async (req) => {
 
     // Create transaction record if payment was successful
     if (captureResult.status === 'COMPLETED' && updatedOrder) {
-      const { error: transactionError } = await supabaseService
+      const captureId = captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+      
+      const { data: newTransaction, error: transactionError } = await supabaseService
         .from('transactions')
         .insert({
           user_id: updatedOrder.user_id,
-          order_id: updatedOrder.id,
-          paypal_transaction_id: captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id,
+          plan_id: updatedOrder.plan_id,
+          paypal_order_id: orderId,
+          paypal_transaction_id: captureId,
           amount: updatedOrder.amount,
-          currency: updatedOrder.currency,
+          currency: updatedOrder.currency || 'USD',
           status: 'completed',
-          transaction_type: 'payment',
-        });
+          payment_method: 'PayPal',
+        })
+        .select()
+        .single();
 
       if (transactionError) {
         console.error('Error creating transaction record:', transactionError);
       } else {
-        console.log('Transaction record created successfully');
+        console.log('Transaction record created successfully:', newTransaction?.id);
+        
+        // Update user's profile with active plan
+        if (updatedOrder.user_id && updatedOrder.plan_id) {
+          const { error: profileError } = await supabaseService
+            .from('profiles')
+            .update({
+              current_plan_id: updatedOrder.plan_id,
+              plan_status: 'active',
+              plan_purchase_date: new Date().toISOString(),
+            })
+            .eq('id', updatedOrder.user_id);
+
+          if (profileError) {
+            console.error('Error updating user profile:', profileError);
+          } else {
+            console.log('User profile updated with active plan');
+          }
+        }
       }
 
-      // Send payment receipt email
+      // Send payment receipt email (non-blocking)
       try {
-        await supabaseService.functions.invoke('send-payment-receipt', {
+        console.log('Sending payment receipt email to:', updatedOrder.customer_email);
+        const emailResult = await supabaseService.functions.invoke('send-payment-receipt', {
           body: {
             email: updatedOrder.customer_email,
             customerName: updatedOrder.customer_name,
             orderId: updatedOrder.id,
             amount: updatedOrder.amount,
             planId: updatedOrder.plan_id,
-            paymentId: captureResult.purchase_units?.[0]?.payments?.captures?.[0]?.id || captureResult.id,
+            paymentId: captureId || captureResult.id,
           },
         });
+        
+        if (emailResult.error) {
+          console.error('Email sending failed:', emailResult.error);
+        } else {
+          console.log('Payment receipt email sent successfully');
+        }
       } catch (emailError) {
-        console.error('Error sending receipt email:', emailError);
+        console.error('Error invoking email function:', emailError);
         // Don't fail the whole operation if email fails
       }
     }
