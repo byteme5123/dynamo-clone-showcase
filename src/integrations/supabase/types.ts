@@ -56,36 +56,83 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          timestamp: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_logs_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_users: {
         Row: {
           created_at: string
+          failed_login_attempts: number | null
           first_name: string | null
           id: string
           is_active: boolean
+          last_ip_address: unknown | null
           last_login_at: string | null
           last_name: string | null
+          locked_until: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          failed_login_attempts?: number | null
           first_name?: string | null
           id?: string
           is_active?: boolean
+          last_ip_address?: unknown | null
           last_login_at?: string | null
           last_name?: string | null
+          locked_until?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          failed_login_attempts?: number | null
           first_name?: string | null
           id?: string
           is_active?: boolean
+          last_ip_address?: unknown | null
           last_login_at?: string | null
           last_name?: string | null
+          locked_until?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
@@ -242,47 +289,89 @@ export type Database = {
         }
         Relationships: []
       }
+      login_attempts: {
+        Row: {
+          email: string
+          failure_reason: string | null
+          id: string
+          ip_address: unknown
+          success: boolean
+          timestamp: string | null
+        }
+        Insert: {
+          email: string
+          failure_reason?: string | null
+          id?: string
+          ip_address: unknown
+          success?: boolean
+          timestamp?: string | null
+        }
+        Update: {
+          email?: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount: number
+          captured_at: string | null
           created_at: string
           currency: string | null
           customer_email: string | null
           customer_name: string | null
           id: string
+          ip_address: unknown | null
+          payment_attempts: number | null
+          paypal_capture_id: string | null
           paypal_order_id: string | null
           paypal_payment_id: string | null
           plan_id: string | null
           status: string
           updated_at: string
+          user_agent: string | null
           user_id: string | null
         }
         Insert: {
           amount: number
+          captured_at?: string | null
           created_at?: string
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
           id?: string
+          ip_address?: unknown | null
+          payment_attempts?: number | null
+          paypal_capture_id?: string | null
           paypal_order_id?: string | null
           paypal_payment_id?: string | null
           plan_id?: string | null
           status?: string
           updated_at?: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
           amount?: number
+          captured_at?: string | null
           created_at?: string
           currency?: string | null
           customer_email?: string | null
           customer_name?: string | null
           id?: string
+          ip_address?: unknown | null
+          payment_attempts?: number | null
+          paypal_capture_id?: string | null
           paypal_order_id?: string | null
           paypal_payment_id?: string | null
           plan_id?: string | null
           status?: string
           updated_at?: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -439,23 +528,32 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          failed_login_attempts: number | null
           first_name: string | null
           id: string
+          last_ip_address: unknown | null
           last_name: string | null
+          locked_until: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          failed_login_attempts?: number | null
           first_name?: string | null
           id: string
+          last_ip_address?: unknown | null
           last_name?: string | null
+          locked_until?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          failed_login_attempts?: number | null
           first_name?: string | null
           id?: string
+          last_ip_address?: unknown | null
           last_name?: string | null
+          locked_until?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -583,12 +681,14 @@ export type Database = {
           created_at: string | null
           currency: string | null
           id: string
+          ip_address: unknown | null
           payment_method: string | null
           paypal_order_id: string | null
           paypal_transaction_id: string | null
           plan_id: string | null
           status: string | null
           updated_at: string | null
+          user_agent: string | null
           user_id: string | null
         }
         Insert: {
@@ -596,12 +696,14 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          ip_address?: unknown | null
           payment_method?: string | null
           paypal_order_id?: string | null
           paypal_transaction_id?: string | null
           plan_id?: string | null
           status?: string | null
           updated_at?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
@@ -609,12 +711,14 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
+          ip_address?: unknown | null
           payment_method?: string | null
           paypal_order_id?: string | null
           paypal_transaction_id?: string | null
           plan_id?: string | null
           status?: string | null
           updated_at?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -654,6 +758,72 @@ export type Database = {
           id?: string
           key?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_audit_logs: {
+        Row: {
+          action: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          timestamp: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          fingerprint: string | null
+          id: string
+          ip_address: unknown | null
+          last_activity: string | null
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          fingerprint?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_activity?: string | null
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          fingerprint?: string | null
+          id?: string
+          ip_address?: unknown | null
+          last_activity?: string | null
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -710,6 +880,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_email: string
+          p_ip_address: unknown
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_audit_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_admin_user_by_id: {
         Args: { target_user_id: string }
         Returns: {
@@ -728,15 +915,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           created_at: string
+          failed_login_attempts: number | null
           first_name: string | null
           id: string
           is_active: boolean
+          last_ip_address: unknown | null
           last_login_at: string | null
           last_name: string | null
+          locked_until: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
         }
+      }
+      increment_failed_login_attempts: {
+        Args: { p_ip_address: unknown; p_user_id: string }
+        Returns: undefined
       }
       is_admin: {
         Args: Record<PropertyKey, never>
@@ -745,6 +939,23 @@ export type Database = {
       is_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      is_user_locked: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
+      log_login_attempt: {
+        Args: {
+          p_email: string
+          p_failure_reason?: string
+          p_ip_address: unknown
+          p_success: boolean
+        }
+        Returns: undefined
+      }
+      update_user_login_info: {
+        Args: { p_ip_address: unknown; p_user_agent: string; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
