@@ -8,6 +8,10 @@ interface UserProfile {
   last_name?: string;
   created_at: string;
   updated_at: string;
+  current_plan_id?: string | null;
+  plan_status?: string | null;
+  plan_purchase_date?: string | null;
+  plan_expiry_date?: string | null;
 }
 
 interface AdminUser {

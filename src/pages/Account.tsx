@@ -37,6 +37,24 @@ const Account = () => {
     }
   }, [userProfile]);
 
+  // Fetch user's current active plan
+  const { data: currentPlan, isLoading: planLoading, refetch: refetchPlan } = useQuery({
+    queryKey: ['current-plan', userProfile?.current_plan_id],
+    queryFn: async () => {
+      if (!userProfile?.current_plan_id) return null;
+      
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('id', userProfile.current_plan_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userProfile?.current_plan_id,
+  });
+
   // Fetch user's orders with proper caching
   const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['user-orders', user?.id],
@@ -45,7 +63,10 @@ const Account = () => {
       
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          plan:plans(*)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -61,7 +82,10 @@ const Account = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          plan:plans(*)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -78,7 +102,8 @@ const Account = () => {
       
       if (event.data.type === 'PAYPAL_PAYMENT_SUCCESS') {
         console.log('Payment success message received:', event.data);
-        // Refresh orders and transactions
+        // Refresh orders, transactions, and plan
+        refetchPlan();
         refetchOrders();
         refetchTransactions();
         refreshUserData();
@@ -87,7 +112,7 @@ const Account = () => {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [refetchOrders, refetchTransactions, refreshUserData]);
+  }, [refetchPlan, refetchOrders, refetchTransactions, refreshUserData]);
 
   // Handle payment success from URL callback
   useEffect(() => {
@@ -103,6 +128,7 @@ const Account = () => {
       
       // Refresh data to show the new purchase
       setTimeout(() => {
+        refetchPlan();
         refetchOrders();
         refetchTransactions();
         refreshUserData();
@@ -111,15 +137,17 @@ const Account = () => {
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [refetchOrders, refetchTransactions, refreshUserData, toast]);
+  }, [refetchPlan, refetchOrders, refetchTransactions, refreshUserData, toast]);
 
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
       await Promise.all([
         refreshUserData(),
+        refetchPlan(),
         refetchOrders(),
         refetchTransactions(),
+        queryClient.invalidateQueries({ queryKey: ['current-plan'] }),
         queryClient.invalidateQueries({ queryKey: ['user-orders'] }),
         queryClient.invalidateQueries({ queryKey: ['user-transactions'] }),
       ]);
@@ -359,9 +387,9 @@ const Account = () => {
         <TabsContent value="plans">
           <div className="space-y-4">
             {/* Recent Payment Success Banner */}
-            {orders && orders.some(order => 
-              (order.status === 'paid' || order.status === 'completed') && 
-              new Date(order.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
+            {transactions && transactions.some(txn => 
+              txn.status === 'completed' && 
+              new Date(txn.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
             ) && (
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-6">
                 <div className="flex items-start space-x-4">
@@ -394,55 +422,129 @@ const Account = () => {
               </div>
             )}
             
+            {/* Current Active Plan */}
+            {userProfile?.plan_status === 'active' && currentPlan && (
+              <Card className="border-2 border-primary">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl">Current Active Plan</CardTitle>
+                      <CardDescription>Your subscription details</CardDescription>
+                    </div>
+                    <Badge variant="default" className="text-sm">Active</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Plan Name</p>
+                      <p className="font-semibold text-lg">{currentPlan.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Price</p>
+                      <p className="font-semibold text-lg">
+                        ${currentPlan.price} {currentPlan.currency?.toUpperCase() || 'USD'}
+                      </p>
+                    </div>
+                    {currentPlan.data_limit && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Data Limit</p>
+                        <p className="font-medium">{currentPlan.data_limit}</p>
+                      </div>
+                    )}
+                    {currentPlan.validity_days && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Validity</p>
+                        <p className="font-medium">{currentPlan.validity_days} days</p>
+                      </div>
+                    )}
+                    {userProfile.plan_purchase_date && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Purchase Date</p>
+                        <p className="font-medium">
+                          {new Date(userProfile.plan_purchase_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+                    {userProfile.plan_expiry_date && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Expiry Date</p>
+                        <p className="font-medium">
+                          {new Date(userProfile.plan_expiry_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {currentPlan.description && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground mb-2">Plan Details</p>
+                      <p className="text-sm">{currentPlan.description}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
             <Card>
             <CardHeader>
-              <CardTitle>My Active Plans</CardTitle>
+              <CardTitle>Purchase History</CardTitle>
               <CardDescription>
-                Plans you've purchased and their current status
+                All your purchases and transactions
               </CardDescription>
             </CardHeader>
             <CardContent>
-          {ordersLoading ? (
+          {transactionsLoading ? (
                 <div className="flex items-center justify-center p-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : orders && orders.length > 0 ? (
+              ) : transactions && transactions.length > 0 ? (
                 <div className="space-y-4">
-                  {orders.filter(order => order.status === 'paid' || order.status === 'completed').map((order, index) => {
-                    const isRecent = new Date(order.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000; // Recent if within last 24 hours
+                  {transactions.filter(txn => txn.status === 'completed').map((txn) => {
+                    const isRecent = new Date(txn.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000;
                     return (
                       <div 
-                        key={order.id} 
+                        key={txn.id} 
                         className={`border rounded-lg p-4 ${isRecent ? 'border-green-200 bg-green-50' : ''}`}
                       >
                         <div className="flex justify-between items-start">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <p className="font-medium">
+                                {txn.plan?.name || 'Unknown Plan'}
+                              </p>
                               {isRecent && (
                                 <Badge variant="default" className="bg-green-600 text-white text-xs">
                                   NEW
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              ${order.amount} {order.currency?.toUpperCase() || 'USD'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Purchased on {new Date(order.created_at).toLocaleDateString()}
-                            </p>
-                            {order.paypal_order_id && (
-                              <p className="text-xs text-muted-foreground">
-                                PayPal Order: {order.paypal_order_id}
-                              </p>
-                            )}
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Amount: </span>
+                                <span className="font-medium">
+                                  ${txn.amount} {txn.currency?.toUpperCase() || 'USD'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Date: </span>
+                                <span>{new Date(txn.created_at).toLocaleDateString()}</span>
+                              </div>
+                              {txn.paypal_transaction_id && (
+                                <div className="col-span-2">
+                                  <span className="text-muted-foreground">Transaction ID: </span>
+                                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                                    {txn.paypal_transaction_id}
+                                  </code>
+                                </div>
+                              )}
+                            </div>
                             {isRecent && (
                               <div className="mt-2 p-2 bg-green-100 rounded text-sm text-green-800">
-                                ✅ Your new plan is active and ready to use!
+                                ✅ Payment completed successfully!
                               </div>
                             )}
                           </div>
-                          {getStatusBadge(order.status)}
+                          {getStatusBadge(txn.status)}
                         </div>
                       </div>
                     );
@@ -450,8 +552,8 @@ const Account = () => {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No active plans found</p>
+                  <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No purchases found</p>
                   <Link to="/plans">
                     <Button className="mt-4">Browse Plans</Button>
                   </Link>

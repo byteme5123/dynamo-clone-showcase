@@ -528,35 +528,55 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string | null
+          current_plan_id: string | null
           failed_login_attempts: number | null
           first_name: string | null
           id: string
           last_ip_address: unknown | null
           last_name: string | null
           locked_until: string | null
+          plan_expiry_date: string | null
+          plan_purchase_date: string | null
+          plan_status: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          current_plan_id?: string | null
           failed_login_attempts?: number | null
           first_name?: string | null
           id: string
           last_ip_address?: unknown | null
           last_name?: string | null
           locked_until?: string | null
+          plan_expiry_date?: string | null
+          plan_purchase_date?: string | null
+          plan_status?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          current_plan_id?: string | null
           failed_login_attempts?: number | null
           first_name?: string | null
           id?: string
           last_ip_address?: unknown | null
           last_name?: string | null
           locked_until?: string | null
+          plan_expiry_date?: string | null
+          plan_purchase_date?: string | null
+          plan_status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_plan_id_fkey"
+            columns: ["current_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       seo_settings: {
         Row: {
