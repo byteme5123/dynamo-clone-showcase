@@ -96,10 +96,13 @@ const Navbar = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-white border shadow-lg z-50">
                   <DropdownMenuItem asChild>
-                    <Link to="/account">My Account</Link>
+                    <Link to="/account">Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/plans">My Plans</Link>
+                    <Link to="/account">My Plans</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account">Payment History</Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

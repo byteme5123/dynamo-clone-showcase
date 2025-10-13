@@ -259,21 +259,15 @@ const PaymentSuccess = () => {
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild>
-                  <Link to="/account">
-                    <User className="w-4 h-4 mr-2" />
-                    View My Dashboard
+                  <Link to="/activate">
+                    <Download className="w-4 h-4 mr-2" />
+                    Activate SIM Card
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/activate-sim">
-                    <Download className="w-4 h-4 mr-2" />
-                    Activate SIM
-                  </Link>
-                </Button>
-                <Button asChild variant="secondary">
-                  <Link to="/plans">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Browse More Plans
+                  <Link to="/account">
+                    <User className="w-4 h-4 mr-2" />
+                    Go to Dashboard
                   </Link>
                 </Button>
               </div>

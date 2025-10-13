@@ -256,7 +256,7 @@ const Account = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile" className="flex items-center space-x-2">
             <User className="h-4 w-4" />
             <span>Profile</span>
@@ -264,10 +264,6 @@ const Account = () => {
           <TabsTrigger value="plans" className="flex items-center space-x-2">
             <Package className="h-4 w-4" />
             <span>My Plans</span>
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center space-x-2">
-            <Package className="h-4 w-4" />
-            <span>Order History</span>
           </TabsTrigger>
           <TabsTrigger value="payments" className="flex items-center space-x-2">
             <CreditCard className="h-4 w-4" />
@@ -406,7 +402,7 @@ const Account = () => {
                       Your payment has been processed and your plan is now active. A confirmation email with invoice has been sent to your registered email address.
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Link to="/activate-sim">
+                       <Link to="/activate">
                         <Button size="sm" variant="default">
                           Activate SIM Card
                         </Button>
@@ -562,49 +558,6 @@ const Account = () => {
             </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        {/* Orders Tab */}
-        <TabsContent value="orders">
-          <Card>
-            <CardHeader>
-              <CardTitle>Order History</CardTitle>
-              <CardDescription>
-                All your past orders and their status
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {ordersLoading ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : orders && orders.length > 0 ? (
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">Order #{order.id.slice(0, 8)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            ${order.amount} {order.currency?.toUpperCase() || 'USD'}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        {getStatusBadge(order.status)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No orders found</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Payment History Tab */}
