@@ -22,28 +22,28 @@ const PlanCard = ({ plan }: PlanCardProps) => {
   };
 
   return (
-    <div className={`bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative w-full h-full flex flex-col ${isFeatureExpanded ? 'z-40' : 'z-10'}`}>
+    <div className={`bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative w-full max-w-[320px] sm:max-w-[300px] lg:max-w-[280px] mx-auto ${isFeatureExpanded ? 'z-40' : 'z-10'}`}>
       {/* Plan Image */}
       <div className="relative overflow-hidden rounded-t-2xl">
         <img
           src={plan.image_url || newPlanImage}
           alt={`${plan.name} SIM card package`}
           loading="eager"
-          className="w-full h-64 object-cover transition-transform duration-300 hover:scale-105"
+          className="w-full h-56 sm:h-64 lg:h-72 object-cover transition-transform duration-300 hover:scale-105"
         />
       </div>
       
       {/* Plan Name & Price */}
-      <div className="px-6 py-4 border-b border-border/50">
-        <h3 className="text-xl font-bold font-poppins text-foreground text-center mb-2">
+      <div className="px-4 sm:px-6 py-4 border-b border-border/50">
+        <h3 className="text-lg sm:text-xl font-bold font-poppins text-foreground text-center mb-2">
           {plan.name}
         </h3>
       </div>
       
       {/* Plan Content */}
-      <div className="p-6 flex-1 flex flex-col">
+      <div className="p-4 sm:p-6">
         {/* Action Buttons */}
-        <div className="space-y-3 mt-auto">
+        <div className="space-y-3">
           {/* See Plan Features - Collapsible */}
           <Collapsible 
             open={isFeatureExpanded}
@@ -52,7 +52,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
             <CollapsibleTrigger asChild>
               <Button 
                 variant="outline" 
-                className="w-full justify-between font-poppins bg-background border-border text-foreground hover:bg-muted/50 rounded-lg text-base py-3 transition-colors duration-200"
+                className="w-full justify-between font-poppins bg-background border-border text-foreground hover:bg-muted/50 rounded-lg text-sm sm:text-base py-3 transition-colors duration-200"
                 onClick={toggleFeatures}
               >
                 See Plan Features
@@ -83,7 +83,7 @@ const PlanCard = ({ plan }: PlanCardProps) => {
 
           {/* Get the Plan Button */}
           <Button 
-            className="w-full font-bold font-poppins bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-all duration-200 hover:shadow-md py-3 text-base group"
+            className="w-full font-bold font-poppins bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-all duration-200 hover:shadow-md py-3 text-sm sm:text-base group"
             asChild
           >
             <Link to={`/plans/${plan.slug}`}>
