@@ -231,19 +231,19 @@ const PlanDetail = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {relatedPlans.map((relatedPlan) => (
-              <Card key={relatedPlan.id} className="group hover:shadow-lg transition-shadow">
+              <Card key={relatedPlan.id} className="group hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="p-4">
                   <img 
                     src={relatedPlan.image_url || '/lovable-uploads/3a841a06-7552-4eaa-98cd-086aa058a533.png'} 
                     alt={relatedPlan.name}
-                    className="w-full h-32 object-cover rounded-lg mb-3"
+                    className="w-full h-48 object-cover rounded-lg mb-3"
                   />
                   <CardTitle className="text-lg">{relatedPlan.name}</CardTitle>
-                  <CardDescription className="text-sm">
+                  <CardDescription className="text-sm line-clamp-2 min-h-[2.5rem]">
                     {relatedPlan.description}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
+                <CardContent className="p-4 pt-0 mt-auto">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-2xl font-bold">{relatedPlan.currency}{relatedPlan.price}</span>
                     <span className="text-muted-foreground">/month</span>
