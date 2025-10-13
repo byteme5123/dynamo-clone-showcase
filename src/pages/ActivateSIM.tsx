@@ -14,9 +14,11 @@ import PromoBanner from '@/components/PromoBanner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const personalInfoSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
+  email: z.string().email('Valid email is required'),
   areaCode: z.string().min(3, 'Area code is required'),
   simNumber: z.string().min(10, 'SIM number is required'),
   isESim: z.string(),
@@ -45,6 +47,7 @@ const ActivateSIM = () => {
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
       fullName: '',
+      email: '',
       areaCode: '',
       simNumber: '',
       isESim: 'no',
@@ -99,13 +102,39 @@ const ActivateSIM = () => {
       return;
     }
 
-    // Simulate API call
-    toast({
-      title: "Activation submitted!",
-      description: "Your SIM activation request has been received.",
-    });
-    
-    setCurrentStep(4);
+    if (!personalInfo) return;
+
+    try {
+      const { error } = await supabase
+        .from('activate_sim_requests')
+        .insert({
+          full_name: personalInfo.fullName,
+          email: personalInfo.email,
+          phone_number: personalInfo.areaCode,
+          sim_card_number: personalInfo.simNumber,
+          plan_preference: portInfo?.carrierProvider || null,
+          additional_notes: portInfo ? 
+            `Port from ${portInfo.carrierProvider}\nAccount: ${portInfo.accountNumber}\nPhone: ${portInfo.telephoneNumber}` : 
+            null,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Activation submitted!",
+        description: "Your SIM activation request has been received.",
+      });
+      
+      setCurrentStep(4);
+    } catch (error) {
+      console.error('Error submitting activation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit activation request. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const goToStep = (step: number) => {
@@ -223,6 +252,20 @@ const ActivateSIM = () => {
                             <FormLabel>Full Name</FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your full name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={personalForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email Address</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="Enter your email" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
