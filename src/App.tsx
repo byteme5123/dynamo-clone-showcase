@@ -1,3 +1,4 @@
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -74,71 +75,73 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <SessionManager />
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <SessionTracker />
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/wireless-pbx" element={<WirelessPBX />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/plans/:slug" element={<PlanDetail />} />
-              <Route path="/activate" element={<ActivateSIM />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/account" element={<Account />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-cancel" element={<PaymentCancel />} />
-              <Route path="/payment-recovery" element={<PaymentRecovery />} />
+const App: React.FC = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <SessionManager />
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <SessionTracker />
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/wireless-pbx" element={<WirelessPBX />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/plans/:slug" element={<PlanDetail />} />
+                <Route path="/activate" element={<ActivateSIM />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/account" element={<Account />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/payment-cancel" element={<PaymentCancel />} />
+                <Route path="/payment-recovery" element={<PaymentRecovery />} />
+                  
+                {/* Admin Routes */}
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin/*" element={<AdminLayout />}>
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="plans" element={<AdminPlans />} />
+                  <Route path="plans/new" element={<AdminPlanForm />} />
+                  <Route path="plans/edit/:id" element={<AdminPlanForm />} />
+                  <Route path="wireless-pbx" element={<AdminWirelessPBX />} />
+                  <Route path="hero-slides" element={<AdminHeroSlides />} />
+                  <Route path="testimonials" element={<AdminTestimonials />} />
+                  <Route path="faqs" element={<AdminFaqs />} />
+                  <Route path="contacts" element={<AdminContacts />} />
+                  <Route path="activate-sim" element={<AdminActivateSimRequests />} />
+                  <Route path="media" element={<AdminMedia />} />
+                  <Route path="translations" element={<AdminTranslations />} />
+                  <Route path="seo" element={<AdminSeo />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="user-management" element={<AdminUserManagement />} />
+                  <Route path="slider" element={<AdminHeroSlides />} />
+                  <Route path="homepage/notification" element={<AdminHomepageNotification />} />
+                  <Route path="homepage/branding" element={<AdminHomepageBranding />} />
+                  <Route path="homepage/features" element={<AdminHomepageFeatures />} />
+                  <Route path="homepage/coverage" element={<AdminHomepageCoverage />} />
+                  <Route path="homepage/cta" element={<AdminHomepageCTA />} />
+                  <Route path="homepage/footer" element={<AdminHomepageFooter />} />
+                  <Route path="about" element={<AdminAbout />} />
+                  <Route path="contact" element={<AdminContact />} />
+                  <Route path="paypal" element={<AdminPayPalSettings />} />
+                </Route>
                 
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin/*" element={<AdminLayout />}>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="plans" element={<AdminPlans />} />
-                <Route path="plans/new" element={<AdminPlanForm />} />
-                <Route path="plans/edit/:id" element={<AdminPlanForm />} />
-                <Route path="wireless-pbx" element={<AdminWirelessPBX />} />
-                <Route path="hero-slides" element={<AdminHeroSlides />} />
-                <Route path="testimonials" element={<AdminTestimonials />} />
-                <Route path="faqs" element={<AdminFaqs />} />
-                <Route path="contacts" element={<AdminContacts />} />
-                <Route path="activate-sim" element={<AdminActivateSimRequests />} />
-                <Route path="media" element={<AdminMedia />} />
-                <Route path="translations" element={<AdminTranslations />} />
-                <Route path="seo" element={<AdminSeo />} />
-                <Route path="settings" element={<AdminSettings />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="user-management" element={<AdminUserManagement />} />
-                <Route path="slider" element={<AdminHeroSlides />} />
-                <Route path="homepage/notification" element={<AdminHomepageNotification />} />
-                <Route path="homepage/branding" element={<AdminHomepageBranding />} />
-                <Route path="homepage/features" element={<AdminHomepageFeatures />} />
-                <Route path="homepage/coverage" element={<AdminHomepageCoverage />} />
-                <Route path="homepage/cta" element={<AdminHomepageCTA />} />
-                <Route path="homepage/footer" element={<AdminHomepageFooter />} />
-                <Route path="about" element={<AdminAbout />} />
-                <Route path="contact" element={<AdminContact />} />
-                <Route path="paypal" element={<AdminPayPalSettings />} />
-              </Route>
-              
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
-);
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
