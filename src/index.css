@@ -158,4 +158,54 @@ All colors MUST be HSL.
     transform: translateY(-4px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   }
+
+  /* Hide Google Translate default elements */
+  #google_translate_element {
+    display: none !important;
+  }
+
+  /* Hide Google Translate banner */
+  .goog-te-banner-frame.skiptranslate {
+    display: none !important;
+  }
+
+  body {
+    top: 0 !important;
+  }
+
+  .goog-te-balloon-frame {
+    display: none !important;
+  }
+
+  /* Hide Google logo */
+  .goog-logo-link {
+    display: none !important;
+  }
+
+  .goog-te-gadget {
+    color: transparent !important;
+    font-size: 0 !important;
+  }
+
+  .goog-te-gadget .goog-te-combo {
+    display: none !important;
+  }
+
+  /* Style for iframe when translating */
+  .skiptranslate iframe {
+    visibility: hidden !important;
+    display: none !important;
+  }
+
+  body > .skiptranslate {
+    display: none !important;
+  }
+
+  iframe.skiptranslate {
+    display: none !important;
+  }
+
+  .goog-te-spinner-pos {
+    display: none !important;
+  }
 }

@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useTranslation } from '@/hooks/useTranslation';
 import { Link } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 import { useSafeAuth } from '@/contexts/AuthContext';
@@ -19,7 +18,25 @@ const Navbar = () => {
   // Force refresh - unified auth context
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
-  const { t } = useTranslation();
+
+  // Function to trigger Google Translate
+  const triggerGoogleTranslate = (lang: 'en' | 'es') => {
+    setLanguage(lang);
+    
+    // Wait for Google Translate to load
+    const checkAndTranslate = () => {
+      const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+      if (selectElement) {
+        selectElement.value = lang;
+        selectElement.dispatchEvent(new Event('change'));
+      } else {
+        // If not loaded yet, try again
+        setTimeout(checkAndTranslate, 100);
+      }
+    };
+    
+    checkAndTranslate();
+  };
   const settings = useHomepageSettings();
   const { isAuthenticated } = useSafeAuth();
 
@@ -73,13 +90,13 @@ const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white border shadow-lg z-50">
                 <DropdownMenuItem 
-                  onClick={() => setLanguage('en')}
+                  onClick={() => triggerGoogleTranslate('en')}
                   className={language === 'en' ? 'bg-gray-100' : ''}
                 >
                   English
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => setLanguage('es')}
+                  onClick={() => triggerGoogleTranslate('es')}
                   className={language === 'es' ? 'bg-gray-100' : ''}
                 >
                   Español
@@ -158,8 +175,8 @@ const Navbar = () => {
                     <ChevronDown className="w-3 h-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-white border shadow-lg">
-                    <DropdownMenuItem onClick={() => setLanguage('en')}>English</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLanguage('es')}>Español</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => triggerGoogleTranslate('en')}>English</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => triggerGoogleTranslate('es')}>Español</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <div className="px-3">

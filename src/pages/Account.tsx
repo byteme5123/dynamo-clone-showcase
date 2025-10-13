@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key } from 'lucide-react';
+import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordResetForm } from '@/components/PasswordResetForm';
@@ -239,6 +239,16 @@ const Account = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          <Button 
+            asChild
+            variant="outline"
+            size="sm"
+          >
+            <Link to="/">
+              <Home className="h-4 w-4 mr-2" />
+              Home
+            </Link>
+          </Button>
           <Button 
             onClick={refreshData} 
             disabled={isRefreshing}
