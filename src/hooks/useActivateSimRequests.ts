@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
 
 export interface ActivateSimRequest {
   id: string;
@@ -17,6 +18,29 @@ export interface ActivateSimRequest {
 }
 
 export const useActivateSimRequests = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('activate-sim-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'activate_sim_requests'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['activate-sim-requests'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['activate-sim-requests'],
     queryFn: async () => {
