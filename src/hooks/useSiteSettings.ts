@@ -26,6 +26,9 @@ export const useSiteSettings = () => {
       if (error) throw error;
       return data as SiteSetting[];
     },
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 };
 
