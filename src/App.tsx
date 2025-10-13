@@ -82,8 +82,6 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            {/* Hidden Google Translate Element */}
-            <div id="google_translate_element" style={{ display: 'none' }}></div>
             <SessionTracker />
             <Routes>
               {/* Public Routes */}

@@ -18,27 +18,53 @@ const Navbar = () => {
   // Force refresh - unified auth context
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
+  const settings = useHomepageSettings();
+  const { isAuthenticated } = useSafeAuth();
 
   // Function to trigger Google Translate
   const triggerGoogleTranslate = (lang: 'en' | 'es') => {
     setLanguage(lang);
     
-    // Wait for Google Translate to load
-    const checkAndTranslate = () => {
-      const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement;
-      if (selectElement) {
-        selectElement.value = lang;
-        selectElement.dispatchEvent(new Event('change'));
-      } else {
-        // If not loaded yet, try again
-        setTimeout(checkAndTranslate, 100);
+    // Function to trigger translation
+    const performTranslation = () => {
+      const frame = document.querySelector('.goog-te-menu-frame') as HTMLIFrameElement;
+      if (!frame) {
+        // Try to find the select element
+        const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+        if (select) {
+          select.value = lang;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+        setTimeout(performTranslation, 100);
+        return;
+      }
+
+      try {
+        const innerDoc = frame.contentDocument || frame.contentWindow?.document;
+        if (innerDoc) {
+          const langLinks = innerDoc.querySelectorAll('.goog-te-menu2-item span.text');
+          langLinks.forEach((link: any) => {
+            const text = link.textContent.toLowerCase();
+            if ((lang === 'es' && text.includes('spanish')) || 
+                (lang === 'en' && text.includes('english'))) {
+              (link.parentElement as HTMLElement).click();
+            }
+          });
+        }
+      } catch (e) {
+        console.log('Translation in progress...');
       }
     };
-    
-    checkAndTranslate();
+
+    // Ensure Google Translate is loaded
+    if (typeof (window as any).google !== 'undefined' && (window as any).google.translate) {
+      performTranslation();
+    } else {
+      // Wait for Google Translate to load
+      setTimeout(() => performTranslation(), 500);
+    }
   };
-  const settings = useHomepageSettings();
-  const { isAuthenticated } = useSafeAuth();
 
   const navItems = [
     { name: 'Home', href: '/' },
