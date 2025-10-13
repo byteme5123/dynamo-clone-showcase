@@ -26,44 +26,58 @@ const Navbar = () => {
     setLanguage(lang);
     
     // Function to trigger translation
-    const performTranslation = () => {
-      const frame = document.querySelector('.goog-te-menu-frame') as HTMLIFrameElement;
-      if (!frame) {
-        // Try to find the select element
-        const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+    const performTranslation = (attempts = 0) => {
+      if (attempts > 20) {
+        console.log('Google Translate not available');
+        return;
+      }
+
+      // Method 1: Try to find and use the select element (most reliable)
+      const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+      if (select) {
+        select.value = lang;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+
+      // Method 2: Try to find the banner element
+      const googleTranslateElement = document.getElementById('google_translate_element');
+      if (googleTranslateElement) {
+        const select = googleTranslateElement.querySelector('select') as HTMLSelectElement;
         if (select) {
           select.value = lang;
           select.dispatchEvent(new Event('change', { bubbles: true }));
           return;
         }
-        setTimeout(performTranslation, 100);
-        return;
       }
 
-      try {
-        const innerDoc = frame.contentDocument || frame.contentWindow?.document;
-        if (innerDoc) {
-          const langLinks = innerDoc.querySelectorAll('.goog-te-menu2-item span.text');
-          langLinks.forEach((link: any) => {
-            const text = link.textContent.toLowerCase();
-            if ((lang === 'es' && text.includes('spanish')) || 
-                (lang === 'en' && text.includes('english'))) {
-              (link.parentElement as HTMLElement).click();
-            }
-          });
+      // Method 3: Try frame method as fallback
+      const frame = document.querySelector('.goog-te-menu-frame') as HTMLIFrameElement;
+      if (frame) {
+        try {
+          const innerDoc = frame.contentDocument || frame.contentWindow?.document;
+          if (innerDoc) {
+            const langLinks = innerDoc.querySelectorAll('.goog-te-menu2-item span.text');
+            langLinks.forEach((link: any) => {
+              const text = link.textContent.toLowerCase();
+              if ((lang === 'es' && text.includes('spanish')) || 
+                  (lang === 'en' && text.includes('english'))) {
+                (link.parentElement as HTMLElement).click();
+              }
+            });
+            return;
+          }
+        } catch (e) {
+          console.log('Frame method failed, trying again...');
         }
-      } catch (e) {
-        console.log('Translation in progress...');
       }
+
+      // If nothing worked, try again
+      setTimeout(() => performTranslation(attempts + 1), 200);
     };
 
-    // Ensure Google Translate is loaded
-    if (typeof (window as any).google !== 'undefined' && (window as any).google.translate) {
-      performTranslation();
-    } else {
-      // Wait for Google Translate to load
-      setTimeout(() => performTranslation(), 500);
-    }
+    // Start translation attempt
+    performTranslation();
   };
 
   const navItems = [
