@@ -1,7 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useHomepageSettings } from '@/hooks/useHomepageSettings';
 import { useSafeAuth } from '@/contexts/AuthContext';
-import { LogOut, LogIn } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,9 +27,6 @@ const NotificationBar = () => {
     }
   };
 
-  const handleLogin = () => {
-    navigate('/auth');
-  };
 
   return (
     <div className="notification-bar h-10 px-4 flex items-center justify-center text-sm">
@@ -37,21 +34,13 @@ const NotificationBar = () => {
         {notificationText}
       </div>
       <div className="hidden md:flex items-center space-x-4 absolute right-4">
-        {isAuthenticated ? (
+          {isAuthenticated && (
           <button 
             onClick={handleLogout}
             className="text-white hover:underline flex items-center gap-1"
           >
             <LogOut className="w-3 h-3" />
             Logout
-          </button>
-        ) : (
-          <button 
-            onClick={handleLogin}
-            className="text-white hover:underline flex items-center gap-1"
-          >
-            <LogIn className="w-3 h-3" />
-            Login
           </button>
         )}
       </div>
