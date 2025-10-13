@@ -23,6 +23,7 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { name: 'Order Management', href: '/admin/orders', icon: Package },
   { 
     name: 'Homepage Management', 
     icon: Home,

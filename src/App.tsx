@@ -46,6 +46,7 @@ import AdminHomepageFooter from "./pages/AdminHomepageFooter";
 import AdminAbout from "./pages/AdminAbout";
 import AdminContact from "./pages/AdminContact";
 import AdminPayPalSettings from "./pages/AdminPayPalSettings";
+import AdminOrders from "./pages/AdminOrders";
 
 // Optimized QueryClient for maximum performance and instant loading
 const queryClient = new QueryClient({
@@ -102,6 +103,7 @@ const App = () => (
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/*" element={<AdminLayout />}>
                 <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="orders" element={<AdminOrders />} />
                 <Route path="plans" element={<AdminPlans />} />
                 <Route path="plans/new" element={<AdminPlanForm />} />
                 <Route path="plans/edit/:id" element={<AdminPlanForm />} />
