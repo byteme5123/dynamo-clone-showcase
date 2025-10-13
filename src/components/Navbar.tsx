@@ -25,59 +25,37 @@ const Navbar = () => {
   const triggerGoogleTranslate = (lang: 'en' | 'es') => {
     setLanguage(lang);
     
-    // Function to trigger translation
-    const performTranslation = (attempts = 0) => {
-      if (attempts > 20) {
-        console.log('Google Translate not available');
-        return;
-      }
+    // Set Google Translate cookie to trigger translation
+    const setCookie = (name: string, value: string, days: number) => {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+      document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+    };
 
-      // Method 1: Try to find and use the select element (most reliable)
+    // Google Translate uses cookies to store language preference
+    // The format is: /en/es (from/to languages)
+    const cookieValue = lang === 'es' ? '/en/es' : '/en/en';
+    
+    // Clear existing Google Translate cookies
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname;
+    
+    // Set new language cookie
+    setCookie('googtrans', cookieValue, 365);
+    
+    // Also try to trigger via the widget if available
+    setTimeout(() => {
       const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
       if (select) {
         select.value = lang;
         select.dispatchEvent(new Event('change', { bubbles: true }));
-        return;
       }
-
-      // Method 2: Try to find the banner element
-      const googleTranslateElement = document.getElementById('google_translate_element');
-      if (googleTranslateElement) {
-        const select = googleTranslateElement.querySelector('select') as HTMLSelectElement;
-        if (select) {
-          select.value = lang;
-          select.dispatchEvent(new Event('change', { bubbles: true }));
-          return;
-        }
-      }
-
-      // Method 3: Try frame method as fallback
-      const frame = document.querySelector('.goog-te-menu-frame') as HTMLIFrameElement;
-      if (frame) {
-        try {
-          const innerDoc = frame.contentDocument || frame.contentWindow?.document;
-          if (innerDoc) {
-            const langLinks = innerDoc.querySelectorAll('.goog-te-menu2-item span.text');
-            langLinks.forEach((link: any) => {
-              const text = link.textContent.toLowerCase();
-              if ((lang === 'es' && text.includes('spanish')) || 
-                  (lang === 'en' && text.includes('english'))) {
-                (link.parentElement as HTMLElement).click();
-              }
-            });
-            return;
-          }
-        } catch (e) {
-          console.log('Frame method failed, trying again...');
-        }
-      }
-
-      // If nothing worked, try again
-      setTimeout(() => performTranslation(attempts + 1), 200);
-    };
-
-    // Start translation attempt
-    performTranslation();
+    }, 100);
+    
+    // Reload page to apply translation
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
   };
 
   const navItems = [
