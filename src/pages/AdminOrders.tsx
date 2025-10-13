@@ -54,7 +54,7 @@ export default function AdminOrders() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch auth users using admin API
+      // Fetch auth users
       const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
       
       if (authError) {
@@ -62,16 +62,78 @@ export default function AdminOrders() {
         throw authError;
       }
 
-      // Map auth users to our User interface
+      // Fetch all profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (profilesError) console.error('Profiles error:', profilesError);
+
+      // Fetch all completed orders
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false });
+
+      if (ordersError) console.error('Orders error:', ordersError);
+
+      // Also fetch from transactions table as backup
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false });
+
+      if (transactionsError) console.error('Transactions error:', transactionsError);
+
+      // Fetch plans for reference
+      const { data: plansData, error: plansError } = await supabase
+        .from('plans')
+        .select('id, name, slug');
+
+      if (plansError) console.error('Plans error:', plansError);
+
+      // Combine data
       const usersWithOrders = (authUsers || []).map((authUser: any) => {
+        const profile = profilesData?.find((p: any) => p.id === authUser.id);
+        
+        // Get orders from both sources
+        const userOrders = [
+          ...(ordersData || []).filter((order: any) => order.user_id === authUser.id),
+          ...(transactionsData || []).filter((txn: any) => txn.user_id === authUser.id)
+        ];
+
+        // Calculate total spent
+        const totalSpent = userOrders.reduce((sum: number, order: any) => {
+          return sum + (parseFloat(order.amount) || 0);
+        }, 0);
+
+        // Map orders to consistent format
+        const orders = userOrders.map((order: any) => {
+          const plan = plansData?.find((p: any) => p.id === order.plan_id);
+          
+          return {
+            id: order.id,
+            plan_name: plan?.name || 'Unknown Plan',
+            amount: parseFloat(order.amount) || 0,
+            currency: order.currency || 'USD',
+            created_at: order.created_at,
+            status: order.status || 'completed',
+            transaction_id: order.paypal_order_id || order.paypal_transaction_id || order.id
+          };
+        });
+
         return {
           id: authUser.id,
-          name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Unknown',
+          name: profile 
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || authUser.email?.split('@')[0] || 'Unknown'
+            : authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Unknown',
           email: authUser.email || '',
           email_verified: authUser.email_confirmed_at ? true : false,
           created_at: authUser.created_at,
-          orders: [], // Will be populated when payment_transactions table is available
-          totalSpent: 0
+          orders,
+          totalSpent
         };
       });
 
