@@ -46,6 +46,61 @@ export default function AdminOrders() {
 
   useEffect(() => {
     fetchUsers();
+
+    // Set up real-time subscriptions for live updates
+    const ordersChannel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders'
+        },
+        () => {
+          console.log('Orders updated, refreshing data...');
+          fetchUsers();
+        }
+      )
+      .subscribe();
+
+    const transactionsChannel = supabase
+      .channel('transactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        },
+        () => {
+          console.log('Transactions updated, refreshing data...');
+          fetchUsers();
+        }
+      )
+      .subscribe();
+
+    const profilesChannel = supabase
+      .channel('profiles-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles'
+        },
+        () => {
+          console.log('Profiles updated, refreshing data...');
+          fetchUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(transactionsChannel);
+      supabase.removeChannel(profilesChannel);
+    };
   }, []);
 
   useEffect(() => {
@@ -54,20 +109,13 @@ export default function AdminOrders() {
 
   const fetchUsers = async () => {
     try {
-      // Fetch auth users
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw authError;
-      }
-
-      // Fetch all profiles
+      // Fetch all profiles (admin can access via RLS)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (profilesError) console.error('Profiles error:', profilesError);
+      if (profilesError) throw profilesError;
 
       // Fetch all completed orders
       const { data: ordersData, error: ordersError } = await supabase
@@ -78,7 +126,7 @@ export default function AdminOrders() {
 
       if (ordersError) console.error('Orders error:', ordersError);
 
-      // Also fetch from transactions table as backup
+      // Fetch from transactions table as backup
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('*')
@@ -94,14 +142,12 @@ export default function AdminOrders() {
 
       if (plansError) console.error('Plans error:', plansError);
 
-      // Combine data
-      const usersWithOrders = (authUsers || []).map((authUser: any) => {
-        const profile = profilesData?.find((p: any) => p.id === authUser.id);
-        
+      // For each profile, get their auth data
+      const usersPromises = (profilesData || []).map(async (profile: any) => {
         // Get orders from both sources
         const userOrders = [
-          ...(ordersData || []).filter((order: any) => order.user_id === authUser.id),
-          ...(transactionsData || []).filter((txn: any) => txn.user_id === authUser.id)
+          ...(ordersData || []).filter((order: any) => order.user_id === profile.id),
+          ...(transactionsData || []).filter((txn: any) => txn.user_id === profile.id)
         ];
 
         // Calculate total spent
@@ -115,7 +161,7 @@ export default function AdminOrders() {
           
           return {
             id: order.id,
-            plan_name: plan?.name || 'Unknown Plan',
+            plan_name: plan?.name || order.customer_name || 'Unknown Plan',
             amount: parseFloat(order.amount) || 0,
             currency: order.currency || 'USD',
             created_at: order.created_at,
@@ -124,19 +170,23 @@ export default function AdminOrders() {
           };
         });
 
+        // Try to get user email from auth
+        const { data: { user } } = await supabase.auth.getUser();
+        const email = user?.id === profile.id ? user.email : ordersData?.find((o: any) => o.user_id === profile.id)?.customer_email || 'Unknown';
+        const email_verified = !!user?.email_confirmed_at;
+
         return {
-          id: authUser.id,
-          name: profile 
-            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || authUser.email?.split('@')[0] || 'Unknown'
-            : authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Unknown',
-          email: authUser.email || '',
-          email_verified: authUser.email_confirmed_at ? true : false,
-          created_at: authUser.created_at,
+          id: profile.id,
+          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || email?.split('@')[0] || 'Unknown',
+          email: email || 'Unknown',
+          email_verified: email_verified,
+          created_at: profile.created_at,
           orders,
           totalSpent
         };
       });
 
+      const usersWithOrders = await Promise.all(usersPromises);
       setUsers(usersWithOrders);
     } catch (error: any) {
       console.error('Failed to fetch users:', error);
@@ -193,7 +243,11 @@ export default function AdminOrders() {
     }
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      // Delete profile (will cascade to orders due to FK constraints)
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
 
       if (error) throw error;
 

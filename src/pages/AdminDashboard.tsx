@@ -1,24 +1,72 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAdminPlans } from '@/hooks/usePlans';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Activity, Users, MessageSquare, FileText, Loader2, Package, HelpCircle, Star } from 'lucide-react';
+import { Activity, Users, MessageSquare, FileText, Loader2, Package, HelpCircle, Star, DollarSign, ShoppingCart } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { data: plans } = useAdminPlans();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    const ordersChannel = supabase
+      .channel('dashboard-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        console.log('Orders updated, refreshing dashboard...');
+        setRefreshTrigger(prev => prev + 1);
+      })
+      .subscribe();
+
+    const transactionsChannel = supabase
+      .channel('dashboard-transactions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
+        console.log('Transactions updated, refreshing dashboard...');
+        setRefreshTrigger(prev => prev + 1);
+      })
+      .subscribe();
+
+    const profilesChannel = supabase
+      .channel('dashboard-profiles')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        console.log('Profiles updated, refreshing dashboard...');
+        setRefreshTrigger(prev => prev + 1);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(transactionsChannel);
+      supabase.removeChannel(profilesChannel);
+    };
+  }, []);
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['admin-stats'],
+    queryKey: ['admin-stats', refreshTrigger],
     queryFn: async () => {
-      const [plansResult, testimonialsResult, contactFormsResult, activateSimResult, faqsResult, heroSlidesResult] = await Promise.all([
+      const [
+        plansResult, 
+        testimonialsResult, 
+        contactFormsResult, 
+        activateSimResult, 
+        faqsResult, 
+        heroSlidesResult,
+        profilesResult,
+        ordersResult,
+        transactionsResult
+      ] = await Promise.all([
         supabase.from('plans').select('id, is_active', { count: 'exact' }),
         supabase.from('testimonials').select('id, is_featured', { count: 'exact' }),
         supabase.from('contact_forms').select('id, created_at', { count: 'exact' }),
         supabase.from('activate_sim_requests').select('id', { count: 'exact', head: true }),
         supabase.from('faqs').select('id', { count: 'exact', head: true }),
         supabase.from('hero_slides').select('id', { count: 'exact', head: true }),
+        supabase.from('profiles').select('id', { count: 'exact' }),
+        supabase.from('orders').select('amount, status, created_at').eq('status', 'completed'),
+        supabase.from('transactions').select('amount, status, created_at').eq('status', 'completed'),
       ]);
 
       // Calculate new contacts (last 7 days)
@@ -27,6 +75,20 @@ const AdminDashboard = () => {
       const newContacts = contactFormsResult.data?.filter(contact => 
         new Date(contact.created_at) > sevenDaysAgo
       ).length || 0;
+
+      // Calculate revenue
+      const allOrders = [...(ordersResult.data || []), ...(transactionsResult.data || [])];
+      const totalRevenue = allOrders.reduce((sum, order) => sum + (parseFloat(order.amount as any) || 0), 0);
+      
+      // Revenue this month
+      const firstDayOfMonth = new Date();
+      firstDayOfMonth.setDate(1);
+      firstDayOfMonth.setHours(0, 0, 0, 0);
+      
+      const thisMonthOrders = allOrders.filter(order => 
+        new Date(order.created_at) >= firstDayOfMonth
+      );
+      const revenueThisMonth = thisMonthOrders.reduce((sum, order) => sum + (parseFloat(order.amount as any) || 0), 0);
 
       return {
         totalPlans: plansResult.count || 0,
@@ -38,6 +100,10 @@ const AdminDashboard = () => {
         totalActivateSim: activateSimResult.count || 0,
         totalFaqs: faqsResult.count || 0,
         totalHeroSlides: heroSlidesResult.count || 0,
+        totalUsers: profilesResult.count || 0,
+        totalOrders: allOrders.length,
+        totalRevenue,
+        revenueThisMonth,
       };
     },
   });
@@ -76,6 +142,58 @@ const AdminDashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Registered users
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Completed orders
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${(stats?.totalRevenue || 0).toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              All time revenue
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${(stats?.revenueThisMonth || 0).toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              Revenue this month
+            </p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Plans</CardTitle>
@@ -167,41 +285,41 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-2">
-              <a 
-                href="/admin/plans/new" 
+              <Link 
+                to="/admin/orders" 
+                className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
+              >
+                <ShoppingCart className="h-4 w-4 mr-3" />
+                <span className="text-sm">View All Orders</span>
+              </Link>
+              <Link 
+                to="/admin/plans/new" 
                 className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
               >
                 <Activity className="h-4 w-4 mr-3" />
                 <span className="text-sm">Add New Plan</span>
-              </a>
-              <a 
-                href="/admin/hero-slides" 
+              </Link>
+              <Link 
+                to="/admin/slider" 
                 className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
               >
                 <FileText className="h-4 w-4 mr-3" />
                 <span className="text-sm">Manage Hero Slides</span>
-              </a>
-              <a 
-                href="/admin/user-management" 
+              </Link>
+              <Link 
+                to="/admin/testimonials" 
                 className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
               >
-                <Users className="h-4 w-4 mr-3" />
-                <span className="text-sm">Manage Users</span>
-              </a>
-              <a 
-                href="/admin/testimonials" 
-                className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
-              >
-                <Users className="h-4 w-4 mr-3" />
+                <Star className="h-4 w-4 mr-3" />
                 <span className="text-sm">Add Testimonial</span>
-              </a>
-              <a 
-                href="/admin/contact-forms" 
+              </Link>
+              <Link 
+                to="/admin/contacts" 
                 className="flex items-center p-3 rounded-lg border hover:bg-muted transition-colors"
               >
                 <MessageSquare className="h-4 w-4 mr-3" />
                 <span className="text-sm">View Messages</span>
-              </a>
+              </Link>
             </div>
           </CardContent>
         </Card>
