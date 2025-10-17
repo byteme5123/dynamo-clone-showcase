@@ -15,13 +15,16 @@ export function PlanExpiryChecker() {
 
   const checkPlanExpiry = () => {
     try {
-      // TEST MODE - Force show modal with expiring plan
+      // TEST MODE - Use real plan ID from user's profile
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 3); // 3 days from now
       
+      // Use the actual plan ID from user profile if available
+      const testPlanId = userProfile?.current_plan_id || '0a4a8e95-2e69-47b2-aa51-0d6796860fbe';
+      
       setPlanData({
         planName: 'Premium Unlimited Plan',
-        planId: 'test-plan-123',
+        planId: testPlanId,
         planPrice: 49.99,
         expiryDate: tomorrow.toISOString(),
         status: 'expiring_soon',
