@@ -18,6 +18,9 @@ RUN bun run build
 # Production stage
 FROM caddy:2-alpine
 
+# Install bash for terminal access
+RUN apk add --no-cache bash
+
 # Copy built files from builder
 COPY --from=builder /app/dist /app/dist
 
