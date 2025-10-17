@@ -351,10 +351,9 @@ const Auth = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                <TabsTrigger value="reset">Reset Password</TabsTrigger>
               </TabsList>
 
               {/* Sign In Tab */}
@@ -390,6 +389,43 @@ const Auth = () => {
                       required
                     />
                   </div>
+                  
+                  <div className="flex items-center justify-end">
+                    <Button
+                      type="button"
+                      variant="link"
+                      onClick={async () => {
+                        if (!signInData.email) {
+                          setError('Please enter your email address first');
+                          return;
+                        }
+                        setIsLoading(true);
+                        setError('');
+                        try {
+                          const { error } = await supabase.auth.resetPasswordForEmail(signInData.email, {
+                            redirectTo: `${window.location.origin}/auth`,
+                          });
+                          if (error) {
+                            setError(error.message || 'Failed to send reset email');
+                          } else {
+                            setSuccess('Password reset link sent! Please check your email.');
+                            toast({
+                              title: 'Reset Email Sent',
+                              description: 'Please check your email for password reset instructions.',
+                            });
+                          }
+                        } catch (error: any) {
+                          setError('Failed to send password reset email. Please try again.');
+                        }
+                        setIsLoading(false);
+                      }}
+                      disabled={isLoading}
+                      className="text-sm p-0 h-auto"
+                    >
+                      Forgot Password?
+                    </Button>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
@@ -492,30 +528,6 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              {/* Password Reset Tab */}
-              <TabsContent value="reset">
-                <form onSubmit={handlePasswordResetRequest} className="space-y-4">
-                  <div>
-                    <Label htmlFor="reset-email">Email Address</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      disabled={isLoading}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Send Reset Link
-                  </Button>
-                  <p className="text-sm text-muted-foreground text-center">
-                    We'll send you a link to reset your password
-                  </p>
-                </form>
-              </TabsContent>
             </Tabs>
 
             <div className="mt-6 text-center">
