@@ -116,6 +116,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (emailResponse.error) {
       console.error('Resend error:', emailResponse.error);
+      
+      // Check if it's a domain verification issue
+      if (emailResponse.error.message?.includes('verify a domain')) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Email service not fully configured. Please contact support.',
+            details: 'Domain verification required in Resend'
+          }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: 'Failed to send email' }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

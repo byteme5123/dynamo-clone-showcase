@@ -402,11 +402,16 @@ const Auth = () => {
                         setIsLoading(true);
                         setError('');
                         try {
-                          const { error } = await supabase.functions.invoke('send-password-reset', {
+                          const { data, error } = await supabase.functions.invoke('send-password-reset', {
                             body: { email: signInData.email }
                           });
+                          
                           if (error) {
-                            setError(error.message || 'Failed to send reset email');
+                            console.error('Password reset error:', error);
+                            setError(error.message || 'Failed to send reset email. Please contact support.');
+                          } else if (data?.error) {
+                            console.error('Password reset response error:', data.error);
+                            setError(data.error);
                           } else {
                             setSuccess('Password reset link sent! Please check your email.');
                             toast({
@@ -415,7 +420,8 @@ const Auth = () => {
                             });
                           }
                         } catch (error: any) {
-                          setError('Failed to send password reset email. Please try again.');
+                          console.error('Password reset exception:', error);
+                          setError('Failed to send password reset email. Please contact support.');
                         }
                         setIsLoading(false);
                       }}
