@@ -402,8 +402,8 @@ const Auth = () => {
                         setIsLoading(true);
                         setError('');
                         try {
-                          const { error } = await supabase.auth.resetPasswordForEmail(signInData.email, {
-                            redirectTo: `${window.location.origin}/auth`,
+                          const { error } = await supabase.functions.invoke('send-password-reset', {
+                            body: { email: signInData.email }
                           });
                           if (error) {
                             setError(error.message || 'Failed to send reset email');
