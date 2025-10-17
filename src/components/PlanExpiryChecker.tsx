@@ -15,38 +15,42 @@ export function PlanExpiryChecker() {
 
   const checkPlanExpiry = () => {
     try {
-      // Check if modal was already shown today
-      const lastShown = localStorage.getItem('planExpiryModalShown');
-      const today = new Date().toDateString();
+      // TEST MODE - Force show modal with expiring plan
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 3); // 3 days from now
       
-      if (lastShown === today) return;
-
-      // Check if user has a plan and expiry date
-      if (!userProfile?.plan_expiry_date || !userProfile?.current_plan_id) return;
-
-      const now = new Date();
-      const expiryDate = new Date(userProfile.plan_expiry_date);
-      const daysRemaining = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-      let status: 'active' | 'expired' | 'expiring_soon' = 'active';
+      setPlanData({
+        planName: 'Premium Unlimited Plan',
+        expiryDate: tomorrow.toISOString(),
+        status: 'expiring_soon',
+        daysRemaining: 3,
+      });
+      setShowModal(true);
       
-      if (daysRemaining < 0) {
-        status = 'expired';
-      } else if (daysRemaining <= 7) {
-        status = 'expiring_soon';
-      }
-
-      // Show modal if expired or expiring soon
-      if (status === 'expired' || status === 'expiring_soon') {
-        setPlanData({
-          planName: 'Your Current Plan',
-          expiryDate: userProfile.plan_expiry_date,
-          status,
-          daysRemaining: Math.max(0, daysRemaining),
-        });
-        setShowModal(true);
-        localStorage.setItem('planExpiryModalShown', today);
-      }
+      // ORIGINAL CODE COMMENTED FOR TESTING
+      // const lastShown = localStorage.getItem('planExpiryModalShown');
+      // const today = new Date().toDateString();
+      // if (lastShown === today) return;
+      // if (!userProfile?.plan_expiry_date || !userProfile?.current_plan_id) return;
+      // const now = new Date();
+      // const expiryDate = new Date(userProfile.plan_expiry_date);
+      // const daysRemaining = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      // let status: 'active' | 'expired' | 'expiring_soon' = 'active';
+      // if (daysRemaining < 0) {
+      //   status = 'expired';
+      // } else if (daysRemaining <= 7) {
+      //   status = 'expiring_soon';
+      // }
+      // if (status === 'expired' || status === 'expiring_soon') {
+      //   setPlanData({
+      //     planName: 'Your Current Plan',
+      //     expiryDate: userProfile.plan_expiry_date,
+      //     status,
+      //     daysRemaining: Math.max(0, daysRemaining),
+      //   });
+      //   setShowModal(true);
+      //   localStorage.setItem('planExpiryModalShown', today);
+      // }
     } catch (error) {
       console.error('Failed to check plan expiry:', error);
     }

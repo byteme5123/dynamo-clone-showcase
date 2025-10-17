@@ -28,6 +28,38 @@ const Account = () => {
     last_name: '',
   });
 
+  // TEST MODE - Force expiring plan data
+  const [testMode] = useState(true);
+  const testPlanData = {
+    id: 'test-plan-123',
+    name: 'Premium Unlimited Plan',
+    price: 49.99,
+    duration: 'monthly',
+    currency: 'USD',
+    data_limit: 'Unlimited',
+    validity_days: 30,
+    description: 'Premium unlimited plan with all features',
+    call_minutes: 'Unlimited',
+    countries: ['US', 'CA', 'MX'],
+    created_at: new Date().toISOString(),
+    display_order: 1,
+    external_link: '',
+    is_active: true,
+    plan_type: 'prepaid',
+    sms_limit: 'Unlimited',
+    updated_at: new Date().toISOString(),
+    features: [
+      'Unlimited data',
+      '5G network access', 
+      'International roaming',
+      'Priority customer support',
+      'Free device insurance'
+    ]
+  };
+  
+  const testPlanExpiry = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(); // 3 days from now
+  const testPlanPurchase = new Date(Date.now() - 27 * 24 * 60 * 60 * 1000).toISOString(); // 27 days ago
+
   // Update profile data when userProfile changes
   useEffect(() => {
     if (userProfile) {
@@ -38,10 +70,15 @@ const Account = () => {
     }
   }, [userProfile]);
 
-  // Fetch user's current active plan
+  // Fetch user's current active plan (with test mode override)
   const { data: currentPlan, isLoading: planLoading, refetch: refetchPlan } = useQuery({
     queryKey: ['current-plan', userProfile?.current_plan_id],
     queryFn: async () => {
+      // TEST MODE - Return test data
+      if (testMode) {
+        return testPlanData;
+      }
+      
       if (!userProfile?.current_plan_id) return null;
       
       const { data, error } = await supabase
@@ -53,7 +90,7 @@ const Account = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!userProfile?.current_plan_id,
+    enabled: true, // Always enabled in test mode
   });
 
   // Fetch user's orders with proper caching
@@ -213,8 +250,21 @@ const Account = () => {
     }
   };
 
-  // Calculate plan status based on expiry date
+  // Calculate plan status based on expiry date (with test mode override)
   const calculatePlanStatus = () => {
+    // TEST MODE - Return test status
+    if (testMode) {
+      const now = new Date();
+      const expiryDate = new Date(testPlanExpiry);
+      const daysRemaining = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      return {
+        status: 'expiring_soon' as const,
+        daysRemaining: Math.max(0, daysRemaining),
+        expiryDate: testPlanExpiry,
+      };
+    }
+    
     if (!userProfile?.plan_expiry_date) return null;
     
     const now = new Date();
