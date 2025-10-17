@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, AlertCircle, Clock, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 
 interface PlanExpiryModalProps {
   plan: {
@@ -15,7 +14,6 @@ interface PlanExpiryModalProps {
 
 export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
   const [showModal, setShowModal] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     setTimeout(() => setShowModal(true), 100);
@@ -28,7 +26,7 @@ export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
 
   const handleRenew = () => {
     handleClose();
-    navigate('/plans');
+    window.location.href = '/plans';
   };
 
   const isExpired = plan.status === 'expired';
