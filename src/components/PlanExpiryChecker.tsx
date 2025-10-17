@@ -21,10 +21,11 @@ export function PlanExpiryChecker() {
       
       setPlanData({
         planName: 'Premium Unlimited Plan',
+        planId: 'test-plan-123',
+        planPrice: 49.99,
         expiryDate: tomorrow.toISOString(),
         status: 'expiring_soon',
         daysRemaining: 3,
-        planId: 'test-plan-123',
       });
       setShowModal(true);
       

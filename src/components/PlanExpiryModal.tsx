@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { X, AlertCircle, Clock, ExternalLink } from 'lucide-react';
+import { X, AlertCircle, Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RenewPaymentModal } from './RenewPaymentModal';
 
 interface PlanExpiryModalProps {
   plan: {
     planName: string;
+    planId: string;
+    planPrice: number;
     expiryDate: string;
     status: 'expired' | 'expiring_soon';
     daysRemaining: number;
-    planId: string;
   };
   onClose: () => void;
 }
 
 export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
   const [showModal, setShowModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     setTimeout(() => setShowModal(true), 100);
@@ -26,8 +29,8 @@ export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
   };
 
   const handleRenew = () => {
-    handleClose();
-    window.location.href = `/plans/${plan.planId}`;
+    setShowModal(false);
+    setShowPaymentModal(true);
   };
 
   const isExpired = plan.status === 'expired';
@@ -38,7 +41,8 @@ export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
   });
 
   return (
-    <div 
+    <>
+    <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
         showModal ? 'opacity-100' : 'opacity-0'
       }`}
@@ -112,7 +116,7 @@ export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
             className="w-full"
             size="lg"
           >
-            <ExternalLink className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2" />
             Renew Plan Now
           </Button>
           
@@ -127,5 +131,22 @@ export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
         </div>
       </div>
     </div>
+
+    {/* Payment Modal */}
+    {showPaymentModal && (
+      <RenewPaymentModal
+        plan={{
+          id: plan.planId,
+          name: plan.planName,
+          price: plan.planPrice,
+          validity_days: 30
+        }}
+        onClose={() => {
+          setShowPaymentModal(false);
+          onClose();
+        }}
+      />
+    )}
+    </>
   );
 }

@@ -14,6 +14,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordResetForm } from '@/components/PasswordResetForm';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { RenewPaymentModal } from '@/components/RenewPaymentModal';
 
 const Account = () => {
   const { user, userProfile, isAuthenticated, signOut, refreshUserData } = useAuth();
@@ -23,6 +24,7 @@ const Account = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
@@ -659,7 +661,7 @@ const Account = () => {
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     {planStatus && (planStatus.status === 'expired' || planStatus.status === 'expiring_soon') && (
                       <Button
-                        onClick={() => navigate(`/plans/${currentPlan.id}`)}
+                        onClick={() => setShowRenewModal(true)}
                         className="flex-1"
                         size="lg"
                       >
@@ -857,6 +859,19 @@ const Account = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Renew Payment Modal */}
+      {showRenewModal && currentPlan && (
+        <RenewPaymentModal
+          plan={{
+            id: currentPlan.id,
+            name: currentPlan.name,
+            price: currentPlan.price,
+            validity_days: currentPlan.validity_days
+          }}
+          onClose={() => setShowRenewModal(false)}
+        />
+      )}
     </div>
   );
 };
