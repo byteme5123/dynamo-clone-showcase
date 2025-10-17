@@ -408,11 +408,10 @@ const Auth = () => {
                           
                           if (error) {
                             console.error('Password reset error:', error);
-                            setError(error.message || 'Failed to send reset email. Please contact support.');
-                          } else if (data?.error) {
-                            console.error('Password reset response error:', data.error);
+                            setError('Failed to send reset email. Please contact support at dynamowirelessofficial@gmail.com');
+                          } else if (data?.success === false) {
                             setError(data.error);
-                          } else {
+                          } else if (data?.success === true) {
                             setSuccess('Password reset link sent! Please check your email.');
                             toast({
                               title: 'Reset Email Sent',
@@ -421,7 +420,7 @@ const Auth = () => {
                           }
                         } catch (error: any) {
                           console.error('Password reset exception:', error);
-                          setError('Failed to send password reset email. Please contact support.');
+                          setError('Failed to send password reset email. Please contact support at dynamowirelessofficial@gmail.com');
                         }
                         setIsLoading(false);
                       }}

@@ -121,16 +121,17 @@ const handler = async (req: Request): Promise<Response> => {
       if (emailResponse.error.message?.includes('verify a domain')) {
         return new Response(
           JSON.stringify({ 
-            error: 'Email service not fully configured. Please contact support.',
+            success: false,
+            error: 'Password reset emails are currently only available for dynamowirelessofficial@gmail.com. Please contact support at dynamowirelessofficial@gmail.com for assistance with your password reset.',
             details: 'Domain verification required in Resend'
           }),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
       
       return new Response(
-        JSON.stringify({ error: 'Failed to send email' }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: false, error: 'Failed to send password reset email. Please contact support.' }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
