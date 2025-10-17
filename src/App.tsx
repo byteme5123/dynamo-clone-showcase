@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import SessionManager from "@/components/SessionManager";
 import SessionTracker from "@/components/SessionTracker";
+import { PlanExpiryChecker } from "@/components/PlanExpiryChecker";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import WirelessPBX from "./pages/WirelessPBX";
@@ -82,6 +83,7 @@ const App: React.FC = () => {
         <AuthProvider>
           <TooltipProvider>
             <SessionManager />
+            <PlanExpiryChecker />
             <Toaster />
             <Sonner />
             <BrowserRouter>

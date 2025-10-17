@@ -9,8 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key, Home } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { User, CreditCard, Package, Settings, LogOut, Loader2, RefreshCw, Key, Home, Calendar, CheckCircle, Clock, AlertCircle, ExternalLink } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordResetForm } from '@/components/PasswordResetForm';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -19,6 +19,7 @@ const Account = () => {
   const { user, userProfile, isAuthenticated, signOut, refreshUserData } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
@@ -212,6 +213,31 @@ const Account = () => {
     }
   };
 
+  // Calculate plan status based on expiry date
+  const calculatePlanStatus = () => {
+    if (!userProfile?.plan_expiry_date) return null;
+    
+    const now = new Date();
+    const expiryDate = new Date(userProfile.plan_expiry_date);
+    const daysRemaining = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    let status: 'active' | 'expired' | 'expiring_soon' = 'active';
+    
+    if (daysRemaining < 0) {
+      status = 'expired';
+    } else if (daysRemaining <= 7) {
+      status = 'expiring_soon';
+    }
+    
+    return {
+      status,
+      daysRemaining: Math.max(0, daysRemaining),
+      expiryDate: userProfile.plan_expiry_date,
+    };
+  };
+
+  const planStatus = calculatePlanStatus();
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
       completed: 'default',
@@ -224,6 +250,22 @@ const Account = () => {
     return (
       <Badge variant={variants[status] || 'secondary'}>
         {status}
+      </Badge>
+    );
+  };
+
+  const getPlanStatusBadge = (status: 'active' | 'expired' | 'expiring_soon') => {
+    const config = {
+      active: { variant: 'default' as const, label: 'Active', className: 'bg-green-600' },
+      expiring_soon: { variant: 'secondary' as const, label: 'Expiring Soon', className: 'bg-orange-500 text-white' },
+      expired: { variant: 'destructive' as const, label: 'Expired', className: 'bg-red-600' },
+    };
+    
+    const { variant, label, className } = config[status];
+    
+    return (
+      <Badge variant={variant} className={className}>
+        {label}
       </Badge>
     );
   };
@@ -391,13 +433,13 @@ const Account = () => {
 
         {/* Plans Tab */}
         <TabsContent value="plans">
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Recent Payment Success Banner */}
             {transactions && transactions.some(txn => 
               txn.status === 'completed' && 
               new Date(txn.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000
             ) && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-6">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0">
                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -429,143 +471,288 @@ const Account = () => {
             )}
             
             {/* Current Active Plan */}
-            {userProfile?.plan_status === 'active' && currentPlan && (
-              <Card className="border-2 border-primary">
+            {currentPlan && userProfile?.current_plan_id ? (
+              <Card className="border-2 bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-xl">Current Active Plan</CardTitle>
+                      <CardTitle className="text-2xl">Current Plan</CardTitle>
                       <CardDescription>Your subscription details</CardDescription>
                     </div>
-                    <Badge variant="default" className="text-sm">Active</Badge>
+                    {planStatus && getPlanStatusBadge(planStatus.status)}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Plan Name</p>
-                      <p className="font-semibold text-lg">{currentPlan.name}</p>
+                <CardContent className="space-y-6">
+                  {/* Expiry Alert */}
+                  {planStatus && (planStatus.status === 'expired' || planStatus.status === 'expiring_soon') && (
+                    <div className={`rounded-lg p-4 flex items-start space-x-3 ${
+                      planStatus.status === 'expired' 
+                        ? 'bg-red-50 border border-red-200' 
+                        : 'bg-orange-50 border border-orange-200'
+                    }`}>
+                      {planStatus.status === 'expired' ? (
+                        <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                      )}
+                      <div className="flex-1">
+                        <p className={`font-semibold ${
+                          planStatus.status === 'expired' ? 'text-red-900' : 'text-orange-900'
+                        }`}>
+                          {planStatus.status === 'expired' 
+                            ? 'Your plan has expired' 
+                            : `Your plan expires in ${planStatus.daysRemaining} day${planStatus.daysRemaining !== 1 ? 's' : ''}`
+                          }
+                        </p>
+                        <p className={`text-sm mt-1 ${
+                          planStatus.status === 'expired' ? 'text-red-700' : 'text-orange-700'
+                        }`}>
+                          {planStatus.status === 'expired'
+                            ? 'Renew your plan to continue enjoying uninterrupted service.'
+                            : 'Renew now to avoid service interruption.'
+                          }
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Price</p>
-                      <p className="font-semibold text-lg">
+                  )}
+
+                  {/* Plan Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Plan Name</p>
+                      </div>
+                      <p className="font-semibold text-xl">{currentPlan.name}</p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Price</p>
+                      </div>
+                      <p className="font-semibold text-xl">
                         ${currentPlan.price} {currentPlan.currency?.toUpperCase() || 'USD'}
                       </p>
                     </div>
+
+                    {userProfile.plan_purchase_date && (
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">Purchase Date</p>
+                        </div>
+                        <p className="font-medium">
+                          {new Date(userProfile.plan_purchase_date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    )}
+
+                    {userProfile.plan_expiry_date && (
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">Expiry Date</p>
+                        </div>
+                        <p className="font-medium">
+                          {new Date(userProfile.plan_expiry_date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    )}
+
                     {currentPlan.data_limit && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Data Limit</p>
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">Data Limit</p>
                         <p className="font-medium">{currentPlan.data_limit}</p>
                       </div>
                     )}
+                    
                     {currentPlan.validity_days && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Validity</p>
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">Validity</p>
                         <p className="font-medium">{currentPlan.validity_days} days</p>
                       </div>
                     )}
-                    {userProfile.plan_purchase_date && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Purchase Date</p>
-                        <p className="font-medium">
-                          {new Date(userProfile.plan_purchase_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
-                    {userProfile.plan_expiry_date && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Expiry Date</p>
-                        <p className="font-medium">
-                          {new Date(userProfile.plan_expiry_date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Plan Features */}
+                  {currentPlan.features && Array.isArray(currentPlan.features) && currentPlan.features.length > 0 && (
+                    <div className="pt-4 border-t space-y-3">
+                      <p className="text-sm font-semibold text-muted-foreground">Plan Features</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {currentPlan.features.map((feature: string, index: number) => (
+                          <div key={index} className="flex items-start space-x-2">
+                            <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {currentPlan.description && (
                     <div className="pt-4 border-t">
                       <p className="text-sm text-muted-foreground mb-2">Plan Details</p>
                       <p className="text-sm">{currentPlan.description}</p>
                     </div>
                   )}
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                    {planStatus && (planStatus.status === 'expired' || planStatus.status === 'expiring_soon') && (
+                      <Button
+                        onClick={() => navigate('/plans')}
+                        className="flex-1"
+                        size="lg"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Renew Plan Now
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => navigate('/plans')}
+                      variant="outline"
+                      className="flex-1"
+                      size="lg"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Browse More Plans
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center space-y-4">
+                    <div className="flex justify-center">
+                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                        <CreditCard className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">No Active Plan</h3>
+                      <p className="text-muted-foreground text-sm">
+                        You don't have an active plan yet. Browse our plans to get started.
+                      </p>
+                    </div>
+                    <Button onClick={() => navigate('/plans')} size="lg">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Browse Plans
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
             
+            {/* Purchase History */}
             <Card>
-            <CardHeader>
-              <CardTitle>Purchase History</CardTitle>
-              <CardDescription>
-                All your purchases and transactions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-          {transactionsLoading ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : transactions && transactions.length > 0 ? (
-                <div className="space-y-4">
-                  {transactions.filter(txn => txn.status === 'completed').map((txn) => {
-                    const isRecent = new Date(txn.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000;
-                    return (
-                      <div 
-                        key={txn.id} 
-                        className={`border rounded-lg p-4 ${isRecent ? 'border-green-200 bg-green-50' : ''}`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <p className="font-medium">
-                                {txn.plan?.name || 'Unknown Plan'}
-                              </p>
-                              {isRecent && (
-                                <Badge variant="default" className="bg-green-600 text-white text-xs">
-                                  NEW
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">Amount: </span>
-                                <span className="font-medium">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Calendar className="h-5 w-5" />
+                  <span>Purchase History</span>
+                </CardTitle>
+                <CardDescription>
+                  Complete history of all your plan purchases
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {transactionsLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : transactions && transactions.filter(txn => txn.status === 'completed').length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="text-left p-3 text-sm font-semibold">Plan</th>
+                          <th className="text-left p-3 text-sm font-semibold">Amount</th>
+                          <th className="text-left p-3 text-sm font-semibold">Purchase Date</th>
+                          <th className="text-left p-3 text-sm font-semibold hidden md:table-cell">Transaction ID</th>
+                          <th className="text-left p-3 text-sm font-semibold">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.filter(txn => txn.status === 'completed').map((txn) => {
+                          const isRecent = new Date(txn.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000;
+                          return (
+                            <tr 
+                              key={txn.id} 
+                              className={`border-b hover:bg-muted/50 transition-colors ${
+                                isRecent ? 'bg-green-50' : ''
+                              }`}
+                            >
+                              <td className="p-3">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium">{txn.plan?.name || 'Unknown Plan'}</span>
+                                  {isRecent && (
+                                    <Badge variant="default" className="bg-green-600 text-white text-xs">
+                                      NEW
+                                    </Badge>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <span className="font-semibold">
                                   ${txn.amount} {txn.currency?.toUpperCase() || 'USD'}
                                 </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Date: </span>
-                                <span>{new Date(txn.created_at).toLocaleDateString()}</span>
-                              </div>
-                              {txn.paypal_transaction_id && (
-                                <div className="col-span-2">
-                                  <span className="text-muted-foreground">Transaction ID: </span>
-                                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                                    {txn.paypal_transaction_id}
+                              </td>
+                              <td className="p-3 text-sm">
+                                {new Date(txn.created_at).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
+                              </td>
+                              <td className="p-3 text-sm hidden md:table-cell">
+                                {txn.paypal_transaction_id ? (
+                                  <code className="text-xs bg-muted px-2 py-1 rounded">
+                                    {txn.paypal_transaction_id.slice(0, 16)}...
                                   </code>
-                                </div>
-                              )}
-                            </div>
-                            {isRecent && (
-                              <div className="mt-2 p-2 bg-green-100 rounded text-sm text-green-800">
-                                ✅ Payment completed successfully!
-                              </div>
-                            )}
-                          </div>
-                          {getStatusBadge(txn.status)}
-                        </div>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                              <td className="p-3">
+                                <Badge variant="default" className="bg-green-600">
+                                  Completed
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 space-y-4">
+                    <div className="flex justify-center">
+                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                        <Calendar className="h-8 w-8 text-muted-foreground" />
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No purchases found</p>
-                  <Link to="/plans">
-                    <Button className="mt-4">Browse Plans</Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">No plan history available</h3>
+                      <p className="text-muted-foreground text-sm">
+                        You haven't purchased any plans yet.
+                      </p>
+                    </div>
+                    <Button onClick={() => navigate('/plans')} variant="outline">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Browse Plans
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </div>
         </TabsContent>
