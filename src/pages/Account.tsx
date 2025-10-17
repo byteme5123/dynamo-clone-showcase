@@ -659,7 +659,7 @@ const Account = () => {
                   <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     {planStatus && (planStatus.status === 'expired' || planStatus.status === 'expiring_soon') && (
                       <Button
-                        onClick={() => navigate('/plans')}
+                        onClick={() => navigate(`/plans/${currentPlan.id}`)}
                         className="flex-1"
                         size="lg"
                       >

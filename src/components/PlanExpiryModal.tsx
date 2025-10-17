@@ -8,6 +8,7 @@ interface PlanExpiryModalProps {
     expiryDate: string;
     status: 'expired' | 'expiring_soon';
     daysRemaining: number;
+    planId: string;
   };
   onClose: () => void;
 }
@@ -26,7 +27,7 @@ export function PlanExpiryModal({ plan, onClose }: PlanExpiryModalProps) {
 
   const handleRenew = () => {
     handleClose();
-    window.location.href = '/plans';
+    window.location.href = `/plans/${plan.planId}`;
   };
 
   const isExpired = plan.status === 'expired';

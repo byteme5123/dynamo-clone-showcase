@@ -24,6 +24,7 @@ export function PlanExpiryChecker() {
         expiryDate: tomorrow.toISOString(),
         status: 'expiring_soon',
         daysRemaining: 3,
+        planId: 'test-plan-123',
       });
       setShowModal(true);
       
@@ -47,6 +48,7 @@ export function PlanExpiryChecker() {
       //     expiryDate: userProfile.plan_expiry_date,
       //     status,
       //     daysRemaining: Math.max(0, daysRemaining),
+      //     planId: userProfile.current_plan_id,
       //   });
       //   setShowModal(true);
       //   localStorage.setItem('planExpiryModalShown', today);
