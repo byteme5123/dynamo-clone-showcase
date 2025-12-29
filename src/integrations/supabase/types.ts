@@ -62,7 +62,7 @@ export type Database = {
           admin_user_id: string | null
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           timestamp: string | null
           user_agent: string | null
         }
@@ -71,7 +71,7 @@ export type Database = {
           admin_user_id?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           timestamp?: string | null
           user_agent?: string | null
         }
@@ -80,7 +80,7 @@ export type Database = {
           admin_user_id?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           timestamp?: string | null
           user_agent?: string | null
         }
@@ -101,7 +101,7 @@ export type Database = {
           first_name: string | null
           id: string
           is_active: boolean
-          last_ip_address: unknown | null
+          last_ip_address: unknown
           last_login_at: string | null
           last_name: string | null
           locked_until: string | null
@@ -115,7 +115,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           is_active?: boolean
-          last_ip_address?: unknown | null
+          last_ip_address?: unknown
           last_login_at?: string | null
           last_name?: string | null
           locked_until?: string | null
@@ -129,7 +129,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           is_active?: boolean
-          last_ip_address?: unknown | null
+          last_ip_address?: unknown
           last_login_at?: string | null
           last_name?: string | null
           locked_until?: string | null
@@ -325,7 +325,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           payment_attempts: number | null
           paypal_capture_id: string | null
           paypal_order_id: string | null
@@ -344,7 +344,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           payment_attempts?: number | null
           paypal_capture_id?: string | null
           paypal_order_id?: string | null
@@ -363,7 +363,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           payment_attempts?: number | null
           paypal_capture_id?: string | null
           paypal_order_id?: string | null
@@ -532,7 +532,7 @@ export type Database = {
           failed_login_attempts: number | null
           first_name: string | null
           id: string
-          last_ip_address: unknown | null
+          last_ip_address: unknown
           last_name: string | null
           locked_until: string | null
           plan_expiry_date: string | null
@@ -546,7 +546,7 @@ export type Database = {
           failed_login_attempts?: number | null
           first_name?: string | null
           id: string
-          last_ip_address?: unknown | null
+          last_ip_address?: unknown
           last_name?: string | null
           locked_until?: string | null
           plan_expiry_date?: string | null
@@ -560,7 +560,7 @@ export type Database = {
           failed_login_attempts?: number | null
           first_name?: string | null
           id?: string
-          last_ip_address?: unknown | null
+          last_ip_address?: unknown
           last_name?: string | null
           locked_until?: string | null
           plan_expiry_date?: string | null
@@ -701,7 +701,7 @@ export type Database = {
           created_at: string | null
           currency: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           payment_method: string | null
           paypal_order_id: string | null
           paypal_transaction_id: string | null
@@ -716,7 +716,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           payment_method?: string | null
           paypal_order_id?: string | null
           paypal_transaction_id?: string | null
@@ -731,7 +731,7 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           payment_method?: string | null
           paypal_order_id?: string | null
           paypal_transaction_id?: string | null
@@ -786,7 +786,7 @@ export type Database = {
           action: string
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           timestamp: string | null
           user_agent: string | null
           user_id: string
@@ -795,7 +795,7 @@ export type Database = {
           action: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           timestamp?: string | null
           user_agent?: string | null
           user_id: string
@@ -804,7 +804,7 @@ export type Database = {
           action?: string
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           timestamp?: string | null
           user_agent?: string | null
           user_id?: string
@@ -817,7 +817,7 @@ export type Database = {
           expires_at: string
           fingerprint: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           last_activity: string | null
           session_token: string
           user_agent: string | null
@@ -828,7 +828,7 @@ export type Database = {
           expires_at: string
           fingerprint?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_activity?: string | null
           session_token: string
           user_agent?: string | null
@@ -839,7 +839,7 @@ export type Database = {
           expires_at?: string
           fingerprint?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_activity?: string | null
           session_token?: string
           user_agent?: string | null
@@ -909,14 +909,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_expired_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_audit_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
+      cleanup_old_audit_logs: { Args: never; Returns: undefined }
       get_admin_user_by_id: {
         Args: { target_user_id: string }
         Returns: {
@@ -932,14 +926,14 @@ export type Database = {
         }[]
       }
       get_current_admin_user: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           failed_login_attempts: number | null
           first_name: string | null
           id: string
           is_active: boolean
-          last_ip_address: unknown | null
+          last_ip_address: unknown
           last_login_at: string | null
           last_name: string | null
           locked_until: string | null
@@ -947,23 +941,20 @@ export type Database = {
           updated_at: string
           user_id: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "admin_users"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       increment_failed_login_attempts: {
         Args: { p_ip_address: unknown; p_user_id: string }
         Returns: undefined
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_super_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_user_locked: {
-        Args: { p_user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      is_user_locked: { Args: { p_user_id: string }; Returns: boolean }
       log_login_attempt: {
         Args: {
           p_email: string

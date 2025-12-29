@@ -28,7 +28,7 @@ COPY --from=builder /app/dist /app/dist
 COPY Caddyfile /etc/caddy/Caddyfile
 
 # Expose port
-EXPOSE 8080
+EXPOSE 3005
 
 # Start Caddy
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
